@@ -10,15 +10,17 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.skinadvisor.ai",
       "infoPlist": {
         "NSCameraUsageDescription": "Scan your face for skin analysis",
         "NSPhotoLibraryUsageDescription": "Upload photos for skin analysis"
       }
     },
     "android": {
+      "package": "com.skinadvisor.ai",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#E8A4B8"
+        "backgroundColor": "#1A1A2E"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -39,7 +41,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#E8A4B8"
+          "backgroundColor": "#1A1A2E"
         }
       ],
       [
@@ -52,6 +54,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "privacyPolicyUrl": "/privacy-policy",
+      "termsOfServiceUrl": "/terms-of-service"
     }
   }
 }
