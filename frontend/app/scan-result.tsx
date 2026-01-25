@@ -1332,4 +1332,70 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 13,
   },
+  // Improvement Section Styles
+  improvementMessage: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  improvementTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  improvementText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  potentialImprovement: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  // Optimization Section Styles
+  optimizationSection: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  optimizationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  opportunitiesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  opportunityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 6,
+  },
+  opportunityText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Perfect Skin CTA Button
+  perfectSkinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginBottom: 16,
+    gap: 8,
+  },
+  perfectSkinButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
