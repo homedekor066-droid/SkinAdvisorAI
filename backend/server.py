@@ -198,6 +198,285 @@ def compute_image_hash(image_base64: str) -> str:
     sample = image_base64[:10000] if len(image_base64) > 10000 else image_base64
     return hashlib.sha256(sample.encode()).hexdigest()[:16]
 
+# ==================== DIET & NUTRITION SYSTEM (DETERMINISTIC) ====================
+
+# Foods database - categorized by benefit
+FOODS_DATABASE = {
+    'omega_3_rich': [
+        {'name': 'Fatty fish (salmon, mackerel)', 'reason': 'Rich in omega-3 fatty acids that reduce inflammation'},
+        {'name': 'Walnuts', 'reason': 'Plant-based omega-3 source for skin repair'},
+        {'name': 'Chia seeds', 'reason': 'High in omega-3 and antioxidants'},
+        {'name': 'Flaxseeds', 'reason': 'Contains alpha-linolenic acid for skin health'},
+    ],
+    'antioxidant_rich': [
+        {'name': 'Berries (blueberries, strawberries)', 'reason': 'Packed with antioxidants that fight free radicals'},
+        {'name': 'Dark leafy greens (spinach, kale)', 'reason': 'Rich in vitamins A, C, E for skin renewal'},
+        {'name': 'Green tea', 'reason': 'Contains catechins that protect skin from damage'},
+        {'name': 'Tomatoes', 'reason': 'Lycopene helps protect against sun damage'},
+    ],
+    'zinc_rich': [
+        {'name': 'Pumpkin seeds', 'reason': 'High in zinc which helps heal blemishes'},
+        {'name': 'Chickpeas', 'reason': 'Plant-based zinc source for skin repair'},
+        {'name': 'Lean beef', 'reason': 'Excellent zinc source for cell regeneration'},
+        {'name': 'Oysters', 'reason': 'Highest natural source of zinc'},
+    ],
+    'vitamin_c_rich': [
+        {'name': 'Citrus fruits (oranges, lemons)', 'reason': 'Vitamin C boosts collagen production'},
+        {'name': 'Bell peppers', 'reason': 'Very high in vitamin C for skin brightening'},
+        {'name': 'Kiwi', 'reason': 'Packed with vitamin C and E for radiance'},
+        {'name': 'Papaya', 'reason': 'Contains papain enzyme and vitamin C'},
+    ],
+    'vitamin_e_rich': [
+        {'name': 'Almonds', 'reason': 'Rich in vitamin E that protects skin cells'},
+        {'name': 'Sunflower seeds', 'reason': 'High in vitamin E and selenium'},
+        {'name': 'Avocados', 'reason': 'Healthy fats and vitamin E for moisturized skin'},
+    ],
+    'hydrating_foods': [
+        {'name': 'Cucumber', 'reason': '95% water content for hydration'},
+        {'name': 'Watermelon', 'reason': 'Hydrating and contains lycopene'},
+        {'name': 'Celery', 'reason': 'High water content and vitamins'},
+        {'name': 'Coconut water', 'reason': 'Natural electrolytes for hydration'},
+    ],
+    'anti_inflammatory': [
+        {'name': 'Turmeric', 'reason': 'Curcumin reduces inflammation and redness'},
+        {'name': 'Ginger', 'reason': 'Anti-inflammatory compounds soothe skin'},
+        {'name': 'Extra virgin olive oil', 'reason': 'Oleocanthal has anti-inflammatory effects'},
+        {'name': 'Fatty fish', 'reason': 'Omega-3s calm inflammatory skin conditions'},
+    ],
+    'probiotic_rich': [
+        {'name': 'Yogurt (unsweetened)', 'reason': 'Probiotics support gut-skin connection'},
+        {'name': 'Kefir', 'reason': 'Fermented dairy improves skin clarity'},
+        {'name': 'Sauerkraut', 'reason': 'Fermented foods balance skin microbiome'},
+        {'name': 'Kimchi', 'reason': 'Probiotics and vitamins for clear skin'},
+    ],
+    'whole_grains': [
+        {'name': 'Brown rice', 'reason': 'Low glycemic, reduces sebum production'},
+        {'name': 'Quinoa', 'reason': 'Complete protein with B vitamins'},
+        {'name': 'Oats', 'reason': 'Beta-glucan soothes skin from within'},
+    ],
+}
+
+FOODS_TO_AVOID = {
+    'high_sugar': [
+        {'name': 'Sugary drinks (sodas, sweetened juices)', 'reason': 'Spikes blood sugar, triggers breakouts'},
+        {'name': 'Candy and sweets', 'reason': 'High glycemic foods worsen acne'},
+        {'name': 'Pastries and cakes', 'reason': 'Refined sugar increases inflammation'},
+    ],
+    'processed_foods': [
+        {'name': 'Fast food', 'reason': 'High in unhealthy fats and sodium'},
+        {'name': 'Processed snacks (chips, crackers)', 'reason': 'Often contain inflammatory oils'},
+        {'name': 'Ultra-processed foods', 'reason': 'Additives can trigger skin reactions'},
+    ],
+    'dairy_limit': [
+        {'name': 'Milk (especially skim)', 'reason': 'May increase sebum production and breakouts'},
+        {'name': 'Ice cream', 'reason': 'Dairy and sugar combination can worsen acne'},
+    ],
+    'fried_foods': [
+        {'name': 'Fried foods', 'reason': 'Excess oil can clog pores and cause inflammation'},
+        {'name': 'Deep-fried snacks', 'reason': 'Trans fats damage skin cell membranes'},
+    ],
+    'refined_carbs': [
+        {'name': 'White bread', 'reason': 'High glycemic index increases oil production'},
+        {'name': 'White pasta', 'reason': 'Spikes insulin which can trigger breakouts'},
+        {'name': 'White rice (excess)', 'reason': 'Refined carbs promote inflammation'},
+    ],
+    'alcohol': [
+        {'name': 'Alcohol', 'reason': 'Dehydrates skin and dilates blood vessels'},
+        {'name': 'Cocktails with sugar', 'reason': 'Alcohol plus sugar accelerates aging'},
+    ],
+    'caffeine_excess': [
+        {'name': 'Excess coffee (>3 cups)', 'reason': 'Can dehydrate skin if overconsumed'},
+        {'name': 'Energy drinks', 'reason': 'High caffeine and sugar damage skin'},
+    ],
+    'spicy_foods': [
+        {'name': 'Very spicy dishes', 'reason': 'Can trigger flushing and worsen redness'},
+        {'name': 'Hot peppers (excess)', 'reason': 'May aggravate rosacea and sensitive skin'},
+    ],
+}
+
+SUPPLEMENTS_DATABASE = {
+    'omega_3': {'name': 'Omega-3 Fish Oil', 'reason': 'Supports skin barrier and reduces inflammation'},
+    'vitamin_d': {'name': 'Vitamin D', 'reason': 'Supports skin cell growth and repair'},
+    'zinc': {'name': 'Zinc', 'reason': 'Helps heal blemishes and control oil production'},
+    'vitamin_c': {'name': 'Vitamin C', 'reason': 'Antioxidant that supports collagen production'},
+    'vitamin_e': {'name': 'Vitamin E', 'reason': 'Protects skin cells from oxidative damage'},
+    'probiotics': {'name': 'Probiotics', 'reason': 'Supports gut-skin axis for clearer complexion'},
+    'biotin': {'name': 'Biotin', 'reason': 'Supports healthy skin, hair, and nails'},
+    'collagen': {'name': 'Collagen peptides', 'reason': 'May improve skin elasticity and hydration'},
+    'evening_primrose': {'name': 'Evening Primrose Oil', 'reason': 'GLA fatty acid for dry, sensitive skin'},
+}
+
+HYDRATION_TIPS = {
+    'general': "Aim for 8 glasses (2 liters) of water daily. Increase intake if exercising or in hot weather.",
+    'dry_skin': "Drink at least 10 glasses of water daily and include hydrating foods like cucumber and watermelon.",
+    'oily_skin': "Stay well hydrated - 8 glasses daily. Proper hydration can actually help regulate oil production.",
+    'acne': "Drink plenty of water to flush toxins. Add lemon for vitamin C boost. Avoid sugary drinks.",
+    'dehydrated': "Increase water intake to 10-12 glasses daily. Consider electrolyte-rich coconut water.",
+    'sensitive': "Room temperature water is gentler. Herbal teas like chamomile can also soothe from within.",
+}
+
+def generate_diet_recommendations(skin_type: str, issues: List[dict]) -> dict:
+    """
+    Generate DETERMINISTIC diet recommendations based on skin type and issues.
+    Same skin type + same issues = same recommendations (no randomness).
+    """
+    eat_more = []
+    avoid = []
+    supplements = []
+    
+    # Create a set of detected issue names (normalized)
+    issue_names = set()
+    issue_severities = {}
+    for issue in issues:
+        name = issue.get('name', '').lower()
+        severity = issue.get('severity', 0)
+        issue_names.add(name)
+        issue_severities[name] = severity
+    
+    # Helper to check if any issue matches keywords
+    def has_issue(keywords):
+        for keyword in keywords:
+            for issue_name in issue_names:
+                if keyword in issue_name:
+                    return True, issue_severities.get(issue_name, 0)
+        return False, 0
+    
+    # ========== ACNE-RELATED ==========
+    has_acne, acne_severity = has_issue(['acne', 'pimple', 'breakout', 'blemish', 'blackhead', 'whitehead'])
+    if has_acne and acne_severity > 3:
+        eat_more.extend(FOODS_DATABASE['omega_3_rich'][:2])
+        eat_more.extend(FOODS_DATABASE['zinc_rich'][:2])
+        eat_more.extend(FOODS_DATABASE['antioxidant_rich'][:2])
+        avoid.extend(FOODS_TO_AVOID['high_sugar'][:2])
+        avoid.extend(FOODS_TO_AVOID['dairy_limit'])
+        avoid.extend(FOODS_TO_AVOID['fried_foods'][:1])
+        supplements.append(SUPPLEMENTS_DATABASE['zinc'])
+        supplements.append(SUPPLEMENTS_DATABASE['omega_3'])
+    elif has_acne:
+        eat_more.extend(FOODS_DATABASE['zinc_rich'][:1])
+        eat_more.extend(FOODS_DATABASE['antioxidant_rich'][:1])
+        avoid.extend(FOODS_TO_AVOID['high_sugar'][:1])
+    
+    # ========== OILY SKIN ==========
+    if skin_type == 'oily':
+        eat_more.extend(FOODS_DATABASE['whole_grains'][:2])
+        eat_more.extend(FOODS_DATABASE['antioxidant_rich'][2:3])  # Green tea
+        avoid.extend(FOODS_TO_AVOID['refined_carbs'][:2])
+        avoid.extend(FOODS_TO_AVOID['fried_foods'][:1])
+    
+    # ========== DRY SKIN ==========
+    if skin_type == 'dry':
+        eat_more.extend(FOODS_DATABASE['vitamin_e_rich'])
+        eat_more.extend(FOODS_DATABASE['omega_3_rich'][:2])
+        eat_more.extend(FOODS_DATABASE['hydrating_foods'][:2])
+        avoid.extend(FOODS_TO_AVOID['alcohol'])
+        avoid.extend(FOODS_TO_AVOID['caffeine_excess'][:1])
+        supplements.append(SUPPLEMENTS_DATABASE['omega_3'])
+        supplements.append(SUPPLEMENTS_DATABASE['evening_primrose'])
+    
+    # ========== DEHYDRATION ==========
+    has_dehydration, dehydration_severity = has_issue(['dehydration', 'dehydrated', 'dry'])
+    if has_dehydration and dehydration_severity > 3:
+        eat_more.extend(FOODS_DATABASE['hydrating_foods'])
+        eat_more.extend(FOODS_DATABASE['omega_3_rich'][:1])
+        avoid.extend(FOODS_TO_AVOID['caffeine_excess'])
+        avoid.extend(FOODS_TO_AVOID['alcohol'][:1])
+    
+    # ========== REDNESS/INFLAMMATION ==========
+    has_redness, redness_severity = has_issue(['redness', 'inflammation', 'rosacea', 'irritation', 'sensitive'])
+    if has_redness and redness_severity > 3:
+        eat_more.extend(FOODS_DATABASE['anti_inflammatory'])
+        eat_more.extend(FOODS_DATABASE['omega_3_rich'][:1])
+        avoid.extend(FOODS_TO_AVOID['spicy_foods'])
+        avoid.extend(FOODS_TO_AVOID['alcohol'])
+        avoid.extend(FOODS_TO_AVOID['processed_foods'][:1])
+        supplements.append(SUPPLEMENTS_DATABASE['omega_3'])
+    elif has_redness:
+        eat_more.extend(FOODS_DATABASE['anti_inflammatory'][:2])
+        avoid.extend(FOODS_TO_AVOID['spicy_foods'][:1])
+    
+    # ========== UNEVEN TONE / DULL SKIN ==========
+    has_uneven, uneven_severity = has_issue(['uneven', 'dull', 'dark spot', 'hyperpigmentation', 'pigment'])
+    if has_uneven:
+        eat_more.extend(FOODS_DATABASE['vitamin_c_rich'][:3])
+        eat_more.extend(FOODS_DATABASE['vitamin_e_rich'][:2])
+        avoid.extend(FOODS_TO_AVOID['processed_foods'][:2])
+        supplements.append(SUPPLEMENTS_DATABASE['vitamin_c'])
+        supplements.append(SUPPLEMENTS_DATABASE['vitamin_e'])
+    
+    # ========== WRINKLES / AGING ==========
+    has_aging, aging_severity = has_issue(['wrinkle', 'fine line', 'aging', 'sagging'])
+    if has_aging and aging_severity > 3:
+        eat_more.extend(FOODS_DATABASE['antioxidant_rich'][:3])
+        eat_more.extend(FOODS_DATABASE['vitamin_c_rich'][:2])
+        eat_more.extend(FOODS_DATABASE['omega_3_rich'][:1])
+        avoid.extend(FOODS_TO_AVOID['high_sugar'][:2])
+        avoid.extend(FOODS_TO_AVOID['alcohol'][:1])
+        supplements.append(SUPPLEMENTS_DATABASE['collagen'])
+        supplements.append(SUPPLEMENTS_DATABASE['vitamin_c'])
+    
+    # ========== SENSITIVE SKIN ==========
+    if skin_type == 'sensitive':
+        eat_more.extend(FOODS_DATABASE['anti_inflammatory'][:2])
+        eat_more.extend(FOODS_DATABASE['probiotic_rich'][:2])
+        avoid.extend(FOODS_TO_AVOID['spicy_foods'])
+        avoid.extend(FOODS_TO_AVOID['alcohol'][:1])
+        supplements.append(SUPPLEMENTS_DATABASE['probiotics'])
+    
+    # ========== LARGE PORES ==========
+    has_pores, pores_severity = has_issue(['pore', 'large pore'])
+    if has_pores and pores_severity > 4:
+        eat_more.extend(FOODS_DATABASE['antioxidant_rich'][:2])
+        eat_more.extend(FOODS_DATABASE['vitamin_c_rich'][:1])
+        avoid.extend(FOODS_TO_AVOID['fried_foods'])
+        avoid.extend(FOODS_TO_AVOID['refined_carbs'][:1])
+    
+    # ========== GENERAL SKIN HEALTH (if few issues) ==========
+    if len(eat_more) < 3:
+        eat_more.extend(FOODS_DATABASE['antioxidant_rich'][:2])
+        eat_more.extend(FOODS_DATABASE['hydrating_foods'][:1])
+    
+    if len(avoid) < 2:
+        avoid.extend(FOODS_TO_AVOID['processed_foods'][:1])
+        avoid.extend(FOODS_TO_AVOID['high_sugar'][:1])
+    
+    if len(supplements) < 2:
+        supplements.append(SUPPLEMENTS_DATABASE['vitamin_d'])
+        supplements.append(SUPPLEMENTS_DATABASE['omega_3'])
+    
+    # Remove duplicates while preserving order
+    def dedupe(items):
+        seen = set()
+        result = []
+        for item in items:
+            key = item['name']
+            if key not in seen:
+                seen.add(key)
+                result.append(item)
+        return result
+    
+    eat_more = dedupe(eat_more)[:8]  # Max 8 items
+    avoid = dedupe(avoid)[:6]  # Max 6 items
+    supplements = dedupe(supplements)[:4]  # Max 4 items
+    
+    # Determine hydration tip based on conditions
+    hydration_tip = HYDRATION_TIPS['general']
+    if skin_type == 'dry' or has_dehydration[0] if isinstance(has_dehydration, tuple) else has_dehydration:
+        hydration_tip = HYDRATION_TIPS['dry_skin']
+    elif skin_type == 'oily':
+        hydration_tip = HYDRATION_TIPS['oily_skin']
+    elif has_acne:
+        hydration_tip = HYDRATION_TIPS['acne']
+    elif skin_type == 'sensitive' or has_redness:
+        hydration_tip = HYDRATION_TIPS['sensitive']
+    
+    return {
+        'eat_more': eat_more,
+        'avoid': avoid,
+        'hydration_tip': hydration_tip,
+        'supplements_optional': supplements
+    }
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
