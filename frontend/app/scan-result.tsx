@@ -958,4 +958,91 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     lineHeight: 18,
   },
+  // Nutrition Tab Styles
+  hydrationCard: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+  },
+  hydrationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  hydrationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginLeft: 10,
+  },
+  hydrationText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  foodCard: {
+    marginBottom: 10,
+    padding: 14,
+  },
+  foodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  foodIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  foodName: {
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  foodReason: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginLeft: 44,
+  },
+  supplementsCard: {
+    padding: 16,
+  },
+  supplementItem: {
+    paddingVertical: 12,
+  },
+  supplementBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  supplementHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  supplementName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  supplementReason: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginLeft: 26,
+  },
+  nutritionDisclaimer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  nutritionDisclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    marginLeft: 10,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
 });
