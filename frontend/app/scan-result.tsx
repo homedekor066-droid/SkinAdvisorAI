@@ -19,13 +19,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { BlurView } from 'expo-blur';
 
-// Score color mapping
+// Score color mapping - YELLOW focused for improvement motivation
 const getScoreColor = (score: number) => {
-  if (score >= 90) return '#27AE60'; // Excellent - Green
-  if (score >= 75) return '#2ECC71'; // Good - Light Green
-  if (score >= 60) return '#F39C12'; // Average - Orange
-  if (score >= 40) return '#E67E22'; // Below Average - Dark Orange
-  return '#E74C3C'; // Poor - Red
+  if (score >= 90) return '#4CAF50'; // Excellent - Soft Green (rare)
+  if (score >= 75) return '#FFC107'; // Good - Yellow (needs improvement)
+  if (score >= 60) return '#FFB300'; // Average - Yellow (needs improvement)
+  if (score >= 40) return '#FF9800'; // Needs attention - Orange
+  return '#F44336'; // Poor - Red
 };
 
 // Score label mapping
