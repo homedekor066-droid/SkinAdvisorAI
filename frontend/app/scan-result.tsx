@@ -28,13 +28,78 @@ const getScoreColor = (score: number) => {
   return '#F44336'; // Poor - Red
 };
 
-// Score label mapping
+// Score label mapping - improvement-focused messaging
 const getScoreInfo = (score: number, t: (key: string) => string) => {
-  if (score >= 90) return { label: t('score_excellent') || 'Excellent', icon: 'star' as const };
-  if (score >= 75) return { label: t('score_good') || 'Good skin condition', icon: 'checkmark-circle' as const };
-  if (score >= 60) return { label: t('score_average') || 'Average', icon: 'remove-circle' as const };
-  if (score >= 40) return { label: t('score_below_average') || 'Below average', icon: 'alert-circle' as const };
-  return { label: t('score_poor') || 'Poor skin condition', icon: 'close-circle' as const };
+  if (score >= 90) return { 
+    label: 'Excellent', 
+    icon: 'star' as const,
+    message: 'Your skin is in great condition. Maintain your routine for lasting results.',
+    improvement: '5-10%'
+  };
+  if (score >= 75) return { 
+    label: 'Good', 
+    icon: 'checkmark-circle' as const,
+    message: 'Your skin is in good condition, but there is still room for improvement.',
+    improvement: '10-15%'
+  };
+  if (score >= 60) return { 
+    label: 'Average', 
+    icon: 'remove-circle' as const,
+    message: 'Your skin shows potential. With the right routine, significant improvement is possible.',
+    improvement: '15-25%'
+  };
+  if (score >= 40) return { 
+    label: 'Needs Attention', 
+    icon: 'alert-circle' as const,
+    message: 'Your skin needs attention. A consistent routine can make a real difference.',
+    improvement: '25-40%'
+  };
+  return { 
+    label: 'Needs Care', 
+    icon: 'close-circle' as const,
+    message: 'Your skin requires focused care. Start with the basics for visible improvement.',
+    improvement: '40-60%'
+  };
+};
+
+// Optimization opportunities based on score
+const getOptimizationOpportunities = (score: number, skinType: string) => {
+  const opportunities = [];
+  
+  // Always show some opportunities to encourage improvement
+  if (score < 95) {
+    opportunities.push({ icon: 'water-outline', text: 'Hydration optimization' });
+  }
+  if (score < 90) {
+    opportunities.push({ icon: 'sparkles-outline', text: 'Pore refinement' });
+  }
+  if (score < 85) {
+    opportunities.push({ icon: 'shield-outline', text: 'Skin barrier strengthening' });
+  }
+  if (score < 80) {
+    opportunities.push({ icon: 'hourglass-outline', text: 'Anti-aging prevention' });
+  }
+  if (score < 75) {
+    opportunities.push({ icon: 'color-palette-outline', text: 'Tone uniformity' });
+  }
+  if (score < 70) {
+    opportunities.push({ icon: 'sunny-outline', text: 'Sun damage repair' });
+  }
+  
+  // Always return at least 3 opportunities
+  if (opportunities.length < 3) {
+    if (!opportunities.find(o => o.text === 'Hydration optimization')) {
+      opportunities.push({ icon: 'water-outline', text: 'Hydration optimization' });
+    }
+    if (!opportunities.find(o => o.text === 'Skin barrier strengthening')) {
+      opportunities.push({ icon: 'shield-outline', text: 'Skin barrier strengthening' });
+    }
+    if (!opportunities.find(o => o.text === 'Anti-aging prevention')) {
+      opportunities.push({ icon: 'hourglass-outline', text: 'Anti-aging prevention' });
+    }
+  }
+  
+  return opportunities.slice(0, 5);
 };
 
 // Locked Content Component
