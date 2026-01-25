@@ -382,4 +382,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
+  // Limit Banner Styles
+  limitBanner: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  limitBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  limitBannerText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  limitBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  limitBannerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 13,
+  },
 });
