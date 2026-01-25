@@ -1176,6 +1176,14 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
     analysis = scan.get('analysis', {})
     score_data = scan.get('score_data', {})
     
+    # Generate diet recommendations if not stored (for older scans)
+    diet_recommendations = scan.get('diet_recommendations')
+    if not diet_recommendations:
+        diet_recommendations = generate_diet_recommendations(
+            skin_type=analysis.get('skin_type', 'normal'),
+            issues=analysis.get('issues', [])
+        )
+    
     return {
         'id': scan['id'],
         'image_base64': scan.get('image_base64'),
@@ -1193,6 +1201,7 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
         },
         'routine': scan.get('routine'),
         'products': scan.get('products'),
+        'diet_recommendations': diet_recommendations,
         'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at']
     }
 
