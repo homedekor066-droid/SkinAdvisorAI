@@ -342,7 +342,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Skin Analysis API"
+    - "Diet & Nutrition Recommendations API"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -352,3 +352,5 @@ agent_communication:
     message: "Initial MVP implementation complete. Backend has auth, skin analysis with GPT-4o, scan history, and translations. Frontend has onboarding, auth, home, scan, progress, profile screens. Please test backend APIs first - auth flow and skin analysis endpoints. For skin analysis test, use a real face image (base64 encoded). Note: Emergent LLM key is configured in backend/.env"
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: All 8 tested backend APIs are working perfectly! Auth flow (register/login/profile), Languages API (9 languages), Translations API (en/fr), Profile Update, Scan History, and Account Deletion all passed comprehensive testing. Skin Analysis API skipped as requested (requires real face image). Backend is production-ready. All APIs use proper authentication, return correct data structures, and handle edge cases properly. Test results saved to /app/backend_test_results.json with 100% success rate."
+  - agent: "main"
+    message: "NEW FEATURE: Diet & Nutrition Recommendations implemented. Backend: Added generate_diet_recommendations() function that returns deterministic diet advice based on skin type and issues. Integrated into /api/scan/analyze and /api/scan/{scan_id} endpoints. Frontend: Added new 'Nutrition' tab in scan-result.tsx with sections for eat_more, avoid, hydration_tip, supplements_optional, and a disclaimer. Please test the new diet recommendations endpoint."
