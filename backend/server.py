@@ -580,6 +580,8 @@ async def login(credentials: UserLogin):
             email=user['email'],
             name=user['name'],
             profile=UserProfile(**user.get('profile', {})) if user.get('profile') else None,
+            plan=user.get('plan', 'free'),
+            scan_count=user.get('scan_count', 0),
             created_at=user['created_at']
         )
     )
