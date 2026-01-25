@@ -1087,6 +1087,12 @@ async def analyze_skin(
                 upsert=True
             )
         
+        # Generate DETERMINISTIC diet recommendations
+        diet_recommendations = generate_diet_recommendations(
+            skin_type=analysis.get('skin_type', 'normal'),
+            issues=analysis.get('issues', [])
+        )
+        
         # Create scan record with all data
         scan = {
             'id': str(uuid.uuid4()),
@@ -1103,6 +1109,7 @@ async def analyze_skin(
             'score_data': score_data,
             'routine': routine,
             'products': products,
+            'diet_recommendations': diet_recommendations,
             'created_at': datetime.utcnow(),
             'language': language
         }
