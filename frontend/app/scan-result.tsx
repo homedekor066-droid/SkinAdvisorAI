@@ -17,6 +17,7 @@ import { skinService, ScanResult, DietRecommendations } from '../src/services/sk
 import { Card, Button } from '../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import { BlurView } from 'expo-blur';
 
 // Score color mapping
 const getScoreColor = (score: number) => {
@@ -36,16 +37,59 @@ const getScoreInfo = (score: number, t: (key: string) => string) => {
   return { label: t('score_poor') || 'Poor skin condition', icon: 'close-circle' as const };
 };
 
+// Locked Content Component
+const LockedSection = ({ 
+  title, 
+  description, 
+  previewCount, 
+  onUnlock, 
+  theme 
+}: { 
+  title: string; 
+  description: string; 
+  previewCount?: number;
+  onUnlock: () => void;
+  theme: any;
+}) => (
+  <View style={[styles.lockedContainer, { backgroundColor: theme.surface }]}>
+    <View style={styles.lockedContent}>
+      <View style={[styles.lockIconCircle, { backgroundColor: theme.primary + '20' }]}>
+        <Ionicons name="lock-closed" size={32} color={theme.primary} />
+      </View>
+      <Text style={[styles.lockedTitle, { color: theme.text }]}>{title}</Text>
+      <Text style={[styles.lockedDescription, { color: theme.textSecondary }]}>
+        {description}
+      </Text>
+      {previewCount !== undefined && (
+        <Text style={[styles.previewCount, { color: theme.primary }]}>
+          {previewCount} items ready for you
+        </Text>
+      )}
+      <TouchableOpacity 
+        style={[styles.unlockButton, { backgroundColor: theme.primary }]}
+        onPress={onUnlock}
+      >
+        <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+        <Text style={styles.unlockButtonText}>Unlock Premium</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
 export default function ScanResultScreen() {
   const { theme } = useTheme();
   const { t } = useI18n();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const router = useRouter();
 
-  const [scan, setScan] = useState<ScanResult | null>(null);
+  const [scan, setScan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'analysis' | 'routine' | 'nutrition' | 'products'>('analysis');
+
+  // Check if user has premium
+  const isPremium = scan?.user_plan === 'premium' || user?.plan === 'premium';
+  const isLocked = !isPremium;
 
   useEffect(() => {
     fetchScanResult();
