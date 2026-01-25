@@ -21,13 +21,22 @@ import { Ionicons } from '@expo/vector-icons';
 export default function ScanScreen() {
   const { theme } = useTheme();
   const { t, language } = useI18n();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
+  // Check if user can scan (free users: 1 scan limit)
+  const canScan = user?.plan === 'premium' || (user?.scan_count ?? 0) < 1;
+
   const pickImage = async (useCamera: boolean) => {
+    // Check scan limit before allowing image selection
+    if (!canScan) {
+      router.push('/paywall');
+      return;
+    }
+
     try {
       const permissionResult = useCamera
         ? await ImagePicker.requestCameraPermissionsAsync()
@@ -66,6 +75,12 @@ export default function ScanScreen() {
   const analyzeSkin = async () => {
     if (!image || !token) return;
 
+    // Double check scan limit
+    if (!canScan) {
+      router.push('/paywall');
+      return;
+    }
+
     setAnalyzing(true);
     try {
       const result = await skinService.analyzeSkin(image, language, token);
@@ -75,8 +90,22 @@ export default function ScanScreen() {
       });
     } catch (error: any) {
       console.error('Analysis error:', error);
-      const message = error.response?.data?.detail || 'Analysis failed. Please try again.';
-      Alert.alert(t('error'), message);
+      
+      // Check if scan limit reached error
+      const errorDetail = error.response?.data?.detail;
+      if (errorDetail?.error === 'scan_limit_reached' || errorDetail?.upgrade_required) {
+        Alert.alert(
+          'Scan Limit Reached',
+          "You've used your free scan. Upgrade to Premium to continue.",
+          [
+            { text: 'Later', style: 'cancel' },
+            { text: 'Upgrade', onPress: () => router.push('/paywall') }
+          ]
+        );
+      } else {
+        const message = typeof errorDetail === 'string' ? errorDetail : errorDetail?.message || 'Analysis failed. Please try again.';
+        Alert.alert(t('error'), message);
+      }
     } finally {
       setAnalyzing(false);
     }
