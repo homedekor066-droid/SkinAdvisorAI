@@ -300,13 +300,47 @@ export default function ScanResultScreen() {
             </View>
           </View>
 
-          {/* Score Info Tooltip */}
-          <View style={[styles.scoreInfoBox, { backgroundColor: theme.surface }]}>
-            <Ionicons name="information-circle-outline" size={16} color={theme.info} />
-            <Text style={[styles.scoreInfoText, { color: theme.textSecondary }]}>
-              {t('score_info') || 'Score represents overall skin health based on detected issues and their severity.'}
-            </Text>
+          {/* Improvement Message - YELLOW PSYCHOLOGY */}
+          <View style={[styles.improvementMessage, { backgroundColor: '#FFF8E1' }]}>
+            <Ionicons name="trending-up" size={20} color="#F57C00" />
+            <View style={styles.improvementTextContainer}>
+              <Text style={[styles.improvementText, { color: '#E65100' }]}>
+                {scoreInfo.message}
+              </Text>
+              <Text style={[styles.potentialImprovement, { color: '#F57C00' }]}>
+                Potential improvement: {scoreInfo.improvement}
+              </Text>
+            </View>
           </View>
+
+          {/* Optimization Opportunities */}
+          <View style={styles.optimizationSection}>
+            <Text style={[styles.optimizationTitle, { color: theme.text }]}>
+              Optimization Opportunities
+            </Text>
+            <View style={styles.opportunitiesGrid}>
+              {getOptimizationOpportunities(overallScore, analysis?.skin_type || 'normal').map((opportunity, index) => (
+                <View key={index} style={[styles.opportunityItem, { backgroundColor: theme.surface }]}>
+                  <Ionicons name={opportunity.icon as any} size={18} color={theme.primary} />
+                  <Text style={[styles.opportunityText, { color: theme.textSecondary }]}>
+                    {opportunity.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* CTA Button */}
+          <TouchableOpacity 
+            style={[styles.perfectSkinButton, { backgroundColor: theme.primary }]}
+            onPress={goToPaywall}
+          >
+            <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+            <Text style={styles.perfectSkinButtonText}>
+              See how to reach perfect skin
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
 
           {/* Score Factors */}
           {scoreFactors.length > 0 && (
