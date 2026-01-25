@@ -119,6 +119,24 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ TESTED: User registration working correctly. Creates user with unique email, returns JWT token and user data. Test user ID: 73df32fe-bb9c-4b1a-b3a9-4002219f3025"
+      - working: true
+        agent: "testing"
+        comment: "✅ MONETIZATION UPDATE: User registration now correctly creates users with plan='free' and scan_count=0. Login endpoint returns plan and scan_count in response. Paywall system fully integrated."
+
+  - task: "Monetization & Paywall System"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE: Monetization & Paywall System implemented. BACKEND CHANGES: 1) Added user.plan (free/premium) and user.scan_count fields to user model. 2) FREE_SCAN_LIMIT = 1 (lifetime). 3) /api/scan/analyze now blocks free users after 1 scan with 403 error. 4) Free users get limited response (score, skin_type, main_issues, preview counts). 5) Premium users get full response (routine, diet, products). 6) New endpoints: GET /api/subscription/status, POST /api/subscription/upgrade (MOCK), GET /api/subscription/pricing."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE TESTING COMPLETE: All 8 paywall tests passed (100% success rate). VERIFIED: 1) New users created with plan='free', scan_count=0. 2) Login returns plan/scan_count. 3) GET /api/subscription/status works for both free (scan_limit=1, can_scan=true) and premium users (scan_limit=-1, unlimited). 4) GET /api/subscription/pricing returns correct €9.99/month, €59.99/year pricing. 5) POST /api/subscription/upgrade successfully upgrades users to premium. 6) Scan limit enforcement: free users blocked after 1 scan with proper 403 error (scan_limit_reached, upgrade_required=true). 7) Response structure differs correctly: free users get limited response with locked_features, premium users get full routine/diet/products. 8) Premium users can scan unlimited times. System is production-ready."
 
   - task: "User Login API"
     implemented: true
