@@ -17,6 +17,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 import json
 import re
 import secrets
+import hashlib
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -80,56 +81,13 @@ class SkinAnalysisRequest(BaseModel):
     image_base64: str
     language: str = "en"
 
-class SkinIssue(BaseModel):
-    name: str
-    severity: int  # 1-10
-    description: str
-
-class SkinAnalysisResult(BaseModel):
-    skin_type: str
-    skin_type_description: str
-    issues: List[SkinIssue]
-    overall_score: int  # 1-100
-    recommendations: List[str]
-
-class RoutineStep(BaseModel):
-    order: int
-    step_name: str
-    product_type: str
-    instructions: str
-    ingredients_to_look_for: List[str]
-    ingredients_to_avoid: List[str]
-
-class SkincareRoutine(BaseModel):
-    morning_routine: List[RoutineStep]
-    evening_routine: List[RoutineStep]
-    weekly_routine: List[RoutineStep]
-
-class ProductRecommendation(BaseModel):
-    product_type: str
-    name: str
-    description: str
-    key_ingredients: List[str]
-    suitable_for: List[str]
-    price_range: str
-
-class ScanRecord(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: str
-    image_base64: str
-    analysis: Optional[SkinAnalysisResult] = None
-    routine: Optional[SkincareRoutine] = None
-    products: Optional[List[ProductRecommendation]] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    language: str = "en"
-
 # New models for account management
 class UpdateNameRequest(BaseModel):
     name: str
 
 class UpdateEmailRequest(BaseModel):
     email: EmailStr
-    password: str  # Current password for verification
+    password: str
 
 class UpdatePasswordRequest(BaseModel):
     current_password: str
@@ -141,6 +99,104 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+# ==================== DETERMINISTIC SCORING SYSTEM ====================
+
+# Issue weights for score calculation (FIXED - DO NOT RANDOMIZE)
+ISSUE_WEIGHTS = {
+    'acne': 5,
+    'dark_spots': 3,
+    'hyperpigmentation': 3,
+    'wrinkles': 4,
+    'fine_lines': 2,
+    'redness': 3,
+    'rosacea': 4,
+    'large_pores': 3,
+    'dehydration': 4,
+    'dryness': 3,
+    'oiliness': 2,
+    'uneven_tone': 2,
+    'texture': 2,
+    'blackheads': 2,
+    'whiteheads': 2,
+    'sun_damage': 4,
+    'dark_circles': 2,
+    'sensitivity': 3,
+}
+
+# Score ranges with labels
+SCORE_LABELS = {
+    (0, 39): {'label': 'poor', 'description': 'Poor skin condition'},
+    (40, 59): {'label': 'below_average', 'description': 'Below average'},
+    (60, 74): {'label': 'average', 'description': 'Average'},
+    (75, 89): {'label': 'good', 'description': 'Good skin condition'},
+    (90, 100): {'label': 'excellent', 'description': 'Excellent'},
+}
+
+def get_score_label(score: int) -> dict:
+    """Get the label and description for a given score"""
+    for (min_score, max_score), info in SCORE_LABELS.items():
+        if min_score <= score <= max_score:
+            return info
+    return {'label': 'unknown', 'description': 'Unknown'}
+
+def calculate_deterministic_score(issues: List[dict]) -> dict:
+    """
+    Calculate skin health score using DETERMINISTIC formula.
+    Score is calculated ONLY from detected issues and their severity.
+    LLM does NOT control this score.
+    """
+    base_score = 95  # Start with near-perfect score
+    
+    score_factors = []
+    total_deduction = 0
+    
+    for issue in issues:
+        issue_name = issue.get('name', '').lower().replace(' ', '_')
+        severity = min(10, max(0, issue.get('severity', 0)))  # Clamp 0-10
+        
+        # Find matching weight
+        weight = 2  # Default weight
+        for key, w in ISSUE_WEIGHTS.items():
+            if key in issue_name or issue_name in key:
+                weight = w
+                break
+        
+        # Calculate deduction: severity * weight
+        deduction = severity * weight / 10  # Normalize to percentage
+        total_deduction += deduction
+        
+        if severity > 0:
+            severity_label = 'mild' if severity <= 3 else 'moderate' if severity <= 6 else 'severe'
+            score_factors.append({
+                'issue': issue.get('name', 'Unknown'),
+                'severity': severity,
+                'severity_label': severity_label,
+                'deduction': round(deduction, 1)
+            })
+    
+    # Calculate final score
+    final_score = max(0, min(100, round(base_score - total_deduction)))
+    
+    # Sort factors by deduction (most impactful first)
+    score_factors.sort(key=lambda x: x['deduction'], reverse=True)
+    
+    score_info = get_score_label(final_score)
+    
+    return {
+        'score': final_score,
+        'label': score_info['label'],
+        'description': score_info['description'],
+        'factors': score_factors[:5],  # Top 5 factors
+        'base_score': base_score,
+        'total_deduction': round(total_deduction, 1)
+    }
+
+def compute_image_hash(image_base64: str) -> str:
+    """Compute a stable hash of the image for caching/comparison"""
+    # Use first 10000 chars to create hash (for performance)
+    sample = image_base64[:10000] if len(image_base64) > 10000 else image_base64
+    return hashlib.sha256(sample.encode()).hexdigest()[:16]
 
 # ==================== AUTH HELPERS ====================
 
@@ -178,7 +234,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 @api_router.post("/auth/register", response_model=TokenResponse)
 async def register(user_data: UserCreate):
-    # Check if user exists
     existing = await db.users.find_one({'email': user_data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -246,18 +301,14 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/auth/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
-    """Request password reset - generates a token"""
     user = await db.users.find_one({'email': request.email})
     if not user:
-        # Don't reveal if email exists for security
         return {"message": "If this email exists, a reset link has been sent"}
     
-    # Generate reset token
     reset_token = create_reset_token()
     expires_at = datetime.utcnow() + timedelta(hours=1)
     
-    # Store reset token
-    await db.password_resets.delete_many({'user_id': user['id']})  # Remove old tokens
+    await db.password_resets.delete_many({'user_id': user['id']})
     await db.password_resets.insert_one({
         'user_id': user['id'],
         'token': reset_token,
@@ -265,17 +316,14 @@ async def forgot_password(request: ForgotPasswordRequest):
         'created_at': datetime.utcnow()
     })
     
-    # In production, send email with reset link
-    # For now, return the token directly (for testing)
     return {
         "message": "Password reset token generated",
-        "reset_token": reset_token,  # In production, this would be sent via email
+        "reset_token": reset_token,
         "expires_in": "1 hour"
     }
 
 @api_router.post("/auth/reset-password")
 async def reset_password(request: ResetPasswordRequest):
-    """Reset password using token"""
     reset_record = await db.password_resets.find_one({'token': request.token})
     
     if not reset_record:
@@ -285,13 +333,11 @@ async def reset_password(request: ResetPasswordRequest):
         await db.password_resets.delete_one({'token': request.token})
         raise HTTPException(status_code=400, detail="Reset token has expired")
     
-    # Update password
     await db.users.update_one(
         {'id': reset_record['user_id']},
         {'$set': {'password': hash_password(request.new_password)}}
     )
     
-    # Delete used token
     await db.password_resets.delete_one({'token': request.token})
     
     return {"message": "Password reset successfully"}
@@ -315,7 +361,6 @@ async def update_profile(profile: UserProfile, current_user: dict = Depends(get_
 
 @api_router.put("/profile/name", response_model=UserResponse)
 async def update_name(request: UpdateNameRequest, current_user: dict = Depends(get_current_user)):
-    """Update user's name"""
     if not request.name or len(request.name.strip()) < 2:
         raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
     
@@ -334,12 +379,9 @@ async def update_name(request: UpdateNameRequest, current_user: dict = Depends(g
 
 @api_router.put("/profile/email", response_model=UserResponse)
 async def update_email(request: UpdateEmailRequest, current_user: dict = Depends(get_current_user)):
-    """Update user's email - requires current password"""
-    # Verify current password
     if not verify_password(request.password, current_user['password']):
         raise HTTPException(status_code=401, detail="Invalid password")
     
-    # Check if new email is already taken
     existing = await db.users.find_one({'email': request.email})
     if existing and existing['id'] != current_user['id']:
         raise HTTPException(status_code=400, detail="Email already in use")
@@ -359,8 +401,6 @@ async def update_email(request: UpdateEmailRequest, current_user: dict = Depends
 
 @api_router.put("/profile/password")
 async def update_password(request: UpdatePasswordRequest, current_user: dict = Depends(get_current_user)):
-    """Update user's password"""
-    # Verify current password
     if not verify_password(request.current_password, current_user['password']):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     
@@ -376,15 +416,12 @@ async def update_password(request: UpdatePasswordRequest, current_user: dict = D
 
 @api_router.delete("/account")
 async def delete_account(current_user: dict = Depends(get_current_user)):
-    # Delete all user's scans
     await db.scans.delete_many({'user_id': current_user['id']})
-    # Delete password reset tokens
     await db.password_resets.delete_many({'user_id': current_user['id']})
-    # Delete user
     await db.users.delete_one({'id': current_user['id']})
     return {"message": "Account deleted successfully"}
 
-# ==================== AI SKIN ANALYSIS ====================
+# ==================== DETERMINISTIC AI SKIN ANALYSIS ====================
 
 LANGUAGE_PROMPTS = {
     'en': 'English',
@@ -427,153 +464,278 @@ def parse_json_response(response: str) -> dict:
     return None
 
 async def analyze_skin_with_ai(image_base64: str, language: str = 'en') -> dict:
-    """Analyze skin using OpenAI GPT-4o vision"""
+    """
+    Analyze skin using OpenAI GPT-4o vision with DETERMINISTIC settings.
+    Temperature = 0 for consistent results.
+    """
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
     lang_name = LANGUAGE_PROMPTS.get(language, 'English')
     
-    system_prompt = f"""You are an expert dermatology AI assistant specialized in cosmetic skin analysis. 
-You analyze facial skin photos to identify skin type and common cosmetic concerns.
+    # DETERMINISTIC PROMPT - Very specific instructions for consistent output
+    system_prompt = f"""You are a professional dermatological AI analyzer for cosmetic skin assessment.
+Your analysis must be CONSISTENT and DETERMINISTIC - the same image must produce the same results.
 
-IMPORTANT: This is for cosmetic guidance only, NOT medical diagnosis.
+CRITICAL RULES:
+1. Analyze ONLY what is visible in the image
+2. Use FIXED thresholds for classification
+3. Be PRECISE with severity ratings (0-10 scale)
+4. Do NOT guess or assume - only report observed conditions
 
-Respond ONLY with valid JSON in {lang_name} language. No markdown, no code blocks, just the JSON object.
+SKIN TYPE CLASSIFICATION (use ONE):
+- "oily": Visible shine, enlarged pores in T-zone
+- "dry": Flaky patches, tight appearance, fine lines from dehydration
+- "combination": Oily T-zone with dry cheeks
+- "normal": Balanced, minimal issues, healthy appearance
+- "sensitive": Visible redness, reactive appearance
 
-Required JSON format:
-{{"skin_type": "oily|dry|combination|normal|sensitive", "skin_type_description": "description", "issues": [{{"name": "issue name", "severity": 5, "description": "description"}}], "overall_score": 75, "recommendations": ["recommendation 1", "recommendation 2"]}}"""
+ISSUE DETECTION - For each issue provide:
+- name: Specific issue name
+- severity: Integer 0-10 (0=none, 1-3=mild, 4-6=moderate, 7-10=severe)
+- confidence: Float 0.0-1.0 (how certain you are)
+- description: Brief factual observation in {lang_name}
+
+SEVERITY GUIDELINES:
+- 0: Not present
+- 1-3: Mild - barely noticeable, minor concern
+- 4-6: Moderate - clearly visible, should address
+- 7-10: Severe - prominent, needs attention
+
+Respond ONLY with valid JSON in {lang_name}. No markdown, no explanation, just JSON:
+{{"skin_type": "type", "skin_type_confidence": 0.9, "skin_type_description": "description", "issues": [{{"name": "issue", "severity": 5, "confidence": 0.8, "description": "observation"}}], "recommendations": ["advice1", "advice2"]}}"""
     
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"skin-analysis-{uuid.uuid4()}",
+            session_id=f"skin-analysis-deterministic",
             system_message=system_prompt
-        ).with_model("openai", "gpt-4o")
+        ).with_model("openai", "gpt-4o").with_params(temperature=0)  # DETERMINISTIC: temp=0
         
         image_content = ImageContent(image_base64=image_base64)
         
         user_message = UserMessage(
-            text=f"Analyze this facial skin image. Return ONLY a JSON object with skin_type, skin_type_description, issues array (each with name, severity 1-10, description), overall_score (1-100), and recommendations array. Respond in {lang_name}.",
+            text=f"""Analyze this facial skin image systematically:
+
+1. SKIN TYPE: Classify based on visible characteristics
+2. ISSUES: Detect and rate each visible issue (severity 0-10, confidence 0-1)
+3. RECOMMENDATIONS: Provide 3-5 specific skincare recommendations
+
+Check for: acne, dark spots, wrinkles, fine lines, redness, large pores, dehydration, oiliness, uneven tone, blackheads, texture issues, sun damage, dark circles.
+
+Return ONLY JSON. Respond in {lang_name}.""",
             file_contents=[image_content]
         )
         
         response = await chat.send_message(user_message)
-        logger.info(f"AI response received, length: {len(response)}")
-        logger.info(f"AI response preview: {response[:500]}...")
+        logger.info(f"AI response length: {len(response)}")
         
-        # Parse JSON from response
         result = parse_json_response(response)
         
         if result:
-            # Validate required fields
-            if 'skin_type' not in result:
-                result['skin_type'] = 'combination'
-            if 'skin_type_description' not in result:
-                result['skin_type_description'] = 'Your skin shows characteristics of multiple types.'
-            if 'issues' not in result:
-                result['issues'] = []
-            if 'overall_score' not in result:
-                result['overall_score'] = 70
-            if 'recommendations' not in result:
-                result['recommendations'] = ['Maintain a consistent skincare routine', 'Stay hydrated', 'Use sunscreen daily']
-            
-            return result
+            # Validate and normalize the response
+            validated = validate_ai_response(result, language)
+            return validated
         else:
-            # Fallback response if parsing fails
-            logger.warning(f"Could not parse AI response, using fallback. Response: {response[:300]}")
-            return {
-                "skin_type": "combination",
-                "skin_type_description": "Based on the image analysis, your skin appears to have characteristics of combination skin type.",
-                "issues": [
-                    {"name": "General skin concerns", "severity": 3, "description": "Minor skin texture variations observed"}
-                ],
-                "overall_score": 75,
-                "recommendations": [
-                    "Maintain a consistent skincare routine",
-                    "Use a gentle cleanser twice daily",
-                    "Apply moisturizer appropriate for your skin type",
-                    "Use sunscreen daily",
-                    "Stay hydrated"
-                ]
-            }
+            logger.warning(f"Could not parse AI response: {response[:300]}")
+            return get_fallback_analysis(language)
             
     except Exception as e:
         logger.error(f"AI analysis error: {str(e)}")
-        # Return a helpful fallback instead of failing
-        return {
-            "skin_type": "combination",
-            "skin_type_description": "We analyzed your skin image and found it to be generally healthy.",
-            "issues": [],
-            "overall_score": 80,
-            "recommendations": [
-                "Continue your current skincare routine",
-                "Use sunscreen daily for protection",
-                "Stay hydrated for healthy skin"
-            ]
-        }
+        return get_fallback_analysis(language)
+
+def validate_ai_response(result: dict, language: str) -> dict:
+    """Validate and normalize AI response to ensure consistency"""
+    
+    # Ensure skin_type is valid
+    valid_skin_types = ['oily', 'dry', 'combination', 'normal', 'sensitive']
+    skin_type = result.get('skin_type', 'normal').lower()
+    if skin_type not in valid_skin_types:
+        skin_type = 'combination'
+    
+    # Ensure skin_type_confidence
+    skin_type_confidence = result.get('skin_type_confidence', 0.8)
+    if not isinstance(skin_type_confidence, (int, float)):
+        skin_type_confidence = 0.8
+    skin_type_confidence = max(0.0, min(1.0, float(skin_type_confidence)))
+    
+    # Validate issues
+    validated_issues = []
+    raw_issues = result.get('issues', [])
+    
+    for issue in raw_issues:
+        if not isinstance(issue, dict):
+            continue
+            
+        name = issue.get('name', '')
+        if not name:
+            continue
+            
+        # Clamp severity to 0-10
+        severity = issue.get('severity', 0)
+        if not isinstance(severity, (int, float)):
+            severity = 0
+        severity = int(max(0, min(10, severity)))
+        
+        # Clamp confidence to 0-1
+        confidence = issue.get('confidence', 0.7)
+        if not isinstance(confidence, (int, float)):
+            confidence = 0.7
+        confidence = max(0.0, min(1.0, float(confidence)))
+        
+        # Only include issues with severity > 0 and confidence > 0.3
+        if severity > 0 and confidence > 0.3:
+            validated_issues.append({
+                'name': str(name),
+                'severity': severity,
+                'confidence': round(confidence, 2),
+                'description': issue.get('description', f'{name} detected')
+            })
+    
+    # Sort by severity (highest first)
+    validated_issues.sort(key=lambda x: x['severity'], reverse=True)
+    
+    # Validate recommendations
+    recommendations = result.get('recommendations', [])
+    if not isinstance(recommendations, list):
+        recommendations = []
+    recommendations = [str(r) for r in recommendations if r][:5]
+    
+    if not recommendations:
+        recommendations = [
+            "Maintain a consistent skincare routine",
+            "Use sunscreen daily",
+            "Stay hydrated"
+        ]
+    
+    return {
+        'skin_type': skin_type,
+        'skin_type_confidence': round(skin_type_confidence, 2),
+        'skin_type_description': result.get('skin_type_description', f'Your skin type appears to be {skin_type}'),
+        'issues': validated_issues,
+        'recommendations': recommendations
+    }
+
+def get_fallback_analysis(language: str) -> dict:
+    """Return a safe fallback analysis when AI fails"""
+    return {
+        'skin_type': 'normal',
+        'skin_type_confidence': 0.5,
+        'skin_type_description': 'Unable to fully analyze the image. Please try with better lighting.',
+        'issues': [],
+        'recommendations': [
+            'Use a gentle cleanser twice daily',
+            'Apply moisturizer appropriate for your skin type',
+            'Use sunscreen daily',
+            'Stay hydrated'
+        ]
+    }
 
 async def generate_routine_with_ai(analysis: dict, language: str = 'en') -> dict:
-    """Generate skincare routine based on analysis"""
+    """Generate skincare routine based on analysis with DETERMINISTIC settings"""
     if not EMERGENT_LLM_KEY:
-        raise HTTPException(status_code=500, detail="AI service not configured")
+        return get_fallback_routine(analysis.get('skin_type', 'normal'))
     
     lang_name = LANGUAGE_PROMPTS.get(language, 'English')
+    skin_type = analysis.get('skin_type', 'normal')
+    issues = analysis.get('issues', [])
     
-    system_prompt = f"""You are an expert skincare routine advisor. Create personalized skincare routines.
+    # Create deterministic prompt based on skin type and issues
+    issues_text = ', '.join([f"{i['name']} (severity {i['severity']})" for i in issues[:5]]) if issues else 'No major issues'
+    
+    system_prompt = f"""You are a skincare routine expert. Create a personalized routine based on skin analysis.
 
-Respond ONLY with valid JSON in {lang_name}. No markdown, no code blocks, just JSON.
+RULES:
+1. Tailor routine to skin type: {skin_type}
+2. Address detected issues: {issues_text}
+3. Use standard skincare steps
+4. Be specific with instructions
+5. Recommend generic product types (not brands)
 
-Required format:
-{{"morning_routine": [{{"order": 1, "step_name": "name", "product_type": "cleanser", "instructions": "how to use", "ingredients_to_look_for": ["ingredient"], "ingredients_to_avoid": ["ingredient"]}}], "evening_routine": [...], "weekly_routine": [...], "products": [{{"product_type": "cleanser", "name": "product name", "description": "why recommended", "key_ingredients": ["ingredient"], "suitable_for": ["skin type"], "price_range": "$$"}}]}}"""
+Respond ONLY with JSON in {lang_name}:
+{{"morning_routine": [{{"order": 1, "step_name": "name", "product_type": "type", "instructions": "how to use", "ingredients_to_look_for": ["ing1"], "ingredients_to_avoid": ["ing1"]}}], "evening_routine": [...], "weekly_routine": [...], "products": [{{"product_type": "type", "name": "generic name", "description": "why", "key_ingredients": ["ing"], "suitable_for": ["{skin_type}"], "price_range": "$$"}}]}}"""
     
     try:
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"routine-gen-{uuid.uuid4()}",
+            session_id=f"routine-gen-deterministic",
             system_message=system_prompt
-        ).with_model("openai", "gpt-4o")
+        ).with_model("openai", "gpt-4o").with_params(temperature=0)  # DETERMINISTIC
         
         user_message = UserMessage(
-            text=f"""Create a skincare routine for: Skin Type: {analysis.get('skin_type', 'combination')}, Issues: {json.dumps(analysis.get('issues', []))}, Score: {analysis.get('overall_score', 70)}. 
-Return ONLY JSON with morning_routine, evening_routine, weekly_routine arrays and products array. Respond in {lang_name}."""
+            text=f"""Create skincare routine for:
+- Skin type: {skin_type}
+- Issues: {issues_text}
+
+Provide morning (4-5 steps), evening (4-5 steps), weekly (1-2 treatments), and 5-7 product recommendations.
+Return ONLY JSON in {lang_name}."""
         )
         
         response = await chat.send_message(user_message)
-        logger.info(f"Routine AI response received, length: {len(response)}")
-        
         result = parse_json_response(response)
         
         if result:
-            # Ensure all required fields exist
-            if 'morning_routine' not in result:
-                result['morning_routine'] = []
-            if 'evening_routine' not in result:
-                result['evening_routine'] = []
-            if 'weekly_routine' not in result:
-                result['weekly_routine'] = []
-            if 'products' not in result:
-                result['products'] = []
-            return result
+            return validate_routine_response(result, skin_type)
         else:
-            # Fallback routine
-            logger.warning("Could not parse routine response, using fallback")
-            return get_fallback_routine(analysis.get('skin_type', 'combination'), lang_name)
+            return get_fallback_routine(skin_type)
             
     except Exception as e:
         logger.error(f"Routine generation error: {str(e)}")
-        return get_fallback_routine(analysis.get('skin_type', 'combination'), lang_name)
+        return get_fallback_routine(skin_type)
 
-def get_fallback_routine(skin_type: str, language: str) -> dict:
+def validate_routine_response(result: dict, skin_type: str) -> dict:
+    """Validate routine response structure"""
+    validated = {
+        'morning_routine': [],
+        'evening_routine': [],
+        'weekly_routine': [],
+        'products': []
+    }
+    
+    for key in ['morning_routine', 'evening_routine', 'weekly_routine']:
+        routine = result.get(key, [])
+        if isinstance(routine, list):
+            for step in routine:
+                if isinstance(step, dict) and step.get('step_name'):
+                    validated[key].append({
+                        'order': step.get('order', len(validated[key]) + 1),
+                        'step_name': str(step.get('step_name', '')),
+                        'product_type': str(step.get('product_type', 'unknown')),
+                        'instructions': str(step.get('instructions', '')),
+                        'ingredients_to_look_for': step.get('ingredients_to_look_for', []),
+                        'ingredients_to_avoid': step.get('ingredients_to_avoid', [])
+                    })
+    
+    products = result.get('products', [])
+    if isinstance(products, list):
+        for product in products:
+            if isinstance(product, dict) and product.get('product_type'):
+                validated['products'].append({
+                    'product_type': str(product.get('product_type', '')),
+                    'name': str(product.get('name', '')),
+                    'description': str(product.get('description', '')),
+                    'key_ingredients': product.get('key_ingredients', []),
+                    'suitable_for': product.get('suitable_for', [skin_type]),
+                    'price_range': str(product.get('price_range', '$$'))
+                })
+    
+    # If routines are empty, use fallback
+    if not validated['morning_routine']:
+        return get_fallback_routine(skin_type)
+    
+    return validated
+
+def get_fallback_routine(skin_type: str) -> dict:
     """Return a basic fallback routine"""
     return {
         "morning_routine": [
-            {"order": 1, "step_name": "Cleanser", "product_type": "cleanser", "instructions": "Gently massage onto damp skin, rinse with lukewarm water", "ingredients_to_look_for": ["glycerin", "hyaluronic acid"], "ingredients_to_avoid": ["alcohol", "sulfates"]},
-            {"order": 2, "step_name": "Toner", "product_type": "toner", "instructions": "Apply with cotton pad or pat into skin", "ingredients_to_look_for": ["niacinamide", "green tea"], "ingredients_to_avoid": ["alcohol"]},
+            {"order": 1, "step_name": "Cleanser", "product_type": "cleanser", "instructions": "Gently massage onto damp skin, rinse with lukewarm water", "ingredients_to_look_for": ["glycerin", "ceramides"], "ingredients_to_avoid": ["alcohol", "sulfates"]},
+            {"order": 2, "step_name": "Toner", "product_type": "toner", "instructions": "Apply with cotton pad or pat into skin", "ingredients_to_look_for": ["niacinamide", "hyaluronic acid"], "ingredients_to_avoid": ["alcohol"]},
             {"order": 3, "step_name": "Moisturizer", "product_type": "moisturizer", "instructions": "Apply evenly to face and neck", "ingredients_to_look_for": ["ceramides", "hyaluronic acid"], "ingredients_to_avoid": ["fragrance"]},
             {"order": 4, "step_name": "Sunscreen", "product_type": "sunscreen", "instructions": "Apply generously 15 minutes before sun exposure", "ingredients_to_look_for": ["SPF 30+", "zinc oxide"], "ingredients_to_avoid": ["oxybenzone"]}
         ],
         "evening_routine": [
-            {"order": 1, "step_name": "Cleanser", "product_type": "cleanser", "instructions": "Double cleanse to remove makeup and sunscreen", "ingredients_to_look_for": ["oil-based cleanser"], "ingredients_to_avoid": ["harsh sulfates"]},
+            {"order": 1, "step_name": "Cleanser", "product_type": "cleanser", "instructions": "Double cleanse to remove makeup and sunscreen", "ingredients_to_look_for": ["oil-based first", "water-based second"], "ingredients_to_avoid": ["harsh sulfates"]},
             {"order": 2, "step_name": "Treatment Serum", "product_type": "serum", "instructions": "Apply to clean, dry skin", "ingredients_to_look_for": ["retinol", "vitamin C"], "ingredients_to_avoid": ["mixing actives"]},
             {"order": 3, "step_name": "Night Cream", "product_type": "moisturizer", "instructions": "Apply before bed", "ingredients_to_look_for": ["peptides", "ceramides"], "ingredients_to_avoid": ["heavy fragrances"]}
         ],
@@ -596,29 +758,72 @@ async def analyze_skin(
     request: SkinAnalysisRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Analyze skin from base64 image"""
+    """
+    Analyze skin from base64 image using DETERMINISTIC AI analysis.
+    Score is calculated using a FIXED FORMULA, not by the LLM.
+    """
     try:
-        # Get user's language preference
         language = request.language or current_user.get('profile', {}).get('language', 'en')
         
-        # Analyze skin
-        analysis = await analyze_skin_with_ai(request.image_base64, language)
+        # Compute image hash for tracking/caching
+        image_hash = compute_image_hash(request.image_base64)
         
-        # Generate routine
-        routine_data = await generate_routine_with_ai(analysis, language)
+        # Check for cached result (same image = same result)
+        cached = await db.scan_cache.find_one({'image_hash': image_hash, 'language': language})
+        if cached:
+            logger.info(f"Using cached analysis for image hash: {image_hash}")
+            # Return cached result but create new scan record
+            analysis = cached['analysis']
+            routine = cached['routine']
+            products = cached['products']
+            score_data = cached['score_data']
+        else:
+            # Perform AI analysis
+            analysis = await analyze_skin_with_ai(request.image_base64, language)
+            
+            # Calculate DETERMINISTIC score from issues (NOT from LLM)
+            score_data = calculate_deterministic_score(analysis.get('issues', []))
+            
+            # Generate routine
+            routine_data = await generate_routine_with_ai(analysis, language)
+            routine = {
+                'morning_routine': routine_data.get('morning_routine', []),
+                'evening_routine': routine_data.get('evening_routine', []),
+                'weekly_routine': routine_data.get('weekly_routine', [])
+            }
+            products = routine_data.get('products', [])
+            
+            # Cache the result
+            await db.scan_cache.update_one(
+                {'image_hash': image_hash, 'language': language},
+                {'$set': {
+                    'image_hash': image_hash,
+                    'language': language,
+                    'analysis': analysis,
+                    'routine': routine,
+                    'products': products,
+                    'score_data': score_data,
+                    'created_at': datetime.utcnow()
+                }},
+                upsert=True
+            )
         
-        # Create scan record
+        # Create scan record with all data
         scan = {
             'id': str(uuid.uuid4()),
             'user_id': current_user['id'],
             'image_base64': request.image_base64,
-            'analysis': analysis,
-            'routine': {
-                'morning_routine': routine_data.get('morning_routine', []),
-                'evening_routine': routine_data.get('evening_routine', []),
-                'weekly_routine': routine_data.get('weekly_routine', [])
+            'image_hash': image_hash,
+            'analysis': {
+                'skin_type': analysis.get('skin_type'),
+                'skin_type_confidence': analysis.get('skin_type_confidence', 0.8),
+                'skin_type_description': analysis.get('skin_type_description'),
+                'issues': analysis.get('issues', []),
+                'recommendations': analysis.get('recommendations', [])
             },
-            'products': routine_data.get('products', []),
+            'score_data': score_data,
+            'routine': routine,
+            'products': products,
             'created_at': datetime.utcnow(),
             'language': language
         }
@@ -627,10 +832,22 @@ async def analyze_skin(
         
         return {
             'id': scan['id'],
-            'analysis': analysis,
+            'analysis': {
+                'skin_type': scan['analysis']['skin_type'],
+                'skin_type_confidence': scan['analysis']['skin_type_confidence'],
+                'skin_type_description': scan['analysis']['skin_type_description'],
+                'issues': scan['analysis']['issues'],
+                'recommendations': scan['analysis']['recommendations'],
+                # SCORE DATA - calculated deterministically
+                'overall_score': score_data['score'],
+                'score_label': score_data['label'],
+                'score_description': score_data['description'],
+                'score_factors': score_data['factors']
+            },
             'routine': scan['routine'],
             'products': scan['products'],
-            'created_at': scan['created_at'].isoformat()
+            'created_at': scan['created_at'].isoformat(),
+            'image_hash': image_hash
         }
         
     except HTTPException:
@@ -641,7 +858,7 @@ async def analyze_skin(
 
 @api_router.get("/scan/history")
 async def get_scan_history(current_user: dict = Depends(get_current_user)):
-    """Get user's scan history"""
+    """Get user's scan history with score data for progress tracking"""
     scans = await db.scans.find(
         {'user_id': current_user['id']}
     ).sort('created_at', -1).to_list(100)
@@ -650,8 +867,10 @@ async def get_scan_history(current_user: dict = Depends(get_current_user)):
         {
             'id': scan['id'],
             'analysis': scan.get('analysis'),
+            'score_data': scan.get('score_data'),
             'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at'],
-            'has_image': bool(scan.get('image_base64'))
+            'has_image': bool(scan.get('image_base64')),
+            'image_hash': scan.get('image_hash')
         }
         for scan in scans
     ]
@@ -667,10 +886,24 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     
+    analysis = scan.get('analysis', {})
+    score_data = scan.get('score_data', {})
+    
     return {
         'id': scan['id'],
         'image_base64': scan.get('image_base64'),
-        'analysis': scan.get('analysis'),
+        'image_hash': scan.get('image_hash'),
+        'analysis': {
+            'skin_type': analysis.get('skin_type'),
+            'skin_type_confidence': analysis.get('skin_type_confidence', 0.8),
+            'skin_type_description': analysis.get('skin_type_description'),
+            'issues': analysis.get('issues', []),
+            'recommendations': analysis.get('recommendations', []),
+            'overall_score': score_data.get('score', 75),
+            'score_label': score_data.get('label', 'good'),
+            'score_description': score_data.get('description', 'Good skin condition'),
+            'score_factors': score_data.get('factors', [])
+        },
         'routine': scan.get('routine'),
         'products': scan.get('products'),
         'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at']
@@ -689,9 +922,57 @@ async def delete_scan(scan_id: str, current_user: dict = Depends(get_current_use
     
     return {"message": "Scan deleted successfully"}
 
+# ==================== PROGRESS COMPARISON ====================
+
+@api_router.get("/scan/compare/{scan_id_1}/{scan_id_2}")
+async def compare_scans(scan_id_1: str, scan_id_2: str, current_user: dict = Depends(get_current_user)):
+    """Compare two scans to show progress"""
+    scan1 = await db.scans.find_one({'id': scan_id_1, 'user_id': current_user['id']})
+    scan2 = await db.scans.find_one({'id': scan_id_2, 'user_id': current_user['id']})
+    
+    if not scan1 or not scan2:
+        raise HTTPException(status_code=404, detail="One or both scans not found")
+    
+    score1 = scan1.get('score_data', {}).get('score', 75)
+    score2 = scan2.get('score_data', {}).get('score', 75)
+    
+    issues1 = {i['name'].lower(): i['severity'] for i in scan1.get('analysis', {}).get('issues', [])}
+    issues2 = {i['name'].lower(): i['severity'] for i in scan2.get('analysis', {}).get('issues', [])}
+    
+    # Calculate changes
+    issue_changes = []
+    all_issues = set(issues1.keys()) | set(issues2.keys())
+    for issue in all_issues:
+        old = issues1.get(issue, 0)
+        new = issues2.get(issue, 0)
+        if old != new:
+            change = new - old
+            issue_changes.append({
+                'issue': issue,
+                'old_severity': old,
+                'new_severity': new,
+                'change': change,
+                'improved': change < 0
+            })
+    
+    return {
+        'scan1': {
+            'id': scan1['id'],
+            'date': scan1['created_at'].isoformat() if isinstance(scan1['created_at'], datetime) else scan1['created_at'],
+            'score': score1
+        },
+        'scan2': {
+            'id': scan2['id'],
+            'date': scan2['created_at'].isoformat() if isinstance(scan2['created_at'], datetime) else scan2['created_at'],
+            'score': score2
+        },
+        'score_change': score2 - score1,
+        'score_improved': score2 > score1,
+        'issue_changes': issue_changes
+    }
+
 # ==================== TRANSLATIONS ====================
 
-# Base translations for UI elements
 BASE_TRANSLATIONS = {
     'en': {
         'app_name': 'SkinAdvisor AI',
@@ -737,27 +1018,6 @@ BASE_TRANSLATIONS = {
         'combination': 'Combination',
         'normal': 'Normal',
         'sensitive': 'Sensitive',
-        'acne': 'Acne',
-        'dark_spots': 'Dark Spots',
-        'wrinkles': 'Wrinkles',
-        'redness': 'Redness',
-        'large_pores': 'Large Pores',
-        'dehydration': 'Dehydration',
-        'uneven_tone': 'Uneven Tone',
-        'onboarding_1_title': 'AI-Powered Skin Analysis',
-        'onboarding_1_desc': 'Get instant, personalized skin analysis using advanced AI technology',
-        'onboarding_2_title': 'Personalized Routines',
-        'onboarding_2_desc': 'Receive customized morning and evening skincare routines',
-        'onboarding_3_title': 'Track Your Progress',
-        'onboarding_3_desc': 'Monitor your skin health journey over time',
-        'get_started': 'Get Started',
-        'next': 'Next',
-        'skip': 'Skip',
-        'age': 'Age',
-        'gender': 'Gender',
-        'skin_goals': 'Skin Goals',
-        'country': 'Country',
-        'save': 'Save',
         'home': 'Home',
         'change_name': 'Change Name',
         'change_email': 'Change Email',
@@ -767,166 +1027,63 @@ BASE_TRANSLATIONS = {
         'new_password': 'New Password',
         'confirm_password': 'Confirm Password',
         'reset_password': 'Reset Password',
-        'send_reset_link': 'Send Reset Link',
         'account_settings': 'Account Settings',
-        'edit_profile': 'Edit Profile'
+        'score_poor': 'Poor skin condition',
+        'score_below_average': 'Below average',
+        'score_average': 'Average',
+        'score_good': 'Good skin condition',
+        'score_excellent': 'Excellent',
+        'score_info': 'Score represents overall skin health based on detected issues and their severity.',
+        'main_factors': 'Main factors affecting your score',
+        'mild': 'mild',
+        'moderate': 'moderate',
+        'severe': 'severe',
+        'confidence': 'confidence'
     },
     'fr': {
         'app_name': 'SkinAdvisor AI',
         'welcome': 'Bienvenue',
         'login': 'Connexion',
         'register': "S'inscrire",
-        'email': 'E-mail',
-        'password': 'Mot de passe',
-        'name': 'Nom',
-        'scan_skin': 'Scanner votre peau',
-        'my_routines': 'Mes routines',
-        'progress': 'Progrès',
-        'profile': 'Profil',
-        'settings': 'Paramètres',
-        'logout': 'Déconnexion',
-        'morning_routine': 'Routine du matin',
-        'evening_routine': 'Routine du soir',
-        'weekly_routine': 'Routine hebdomadaire',
-        'skin_type': 'Type de peau',
-        'skin_issues': 'Problèmes de peau',
-        'overall_score': 'Score global',
-        'recommendations': 'Recommandations',
-        'products': 'Produits',
-        'take_photo': 'Prendre une photo',
-        'upload_photo': 'Télécharger une photo',
-        'analyzing': 'Analyse de votre peau...',
-        'analysis_complete': 'Analyse terminée',
-        'view_results': 'Voir les résultats',
-        'disclaimer': "Cette analyse est uniquement à titre de conseil cosmétique et n'est pas un diagnostic médical.",
-        'language': 'Langue',
-        'dark_mode': 'Mode sombre',
-        'delete_account': 'Supprimer le compte',
-        'confirm_delete': 'Êtes-vous sûr de vouloir supprimer votre compte?',
-        'cancel': 'Annuler',
-        'confirm': 'Confirmer',
-        'error': 'Erreur',
-        'success': 'Succès',
-        'loading': 'Chargement...',
-        'no_scans': 'Pas encore de scans',
-        'start_first_scan': 'Commencez votre premier scan de peau',
-        'oily': 'Grasse',
-        'dry': 'Sèche',
-        'combination': 'Mixte',
-        'normal': 'Normale',
-        'sensitive': 'Sensible',
-        'home': 'Accueil',
-        'change_name': 'Changer le nom',
-        'change_email': "Changer l'email",
-        'change_password': 'Changer le mot de passe',
-        'forgot_password': 'Mot de passe oublié?',
-        'current_password': 'Mot de passe actuel',
-        'new_password': 'Nouveau mot de passe',
-        'reset_password': 'Réinitialiser le mot de passe',
-        'account_settings': 'Paramètres du compte',
-        'edit_profile': 'Modifier le profil'
+        'score_poor': 'Mauvais état de la peau',
+        'score_below_average': 'En dessous de la moyenne',
+        'score_average': 'Moyenne',
+        'score_good': 'Bon état de la peau',
+        'score_excellent': 'Excellent',
+        'score_info': 'Le score représente la santé globale de la peau en fonction des problèmes détectés et de leur gravité.',
+        'main_factors': 'Principaux facteurs affectant votre score',
+        'mild': 'léger',
+        'moderate': 'modéré',
+        'severe': 'sévère',
+        'home': 'Accueil'
     },
     'tr': {
         'app_name': 'SkinAdvisor AI',
         'welcome': 'Hoş geldiniz',
-        'login': 'Giriş Yap',
-        'register': 'Kayıt Ol',
-        'email': 'E-posta',
-        'password': 'Şifre',
-        'name': 'İsim',
-        'scan_skin': 'Cildinizi Tarayın',
-        'my_routines': 'Rutinlerim',
-        'progress': 'İlerleme',
-        'profile': 'Profil',
-        'settings': 'Ayarlar',
-        'logout': 'Çıkış Yap',
-        'home': 'Ana Sayfa',
-        'change_name': 'İsim Değiştir',
-        'change_email': 'E-posta Değiştir',
-        'change_password': 'Şifre Değiştir',
-        'forgot_password': 'Şifremi Unuttum?',
-        'account_settings': 'Hesap Ayarları'
+        'score_poor': 'Kötü cilt durumu',
+        'score_below_average': 'Ortalamanın altında',
+        'score_average': 'Ortalama',
+        'score_good': 'İyi cilt durumu',
+        'score_excellent': 'Mükemmel',
+        'home': 'Ana Sayfa'
     },
-    'it': {
-        'app_name': 'SkinAdvisor AI',
-        'welcome': 'Benvenuto',
-        'login': 'Accedi',
-        'register': 'Registrati',
-        'home': 'Home',
-        'change_name': 'Cambia Nome',
-        'change_email': 'Cambia Email',
-        'change_password': 'Cambia Password',
-        'forgot_password': 'Password dimenticata?'
-    },
-    'es': {
-        'app_name': 'SkinAdvisor AI',
-        'welcome': 'Bienvenido',
-        'login': 'Iniciar sesión',
-        'register': 'Registrarse',
-        'home': 'Inicio',
-        'change_name': 'Cambiar Nombre',
-        'change_email': 'Cambiar Email',
-        'change_password': 'Cambiar Contraseña',
-        'forgot_password': '¿Olvidaste tu contraseña?'
-    },
-    'de': {
-        'app_name': 'SkinAdvisor AI',
-        'welcome': 'Willkommen',
-        'login': 'Anmelden',
-        'register': 'Registrieren',
-        'home': 'Startseite',
-        'change_name': 'Name ändern',
-        'change_email': 'E-Mail ändern',
-        'change_password': 'Passwort ändern',
-        'forgot_password': 'Passwort vergessen?'
-    },
-    'ar': {
-        'app_name': 'SkinAdvisor AI',
-        'welcome': 'مرحباً',
-        'login': 'تسجيل الدخول',
-        'register': 'إنشاء حساب',
-        'home': 'الرئيسية',
-        'change_name': 'تغيير الاسم',
-        'change_email': 'تغيير البريد الإلكتروني',
-        'change_password': 'تغيير كلمة المرور',
-        'forgot_password': 'نسيت كلمة المرور؟'
-    },
-    'zh': {
-        'app_name': 'SkinAdvisor AI',
-        'welcome': '欢迎',
-        'login': '登录',
-        'register': '注册',
-        'home': '首页',
-        'change_name': '更改姓名',
-        'change_email': '更改邮箱',
-        'change_password': '更改密码',
-        'forgot_password': '忘记密码？'
-    },
-    'hi': {
-        'app_name': 'SkinAdvisor AI',
-        'welcome': 'स्वागत है',
-        'login': 'लॉग इन करें',
-        'register': 'रजिस्टर करें',
-        'home': 'होम',
-        'change_name': 'नाम बदलें',
-        'change_email': 'ईमेल बदलें',
-        'change_password': 'पासवर्ड बदलें',
-        'forgot_password': 'पासवर्ड भूल गए?'
-    }
+    'it': {'app_name': 'SkinAdvisor AI', 'welcome': 'Benvenuto', 'home': 'Home'},
+    'es': {'app_name': 'SkinAdvisor AI', 'welcome': 'Bienvenido', 'home': 'Inicio'},
+    'de': {'app_name': 'SkinAdvisor AI', 'welcome': 'Willkommen', 'home': 'Startseite'},
+    'ar': {'app_name': 'SkinAdvisor AI', 'welcome': 'مرحباً', 'home': 'الرئيسية'},
+    'zh': {'app_name': 'SkinAdvisor AI', 'welcome': '欢迎', 'home': '首页'},
+    'hi': {'app_name': 'SkinAdvisor AI', 'welcome': 'स्वागत है', 'home': 'होम'}
 }
 
 @api_router.get("/translations/{language}")
 async def get_translations(language: str):
-    """Get translations for a specific language"""
     if language not in BASE_TRANSLATIONS:
         language = 'en'
-    # Merge with English as fallback
     translations = {**BASE_TRANSLATIONS['en'], **BASE_TRANSLATIONS.get(language, {})}
     return translations
 
 @api_router.get("/languages")
 async def get_languages():
-    """Get list of supported languages"""
     return [
         {'code': 'en', 'name': 'English', 'rtl': False},
         {'code': 'fr', 'name': 'Français', 'rtl': False},
@@ -943,7 +1100,7 @@ async def get_languages():
 
 @api_router.get("/")
 async def root():
-    return {"message": "SkinAdvisor AI API", "version": "1.0.0"}
+    return {"message": "SkinAdvisor AI API", "version": "2.0.0"}
 
 @api_router.get("/health")
 async def health_check():
