@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../src/context/ThemeContext';
 import { useI18n } from '../src/context/I18nContext';
 import { useAuth } from '../src/context/AuthContext';
-import { skinService, ScanResult } from '../src/services/skinService';
+import { skinService, ScanResult, DietRecommendations } from '../src/services/skinService';
 import { Card, Button } from '../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
