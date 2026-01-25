@@ -160,6 +160,18 @@ export default function ScanResultScreen() {
   const scoreColor = getScoreColor(overallScore);
   const scoreInfo = getScoreInfo(overallScore, t);
   const scoreFactors = analysis?.score_factors || [];
+  
+  // Get preview data for free users
+  const preview = scan?.preview || {};
+  const mainIssues = analysis?.main_issues || [];
+
+  // Navigate to paywall
+  const goToPaywall = () => {
+    router.push({
+      pathname: '/paywall',
+      params: { scanId: scanId }
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
