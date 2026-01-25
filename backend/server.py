@@ -1054,6 +1054,9 @@ def get_fallback_routine(skin_type: str) -> dict:
 
 # ==================== SCAN ROUTES ====================
 
+# Constants for subscription limits
+FREE_SCAN_LIMIT = 1  # Free users get 1 scan total (lifetime)
+
 @api_router.post("/scan/analyze")
 async def analyze_skin(
     request: SkinAnalysisRequest,
@@ -1062,8 +1065,27 @@ async def analyze_skin(
     """
     Analyze skin from base64 image using DETERMINISTIC AI analysis.
     Score is calculated using a FIXED FORMULA, not by the LLM.
+    
+    FREE USERS: Get limited response (score, skin_type, main_issues, preview counts)
+    PREMIUM USERS: Get full response (routine, diet, products, explanations)
     """
     try:
+        user_plan = current_user.get('plan', 'free')
+        scan_count = current_user.get('scan_count', 0)
+        
+        # ==================== SCAN LIMIT CHECK (SERVER-SIDE ENFORCEMENT) ====================
+        if user_plan == 'free' and scan_count >= FREE_SCAN_LIMIT:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "scan_limit_reached",
+                    "message": "You've used your free scan. Upgrade to Premium to continue.",
+                    "scan_count": scan_count,
+                    "scan_limit": FREE_SCAN_LIMIT,
+                    "upgrade_required": True
+                }
+            )
+        
         language = request.language or current_user.get('profile', {}).get('language', 'en')
         
         # Compute image hash for tracking/caching
@@ -1073,7 +1095,6 @@ async def analyze_skin(
         cached = await db.scan_cache.find_one({'image_hash': image_hash, 'language': language})
         if cached:
             logger.info(f"Using cached analysis for image hash: {image_hash}")
-            # Return cached result but create new scan record
             analysis = cached['analysis']
             routine = cached['routine']
             products = cached['products']
@@ -1115,7 +1136,7 @@ async def analyze_skin(
             issues=analysis.get('issues', [])
         )
         
-        # Create scan record with all data
+        # Create scan record with all data (always store full data)
         scan = {
             'id': str(uuid.uuid4()),
             'user_id': current_user['id'],
@@ -1138,26 +1159,76 @@ async def analyze_skin(
         
         await db.scans.insert_one(scan)
         
-        return {
-            'id': scan['id'],
-            'analysis': {
-                'skin_type': scan['analysis']['skin_type'],
-                'skin_type_confidence': scan['analysis']['skin_type_confidence'],
-                'skin_type_description': scan['analysis']['skin_type_description'],
-                'issues': scan['analysis']['issues'],
-                'recommendations': scan['analysis']['recommendations'],
-                # SCORE DATA - calculated deterministically
-                'overall_score': score_data['score'],
-                'score_label': score_data['label'],
-                'score_description': score_data['description'],
-                'score_factors': score_data['factors']
-            },
-            'routine': scan['routine'],
-            'products': scan['products'],
-            'diet_recommendations': diet_recommendations,
-            'created_at': scan['created_at'].isoformat(),
-            'image_hash': image_hash
-        }
+        # ==================== INCREMENT SCAN COUNT ====================
+        new_scan_count = scan_count + 1
+        await db.users.update_one(
+            {'id': current_user['id']},
+            {'$set': {'scan_count': new_scan_count}}
+        )
+        
+        # ==================== RETURN RESPONSE BASED ON PLAN ====================
+        if user_plan == 'premium':
+            # PREMIUM USER: Return full response
+            return {
+                'id': scan['id'],
+                'user_plan': 'premium',
+                'analysis': {
+                    'skin_type': scan['analysis']['skin_type'],
+                    'skin_type_confidence': scan['analysis']['skin_type_confidence'],
+                    'skin_type_description': scan['analysis']['skin_type_description'],
+                    'issues': scan['analysis']['issues'],
+                    'recommendations': scan['analysis']['recommendations'],
+                    'overall_score': score_data['score'],
+                    'score_label': score_data['label'],
+                    'score_description': score_data['description'],
+                    'score_factors': score_data['factors']
+                },
+                'routine': scan['routine'],
+                'products': scan['products'],
+                'diet_recommendations': diet_recommendations,
+                'progress_tracking_enabled': True,
+                'created_at': scan['created_at'].isoformat(),
+                'image_hash': image_hash
+            }
+        else:
+            # FREE USER: Return limited response
+            # Extract main issues (top 3 by severity)
+            main_issues = sorted(
+                scan['analysis']['issues'],
+                key=lambda x: x.get('severity', 0),
+                reverse=True
+            )[:3]
+            main_issues_simplified = [
+                {'issue': issue.get('name', 'Unknown'), 'severity': issue.get('severity', 0)}
+                for issue in main_issues
+            ]
+            
+            return {
+                'id': scan['id'],
+                'user_plan': 'free',
+                'analysis': {
+                    'skin_type': scan['analysis']['skin_type'],
+                    'overall_score': score_data['score'],
+                    'score_label': score_data['label'],
+                    'main_issues': main_issues_simplified
+                },
+                # Don't return full data - only preview counts
+                'locked_features': [
+                    'full_routine',
+                    'diet_plan',
+                    'product_recommendations',
+                    'progress_tracking',
+                    'detailed_explanations'
+                ],
+                'preview': {
+                    'routine_steps_count': len(routine.get('morning_routine', [])) + len(routine.get('evening_routine', [])) + len(routine.get('weekly_routine', [])),
+                    'diet_items_count': len(diet_recommendations.get('eat_more', [])) + len(diet_recommendations.get('avoid', [])),
+                    'products_count': len(products)
+                },
+                'created_at': scan['created_at'].isoformat(),
+                'image_hash': image_hash,
+                'upgrade_message': "You discovered what's affecting your skin. Now unlock the exact steps to fix it."
+            }
         
     except HTTPException:
         raise
