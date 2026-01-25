@@ -540,6 +540,36 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 20,
   },
+  // Skin Type Header - PROMINENT
+  skinTypeHeader: {
+    borderBottomWidth: 1,
+    paddingBottom: 16,
+    marginBottom: 16,
+  },
+  skinTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  skinTypeHeaderLabel: {
+    fontSize: 14,
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  skinTypeBadgeLarge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  skinTypeTextLarge: {
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  skinTypeConfidence: {
+    fontSize: 12,
+    marginTop: 8,
+    marginLeft: 32,
+  },
   scoreHeader: {
     flexDirection: 'row',
     alignItems: 'center',
