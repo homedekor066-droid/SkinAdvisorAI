@@ -388,86 +388,96 @@ export default function ScanResultScreen() {
           </View>
         )}
 
-        {activeTab === 'routine' && routine && (
+        {activeTab === 'routine' && (
           <View style={styles.tabContent}>
-            {/* Morning Routine */}
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {t('morning_routine')}
-            </Text>
-            {routine.morning_routine?.map((step: any, index: number) => (
-              <Card key={index} style={styles.routineCard}>
-                <View style={styles.stepHeader}>
-                  <View style={[styles.stepNumber, { backgroundColor: theme.primary }]}>
-                    <Text style={styles.stepNumberText}>{step.order}</Text>
-                  </View>
-                  <View style={styles.stepInfo}>
-                    <Text style={[styles.stepName, { color: theme.text }]}>
-                      {step.step_name}
-                    </Text>
-                    <Text style={[styles.productType, { color: theme.primary }]}>
-                      {step.product_type}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.instructions, { color: theme.textSecondary }]}>
-                  {step.instructions}
-                </Text>
-                {step.ingredients_to_look_for?.length > 0 && (
-                  <View style={styles.ingredientSection}>
-                    <Text style={[styles.ingredientLabel, { color: theme.success }]}>
-                      Look for:
-                    </Text>
-                    <Text style={[styles.ingredientList, { color: theme.textSecondary }]}>
-                      {step.ingredients_to_look_for.join(', ')}
-                    </Text>
-                  </View>
-                )}
-              </Card>
-            ))}
-
-            {/* Evening Routine */}
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {t('evening_routine')}
-            </Text>
-            {routine.evening_routine?.map((step: any, index: number) => (
-              <Card key={index} style={styles.routineCard}>
-                <View style={styles.stepHeader}>
-                  <View style={[styles.stepNumber, { backgroundColor: theme.info }]}>
-                    <Text style={styles.stepNumberText}>{step.order}</Text>
-                  </View>
-                  <View style={styles.stepInfo}>
-                    <Text style={[styles.stepName, { color: theme.text }]}>
-                      {step.step_name}
-                    </Text>
-                    <Text style={[styles.productType, { color: theme.info }]}>
-                      {step.product_type}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.instructions, { color: theme.textSecondary }]}>
-                  {step.instructions}
-                </Text>
-              </Card>
-            ))}
-
-            {/* Weekly Routine */}
-            {routine.weekly_routine?.length > 0 && (
+            {isLocked ? (
+              <LockedSection
+                title="Your personalized routine is ready"
+                description="Unlock to see exact steps for morning & night skincare."
+                previewCount={preview.routine_steps_count}
+                onUnlock={goToPaywall}
+                theme={theme}
+              />
+            ) : routine && (
               <>
+                {/* Morning Routine */}
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  {t('weekly_routine')}
+                  {t('morning_routine')}
                 </Text>
-                {routine.weekly_routine?.map((step: any, index: number) => (
+                {routine.morning_routine?.map((step: any, index: number) => (
                   <Card key={index} style={styles.routineCard}>
                     <View style={styles.stepHeader}>
-                      <View style={[styles.stepNumber, { backgroundColor: theme.warning }]}>
+                      <View style={[styles.stepNumber, { backgroundColor: theme.primary }]}>
                         <Text style={styles.stepNumberText}>{step.order}</Text>
                       </View>
                       <View style={styles.stepInfo}>
                         <Text style={[styles.stepName, { color: theme.text }]}>
                           {step.step_name}
                         </Text>
-                        <Text style={[styles.productType, { color: theme.warning }]}>
+                        <Text style={[styles.productType, { color: theme.primary }]}>
                           {step.product_type}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.instructions, { color: theme.textSecondary }]}>
+                      {step.instructions}
+                    </Text>
+                    {step.ingredients_to_look_for?.length > 0 && (
+                      <View style={styles.ingredientSection}>
+                        <Text style={[styles.ingredientLabel, { color: theme.success }]}>
+                          Look for:
+                        </Text>
+                        <Text style={[styles.ingredientList, { color: theme.textSecondary }]}>
+                          {step.ingredients_to_look_for.join(', ')}
+                        </Text>
+                      </View>
+                    )}
+                  </Card>
+                ))}
+
+                {/* Evening Routine */}
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t('evening_routine')}
+                </Text>
+                {routine.evening_routine?.map((step: any, index: number) => (
+                  <Card key={index} style={styles.routineCard}>
+                    <View style={styles.stepHeader}>
+                      <View style={[styles.stepNumber, { backgroundColor: theme.info }]}>
+                        <Text style={styles.stepNumberText}>{step.order}</Text>
+                      </View>
+                      <View style={styles.stepInfo}>
+                        <Text style={[styles.stepName, { color: theme.text }]}>
+                          {step.step_name}
+                        </Text>
+                        <Text style={[styles.productType, { color: theme.info }]}>
+                          {step.product_type}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.instructions, { color: theme.textSecondary }]}>
+                      {step.instructions}
+                    </Text>
+                  </Card>
+                ))}
+
+                {/* Weekly Routine */}
+                {routine.weekly_routine?.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                      {t('weekly_routine')}
+                    </Text>
+                    {routine.weekly_routine?.map((step: any, index: number) => (
+                      <Card key={index} style={styles.routineCard}>
+                        <View style={styles.stepHeader}>
+                          <View style={[styles.stepNumber, { backgroundColor: theme.warning }]}>
+                            <Text style={styles.stepNumberText}>{step.order}</Text>
+                          </View>
+                          <View style={styles.stepInfo}>
+                            <Text style={[styles.stepName, { color: theme.text }]}>
+                              {step.step_name}
+                            </Text>
+                            <Text style={[styles.productType, { color: theme.warning }]}>
+                              {step.product_type}
                         </Text>
                       </View>
                     </View>
