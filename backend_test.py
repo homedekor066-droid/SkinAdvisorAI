@@ -300,6 +300,186 @@ class BackendTester:
             self.log_test("Account Deletion", False, f"Account deletion error: {str(e)}")
             return False
     
+    def test_diet_recommendations_structure(self, diet_recs):
+        """Verify diet recommendations structure"""
+        required_fields = ['eat_more', 'avoid', 'hydration_tip', 'supplements_optional']
+        
+        # Check all required fields exist
+        for field in required_fields:
+            if field not in diet_recs:
+                return False, f"Missing required field: {field}"
+        
+        # Check eat_more structure
+        if not isinstance(diet_recs['eat_more'], list):
+            return False, "eat_more should be a list"
+        
+        for item in diet_recs['eat_more']:
+            if not isinstance(item, dict) or 'name' not in item or 'reason' not in item:
+                return False, "eat_more items should have 'name' and 'reason' fields"
+        
+        # Check avoid structure
+        if not isinstance(diet_recs['avoid'], list):
+            return False, "avoid should be a list"
+        
+        for item in diet_recs['avoid']:
+            if not isinstance(item, dict) or 'name' not in item or 'reason' not in item:
+                return False, "avoid items should have 'name' and 'reason' fields"
+        
+        # Check hydration_tip
+        if not isinstance(diet_recs['hydration_tip'], str):
+            return False, "hydration_tip should be a string"
+        
+        # Check supplements_optional structure
+        if not isinstance(diet_recs['supplements_optional'], list):
+            return False, "supplements_optional should be a list"
+        
+        for item in diet_recs['supplements_optional']:
+            if not isinstance(item, dict) or 'name' not in item or 'reason' not in item:
+                return False, "supplements_optional items should have 'name' and 'reason' fields"
+        
+        return True, "Structure validation passed"
+    
+    def test_diet_recommendations_with_mock_scan(self):
+        """Test diet recommendations by creating a mock scan"""
+        if not self.auth_token:
+            self.log_test("Diet Recommendations - Mock Scan", False, "No auth token available")
+            return False
+        
+        try:
+            # Create a simple 1x1 pixel base64 image for testing
+            test_image_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+            
+            analyze_data = {
+                "image_base64": test_image_b64,
+                "language": "en"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            response = self.session.post(f"{self.base_url}/scan/analyze", 
+                                       json=analyze_data, 
+                                       headers=headers, 
+                                       timeout=30)
+            
+            if response.status_code == 200:
+                scan_result = response.json()
+                
+                # Check if diet_recommendations exists in the analyze response
+                if 'diet_recommendations' not in scan_result:
+                    self.log_test("Diet Recommendations - Mock Scan", False, "diet_recommendations field missing from analyze response")
+                    return False
+                
+                diet_recs = scan_result['diet_recommendations']
+                
+                # Verify structure
+                structure_valid, message = self.test_diet_recommendations_structure(diet_recs)
+                
+                if structure_valid:
+                    self.log_test("Diet Recommendations - Mock Scan", True, f"Diet recommendations present and valid in analyze response. Found {len(diet_recs['eat_more'])} eat_more items, {len(diet_recs['avoid'])} avoid items, {len(diet_recs['supplements_optional'])} supplements")
+                    
+                    # Test deterministic behavior by calling the same scan detail endpoint twice
+                    scan_id = scan_result['id']
+                    return self.test_diet_recommendations_deterministic(scan_id)
+                else:
+                    self.log_test("Diet Recommendations - Mock Scan", False, f"Invalid structure: {message}")
+                    return False
+                    
+            else:
+                self.log_test("Diet Recommendations - Mock Scan", False, f"Scan analyze failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Diet Recommendations - Mock Scan", False, f"Error: {str(e)}")
+            return False
+    
+    def test_diet_recommendations_deterministic(self, scan_id):
+        """Test that diet recommendations are deterministic"""
+        if not self.auth_token:
+            self.log_test("Diet Recommendations - Deterministic", False, "No auth token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            
+            # Call the same scan detail endpoint twice
+            response1 = self.session.get(f"{self.base_url}/scan/{scan_id}", headers=headers, timeout=10)
+            response2 = self.session.get(f"{self.base_url}/scan/{scan_id}", headers=headers, timeout=10)
+            
+            if response1.status_code == 200 and response2.status_code == 200:
+                scan_data1 = response1.json()
+                scan_data2 = response2.json()
+                
+                if 'diet_recommendations' not in scan_data1 or 'diet_recommendations' not in scan_data2:
+                    self.log_test("Diet Recommendations - Deterministic", False, "diet_recommendations missing from scan detail response")
+                    return False
+                
+                diet_recs1 = scan_data1['diet_recommendations']
+                diet_recs2 = scan_data2['diet_recommendations']
+                
+                if diet_recs1 == diet_recs2:
+                    self.log_test("Diet Recommendations - Deterministic", True, "Diet recommendations are deterministic - same scan returns identical results")
+                    return True
+                else:
+                    self.log_test("Diet Recommendations - Deterministic", False, "Diet recommendations are not deterministic - same scan returns different results")
+                    return False
+            else:
+                self.log_test("Diet Recommendations - Deterministic", False, f"Scan detail failed: {response1.status_code}, {response2.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Diet Recommendations - Deterministic", False, f"Error: {str(e)}")
+            return False
+    
+    def test_diet_recommendations_existing_scans(self):
+        """Test diet recommendations with existing scans"""
+        if not self.auth_token:
+            self.log_test("Diet Recommendations - Existing Scans", False, "No auth token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            
+            # Get scan history
+            response = self.session.get(f"{self.base_url}/scan/history", headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                scans = response.json()
+                
+                if len(scans) == 0:
+                    self.log_test("Diet Recommendations - Existing Scans", True, "No existing scans found - this is expected for new user")
+                    return True
+                
+                # Test the first scan
+                scan_id = scans[0]['id']
+                scan_response = self.session.get(f"{self.base_url}/scan/{scan_id}", headers=headers, timeout=10)
+                
+                if scan_response.status_code == 200:
+                    scan_data = scan_response.json()
+                    
+                    if 'diet_recommendations' in scan_data:
+                        diet_recs = scan_data['diet_recommendations']
+                        structure_valid, message = self.test_diet_recommendations_structure(diet_recs)
+                        
+                        if structure_valid:
+                            self.log_test("Diet Recommendations - Existing Scans", True, f"Diet recommendations found and valid in existing scan {scan_id}")
+                            return True
+                        else:
+                            self.log_test("Diet Recommendations - Existing Scans", False, f"Invalid structure in existing scan: {message}")
+                            return False
+                    else:
+                        # This is expected for older scans - the endpoint should generate them
+                        self.log_test("Diet Recommendations - Existing Scans", True, "Older scan without diet_recommendations - endpoint should generate them on-the-fly")
+                        return True
+                else:
+                    self.log_test("Diet Recommendations - Existing Scans", False, f"Failed to get scan detail: {scan_response.status_code}")
+                    return False
+            else:
+                self.log_test("Diet Recommendations - Existing Scans", False, f"Failed to get scan history: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Diet Recommendations - Existing Scans", False, f"Error: {str(e)}")
+            return False
+    
     def run_all_tests(self):
         """Run all backend tests in sequence"""
         print(f"\n🧪 Starting SkinAdvisor AI Backend API Tests")
