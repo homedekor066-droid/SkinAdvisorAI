@@ -115,35 +115,39 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 # ==================== DETERMINISTIC SCORING SYSTEM ====================
+# STRICT SCORING: 85+ should be elite (top 10%), 90+ extremely rare (top 3-5%)
 
-# Issue weights for score calculation (FIXED - DO NOT RANDOMIZE)
+# Issue weights for score calculation - STRONGER PENALTIES
 ISSUE_WEIGHTS = {
-    'acne': 5,
+    'acne': 6,           # Strong penalty
+    'pores': 4,          # Moderate penalty
+    'large_pores': 4,
+    'uneven_tone': 3,
+    'uneven_skin_tone': 3,
+    'redness': 4,
+    'rosacea': 5,
+    'dehydration': 5,
+    'dryness': 3,
+    'oiliness': 3,
     'dark_spots': 3,
     'hyperpigmentation': 3,
     'wrinkles': 4,
     'fine_lines': 2,
-    'redness': 3,
-    'rosacea': 4,
-    'large_pores': 3,
-    'dehydration': 4,
-    'dryness': 3,
-    'oiliness': 2,
-    'uneven_tone': 2,
-    'texture': 2,
-    'blackheads': 2,
-    'whiteheads': 2,
+    'texture': 3,
+    'blackheads': 3,
+    'whiteheads': 3,
     'sun_damage': 4,
     'dark_circles': 2,
     'sensitivity': 3,
+    'inflammation': 4,
 }
 
-# Score ranges with labels
+# Score ranges with labels - Updated for YELLOW-focused psychology
 SCORE_LABELS = {
-    (0, 39): {'label': 'poor', 'description': 'Poor skin condition'},
-    (40, 59): {'label': 'below_average', 'description': 'Below average'},
-    (60, 74): {'label': 'average', 'description': 'Average'},
-    (75, 89): {'label': 'good', 'description': 'Good skin condition'},
+    (0, 39): {'label': 'needs_care', 'description': 'Your skin requires focused care'},
+    (40, 59): {'label': 'needs_attention', 'description': 'Your skin needs attention'},
+    (60, 74): {'label': 'average', 'description': 'Average - room for improvement'},
+    (75, 89): {'label': 'good', 'description': 'Good - but can be better'},
     (90, 100): {'label': 'excellent', 'description': 'Excellent'},
 }
 
@@ -156,28 +160,55 @@ def get_score_label(score: int) -> dict:
 
 def calculate_deterministic_score(issues: List[dict]) -> dict:
     """
-    Calculate skin health score using DETERMINISTIC formula.
+    Calculate skin health score using STRICT DETERMINISTIC formula.
+    
+    GOALS:
+    - 90+ = top 3-5% (extremely rare)
+    - 85-89 = top 10% (elite)
+    - 70-84 = majority of users
+    - <70 = common
+    
     Score is calculated ONLY from detected issues and their severity.
     LLM does NOT control this score.
     """
-    base_score = 95  # Start with near-perfect score
+    # LOWER base score: 75 (max 78 with bonuses)
+    base_score = 75
     
     score_factors = []
     total_deduction = 0
     
+    # Track critical issues for hard cap rule
+    critical_issues = {
+        'acne': 0,
+        'pores': 0,
+        'uneven_tone': 0,
+        'redness': 0,
+    }
+    
+    max_severity = 0  # Track highest severity for elite score check
+    
     for issue in issues:
-        issue_name = issue.get('name', '').lower().replace(' ', '_')
+        issue_name = issue.get('name', '').lower().replace(' ', '_').replace('-', '_')
         severity = min(10, max(0, issue.get('severity', 0)))  # Clamp 0-10
         
-        # Find matching weight
-        weight = 2  # Default weight
+        # Track max severity
+        if severity > max_severity:
+            max_severity = severity
+        
+        # Track critical issues
+        for critical_key in critical_issues.keys():
+            if critical_key in issue_name or issue_name in critical_key:
+                critical_issues[critical_key] = max(critical_issues[critical_key], severity)
+        
+        # Find matching weight - use STRONGER penalties
+        weight = 3  # Default weight (increased)
         for key, w in ISSUE_WEIGHTS.items():
             if key in issue_name or issue_name in key:
                 weight = w
                 break
         
-        # Calculate deduction: severity * weight
-        deduction = severity * weight / 10  # Normalize to percentage
+        # Calculate deduction: severity * weight (NO normalization - direct impact)
+        deduction = severity * weight * 0.15  # Each severity point = weight * 0.15 points
         total_deduction += deduction
         
         if severity > 0:
@@ -189,8 +220,37 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
                 'deduction': round(deduction, 1)
             })
     
-    # Calculate final score
-    final_score = max(0, min(100, round(base_score - total_deduction)))
+    # Calculate preliminary score
+    preliminary_score = base_score - total_deduction
+    
+    # ==================== HARD CAP RULES ====================
+    
+    # Rule 1: If ANY critical issue has severity >= 3, cap at 84
+    has_critical_issue = any(sev >= 3 for sev in critical_issues.values())
+    if has_critical_issue:
+        preliminary_score = min(preliminary_score, 84)
+    
+    # Rule 2: If ANY issue has severity >= 5, cap at 79
+    if max_severity >= 5:
+        preliminary_score = min(preliminary_score, 79)
+    
+    # Rule 3: If ANY issue has severity >= 7, cap at 74
+    if max_severity >= 7:
+        preliminary_score = min(preliminary_score, 74)
+    
+    # Rule 4: 90+ ONLY allowed if ALL conditions met:
+    # - All severities <= 1
+    # - Total deduction < 5
+    can_be_elite = (max_severity <= 1) and (total_deduction < 5)
+    if not can_be_elite and preliminary_score >= 85:
+        preliminary_score = min(preliminary_score, 84)
+    
+    # Rule 5: 90+ requires exceptionally good skin
+    if preliminary_score >= 90 and not (max_severity == 0 and total_deduction < 2):
+        preliminary_score = min(preliminary_score, 89)
+    
+    # Final score clamping
+    final_score = max(0, min(100, round(preliminary_score)))
     
     # Sort factors by deduction (most impactful first)
     score_factors.sort(key=lambda x: x['deduction'], reverse=True)
