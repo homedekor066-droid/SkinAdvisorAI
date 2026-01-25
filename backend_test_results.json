@@ -1,0 +1,80 @@
+{
+  "summary": {
+    "passed": 9,
+    "total": 9,
+    "success_rate": "100.0%",
+    "timestamp": "2026-01-25T18:46:32.676329"
+  },
+  "detailed_results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "message": "API is healthy: {'status': 'healthy'}",
+      "timestamp": "2026-01-25T18:46:32.043877",
+      "response_data": null
+    },
+    {
+      "test": "User Registration",
+      "success": true,
+      "message": "User registered successfully with ID: 73df32fe-bb9c-4b1a-b3a9-4002219f3025",
+      "timestamp": "2026-01-25T18:46:32.279584",
+      "response_data": null
+    },
+    {
+      "test": "User Login",
+      "success": true,
+      "message": "Login successful for user: testuser_82846b28@skinadvisor.com",
+      "timestamp": "2026-01-25T18:46:32.510679",
+      "response_data": null
+    },
+    {
+      "test": "Get User Profile",
+      "success": true,
+      "message": "Profile retrieved for user: testuser_82846b28@skinadvisor.com",
+      "timestamp": "2026-01-25T18:46:32.525821",
+      "response_data": null
+    },
+    {
+      "test": "Languages API",
+      "success": true,
+      "message": "Retrieved 9 languages: en, fr, tr, it, es, de, ar, zh, hi",
+      "timestamp": "2026-01-25T18:46:32.576421",
+      "response_data": null
+    },
+    {
+      "test": "Translations API (en)",
+      "success": true,
+      "message": "Retrieved 65 translations for en",
+      "timestamp": "2026-01-25T18:46:32.589852",
+      "response_data": null
+    },
+    {
+      "test": "Translations API (fr)",
+      "success": true,
+      "message": "Retrieved 65 translations for fr",
+      "timestamp": "2026-01-25T18:46:32.598107",
+      "response_data": null
+    },
+    {
+      "test": "Profile Update",
+      "success": true,
+      "message": "Profile updated successfully with correct data",
+      "timestamp": "2026-01-25T18:46:32.614258",
+      "response_data": null
+    },
+    {
+      "test": "Scan History",
+      "success": true,
+      "message": "Scan history is empty for new user (as expected)",
+      "timestamp": "2026-01-25T18:46:32.624364",
+      "response_data": null
+    },
+    {
+      "test": "Account Deletion",
+      "success": true,
+      "message": "Account deleted successfully",
+      "timestamp": "2026-01-25T18:46:32.676174",
+      "response_data": null
+    }
+  ]
+}
