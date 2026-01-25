@@ -1,14 +1,13 @@
 import React from 'react';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { I18nProvider } from '../src/context/I18nContext';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View } from 'react-native';
 
-function Providers({ children }: { children: React.ReactNode }) {
+export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -16,7 +15,7 @@ function Providers({ children }: { children: React.ReactNode }) {
           <I18nProvider>
             <AuthProvider>
               <StatusBar style="auto" />
-              {children}
+              <RootNavigator />
             </AuthProvider>
           </I18nProvider>
         </ThemeProvider>
@@ -25,10 +24,14 @@ function Providers({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function RootLayout() {
+function RootNavigator() {
   return (
-    <Providers>
-      <Slot />
-    </Providers>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="scan-result" />
+    </Stack>
   );
 }
