@@ -488,76 +488,100 @@ export default function ScanResultScreen() {
                 ))}
               </>
             )}
+              </>
+            )}
           </View>
         )}
 
-        {activeTab === 'products' && products && (
+        {activeTab === 'products' && (
           <View style={styles.tabContent}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {t('products')} ({products.length})
-            </Text>
-            {products.map((product: any, index: number) => (
-              <Card key={index} style={styles.productCard}>
-                <View style={styles.productHeader}>
-                  <View style={[styles.productIcon, { backgroundColor: theme.primary + '20' }]}>
-                    <Ionicons name="leaf-outline" size={24} color={theme.primary} />
-                  </View>
-                  <View style={styles.productInfo}>
-                    <Text style={[styles.productName, { color: theme.text }]}>
-                      {product.name}
-                    </Text>
-                    <Text style={[styles.productTypeText, { color: theme.primary }]}>
-                      {product.product_type}
-                    </Text>
-                  </View>
-                  <Text style={[styles.priceRange, { color: theme.success }]}>
-                    {product.price_range}
-                  </Text>
-                </View>
-                <Text style={[styles.productDescription, { color: theme.textSecondary }]}>
-                  {product.description}
+            {isLocked ? (
+              <LockedSection
+                title="Product recommendations ready"
+                description="Unlock to see the best products for your skin type."
+                previewCount={preview.products_count}
+                onUnlock={goToPaywall}
+                theme={theme}
+              />
+            ) : products && (
+              <>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t('products')} ({products.length})
                 </Text>
-                <View style={styles.keyIngredients}>
-                  <Text style={[styles.keyIngredientsLabel, { color: theme.text }]}>
-                    Key Ingredients:
-                  </Text>
-                  <View style={styles.ingredientTags}>
-                    {product.key_ingredients?.slice(0, 4).map((ingredient: string, i: number) => (
-                      <View key={i} style={[styles.ingredientTag, { backgroundColor: theme.surface }]}>
-                        <Text style={[styles.ingredientTagText, { color: theme.textSecondary }]}>
-                          {ingredient}
+                {products.map((product: any, index: number) => (
+                  <Card key={index} style={styles.productCard}>
+                    <View style={styles.productHeader}>
+                      <View style={[styles.productIcon, { backgroundColor: theme.primary + '20' }]}>
+                        <Ionicons name="leaf-outline" size={24} color={theme.primary} />
+                      </View>
+                      <View style={styles.productInfo}>
+                        <Text style={[styles.productName, { color: theme.text }]}>
+                          {product.name}
+                        </Text>
+                        <Text style={[styles.productTypeText, { color: theme.primary }]}>
+                          {product.product_type}
                         </Text>
                       </View>
-                    ))}
-                  </View>
-                </View>
-              </Card>
-            ))}
+                      <Text style={[styles.priceRange, { color: theme.success }]}>
+                        {product.price_range}
+                      </Text>
+                    </View>
+                    <Text style={[styles.productDescription, { color: theme.textSecondary }]}>
+                      {product.description}
+                    </Text>
+                    <View style={styles.keyIngredients}>
+                      <Text style={[styles.keyIngredientsLabel, { color: theme.text }]}>
+                        Key Ingredients:
+                      </Text>
+                      <View style={styles.ingredientTags}>
+                        {product.key_ingredients?.slice(0, 4).map((ingredient: string, i: number) => (
+                          <View key={i} style={[styles.ingredientTag, { backgroundColor: theme.surface }]}>
+                            <Text style={[styles.ingredientTagText, { color: theme.textSecondary }]}>
+                              {ingredient}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  </Card>
+                ))}
+              </>
+            )}
           </View>
         )}
 
         {/* Nutrition Tab Content */}
-        {activeTab === 'nutrition' && diet_recommendations && (
+        {activeTab === 'nutrition' && (
           <View style={styles.tabContent}>
-            {/* Hydration Tip Card */}
-            <Card style={[styles.hydrationCard, { backgroundColor: '#E3F2FD' }]}>
-              <View style={styles.hydrationHeader}>
-                <Ionicons name="water-outline" size={28} color="#1976D2" />
-                <Text style={[styles.hydrationTitle, { color: '#1976D2' }]}>
-                  Hydration Tip
-                </Text>
-              </View>
-              <Text style={[styles.hydrationText, { color: '#0D47A1' }]}>
-                {diet_recommendations.hydration_tip}
-              </Text>
-            </Card>
+            {isLocked ? (
+              <LockedSection
+                title="Nutrition has a huge impact on your skin"
+                description="Unlock to see what to eat and avoid for better skin."
+                previewCount={preview.diet_items_count}
+                onUnlock={goToPaywall}
+                theme={theme}
+              />
+            ) : diet_recommendations && (
+              <>
+                {/* Hydration Tip Card */}
+                <Card style={[styles.hydrationCard, { backgroundColor: '#E3F2FD' }]}>
+                  <View style={styles.hydrationHeader}>
+                    <Ionicons name="water-outline" size={28} color="#1976D2" />
+                    <Text style={[styles.hydrationTitle, { color: '#1976D2' }]}>
+                      Hydration Tip
+                    </Text>
+                  </View>
+                  <Text style={[styles.hydrationText, { color: '#0D47A1' }]}>
+                    {diet_recommendations.hydration_tip}
+                  </Text>
+                </Card>
 
-            {/* Foods to Eat More */}
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              <Ionicons name="checkmark-circle" size={20} color={theme.success} /> Foods to Eat More
-            </Text>
-            {diet_recommendations.eat_more?.map((food, index) => (
-              <Card key={index} style={styles.foodCard}>
+                {/* Foods to Eat More */}
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  <Ionicons name="checkmark-circle" size={20} color={theme.success} /> Foods to Eat More
+                </Text>
+                {diet_recommendations.eat_more?.map((food, index) => (
+                  <Card key={index} style={styles.foodCard}>
                 <View style={styles.foodHeader}>
                   <View style={[styles.foodIconContainer, { backgroundColor: '#E8F5E9' }]}>
                     <Ionicons name="leaf" size={20} color="#4CAF50" />
