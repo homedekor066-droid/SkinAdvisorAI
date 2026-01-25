@@ -1257,7 +1257,7 @@ async def get_scan_history(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/scan/{scan_id}")
 async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current_user)):
-    """Get detailed scan result"""
+    """Get detailed scan result - respects paywall for free users"""
     scan = await db.scans.find_one({
         'id': scan_id,
         'user_id': current_user['id']
@@ -1266,6 +1266,7 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     
+    user_plan = current_user.get('plan', 'free')
     analysis = scan.get('analysis', {})
     score_data = scan.get('score_data', {})
     
@@ -1277,26 +1278,72 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
             issues=analysis.get('issues', [])
         )
     
-    return {
-        'id': scan['id'],
-        'image_base64': scan.get('image_base64'),
-        'image_hash': scan.get('image_hash'),
-        'analysis': {
-            'skin_type': analysis.get('skin_type'),
-            'skin_type_confidence': analysis.get('skin_type_confidence', 0.8),
-            'skin_type_description': analysis.get('skin_type_description'),
-            'issues': analysis.get('issues', []),
-            'recommendations': analysis.get('recommendations', []),
-            'overall_score': score_data.get('score', 75),
-            'score_label': score_data.get('label', 'good'),
-            'score_description': score_data.get('description', 'Good skin condition'),
-            'score_factors': score_data.get('factors', [])
-        },
-        'routine': scan.get('routine'),
-        'products': scan.get('products'),
-        'diet_recommendations': diet_recommendations,
-        'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at']
-    }
+    # ==================== RETURN RESPONSE BASED ON PLAN ====================
+    if user_plan == 'premium':
+        # PREMIUM USER: Return full response
+        return {
+            'id': scan['id'],
+            'user_plan': 'premium',
+            'image_base64': scan.get('image_base64'),
+            'image_hash': scan.get('image_hash'),
+            'analysis': {
+                'skin_type': analysis.get('skin_type'),
+                'skin_type_confidence': analysis.get('skin_type_confidence', 0.8),
+                'skin_type_description': analysis.get('skin_type_description'),
+                'issues': analysis.get('issues', []),
+                'recommendations': analysis.get('recommendations', []),
+                'overall_score': score_data.get('score', 75),
+                'score_label': score_data.get('label', 'good'),
+                'score_description': score_data.get('description', 'Good skin condition'),
+                'score_factors': score_data.get('factors', [])
+            },
+            'routine': scan.get('routine'),
+            'products': scan.get('products'),
+            'diet_recommendations': diet_recommendations,
+            'progress_tracking_enabled': True,
+            'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at']
+        }
+    else:
+        # FREE USER: Return limited response
+        main_issues = sorted(
+            analysis.get('issues', []),
+            key=lambda x: x.get('severity', 0),
+            reverse=True
+        )[:3]
+        main_issues_simplified = [
+            {'issue': issue.get('name', 'Unknown'), 'severity': issue.get('severity', 0)}
+            for issue in main_issues
+        ]
+        
+        routine = scan.get('routine', {})
+        products = scan.get('products', [])
+        
+        return {
+            'id': scan['id'],
+            'user_plan': 'free',
+            'image_base64': scan.get('image_base64'),
+            'image_hash': scan.get('image_hash'),
+            'analysis': {
+                'skin_type': analysis.get('skin_type'),
+                'overall_score': score_data.get('score', 75),
+                'score_label': score_data.get('label', 'good'),
+                'main_issues': main_issues_simplified
+            },
+            'locked_features': [
+                'full_routine',
+                'diet_plan',
+                'product_recommendations',
+                'progress_tracking',
+                'detailed_explanations'
+            ],
+            'preview': {
+                'routine_steps_count': len(routine.get('morning_routine', [])) + len(routine.get('evening_routine', [])) + len(routine.get('weekly_routine', [])),
+                'diet_items_count': len(diet_recommendations.get('eat_more', [])) + len(diet_recommendations.get('avoid', [])),
+                'products_count': len(products)
+            },
+            'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at'],
+            'upgrade_message': "Your personalized routine is ready. Unlock to see exact steps for morning & night."
+        }
 
 @api_router.delete("/scan/{scan_id}")
 async def delete_scan(scan_id: str, current_user: dict = Depends(get_current_user)):
