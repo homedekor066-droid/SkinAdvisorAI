@@ -1,0 +1,58 @@
+{
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8
+  },
+  "tests": [
+    {
+      "name": "User Registration (free)",
+      "passed": true,
+      "details": "Email: test_free_65a707cf@example.com",
+      "timestamp": "2026-01-25T22:18:38.504918"
+    },
+    {
+      "name": "Free User Scan Response Structure",
+      "passed": true,
+      "details": "\u2713 user_plan = 'free'\n    \u2713 locked = true\n    \u2713 issue_count = 0\n    \u2713 issues_preview array with 0 items\n    \u2713 locked_features: 6 features locked\n    \u2713 Premium features properly locked (no routine/diet/products)\n    \u2713 No issues detected (acceptable)\n    \u2713 issue_count matches issues_preview length",
+      "timestamp": "2026-01-25T22:18:38.547814"
+    },
+    {
+      "name": "Free User Scan Detail Endpoint",
+      "passed": true,
+      "details": "\u2713 Free user scan detail properly locked\n    \u2713 Has issues_preview and issue_count",
+      "timestamp": "2026-01-25T22:18:38.584168"
+    },
+    {
+      "name": "User Registration (premium)",
+      "passed": true,
+      "details": "Email: test_premium_7ed1c2c3@example.com",
+      "timestamp": "2026-01-25T22:18:38.842568"
+    },
+    {
+      "name": "Premium Upgrade",
+      "passed": true,
+      "details": "User upgraded to premium successfully",
+      "timestamp": "2026-01-25T22:18:38.880092"
+    },
+    {
+      "name": "Premium User Scan Response Structure",
+      "passed": true,
+      "details": "\u2713 user_plan = 'premium'\n    \u2713 locked = false\n    \u2713 Full issues array with 0 items\n    \u2713 Premium features available (routine, diet, products)\n    \u2713 No issues_preview (correct for premium)",
+      "timestamp": "2026-01-25T22:18:38.918357"
+    },
+    {
+      "name": "Premium User Scan Detail Endpoint",
+      "passed": true,
+      "details": "\u2713 Premium user scan detail\n    \u2713 Has full issues array",
+      "timestamp": "2026-01-25T22:18:38.952483"
+    },
+    {
+      "name": "Critical Fix Verification",
+      "passed": true,
+      "details": "Test completed (no issues detected to validate visibility)",
+      "timestamp": "2026-01-25T22:18:38.952986"
+    }
+  ],
+  "timestamp": "2026-01-25T22:18:38.953238"
+}
