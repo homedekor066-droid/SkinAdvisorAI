@@ -916,7 +916,14 @@ Return ONLY JSON. Respond in {lang_name}.""",
         return get_fallback_analysis(language)
 
 def validate_ai_response(result: dict, language: str) -> dict:
-    """Validate and normalize AI response to ensure consistency"""
+    """
+    Validate and normalize AI response to ensure consistency.
+    
+    CRITICAL RULES:
+    1. ALWAYS return at least 1-3 optimization issues (no face is perfect)
+    2. Ensure skin_type is valid
+    3. Normalize all values to expected ranges
+    """
     
     # Ensure skin_type is valid
     valid_skin_types = ['oily', 'dry', 'combination', 'normal', 'sensitive']
@@ -930,7 +937,7 @@ def validate_ai_response(result: dict, language: str) -> dict:
         skin_type_confidence = 0.8
     skin_type_confidence = max(0.0, min(1.0, float(skin_type_confidence)))
     
-    # Validate issues
+    # Validate issues from AI
     validated_issues = []
     raw_issues = result.get('issues', [])
     
@@ -962,6 +969,26 @@ def validate_ai_response(result: dict, language: str) -> dict:
                 'confidence': round(confidence, 2),
                 'description': issue.get('description', f'{name} detected')
             })
+    
+    # ==================== CRITICAL: ENSURE MINIMUM ISSUES ====================
+    # No face is perfect - ALWAYS return at least 1-3 optimization issues
+    # This prevents the "score > 70 but 0 issues" bug
+    
+    if len(validated_issues) < 3:
+        # Get issue names already present
+        existing_names = {i['name'].lower() for i in validated_issues}
+        
+        # Add universal optimization issues that aren't already detected
+        for opt_issue in UNIVERSAL_OPTIMIZATION_ISSUES:
+            if opt_issue['name'].lower() not in existing_names:
+                validated_issues.append({
+                    'name': opt_issue['name'],
+                    'severity': opt_issue['severity'],
+                    'confidence': opt_issue['confidence'],
+                    'description': opt_issue['description']
+                })
+                if len(validated_issues) >= 3:
+                    break
     
     # Sort by severity (highest first)
     validated_issues.sort(key=lambda x: x['severity'], reverse=True)
