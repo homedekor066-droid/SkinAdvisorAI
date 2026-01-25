@@ -137,6 +137,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ COMPREHENSIVE TESTING COMPLETE: All 8 paywall tests passed (100% success rate). VERIFIED: 1) New users created with plan='free', scan_count=0. 2) Login returns plan/scan_count. 3) GET /api/subscription/status works for both free (scan_limit=1, can_scan=true) and premium users (scan_limit=-1, unlimited). 4) GET /api/subscription/pricing returns correct €9.99/month, €59.99/year pricing. 5) POST /api/subscription/upgrade successfully upgrades users to premium. 6) Scan limit enforcement: free users blocked after 1 scan with proper 403 error (scan_limit_reached, upgrade_required=true). 7) Response structure differs correctly: free users get limited response with locked_features, premium users get full routine/diet/products. 8) Premium users can scan unlimited times. System is production-ready."
+      - working: true
+        agent: "testing"
+        comment: "🎯 CRITICAL FIXES VALIDATION COMPLETE: Comprehensive testing of all critical fixes completed with 23/23 tests passing (100% success rate). VERIFIED WORKING: ✅ NEW SCORING SYSTEM: Base score correctly set to 75 (not 95), scores in expected range 70-84 for most users, proper score structure. ✅ SUBSCRIPTION FLOW: Complete upgrade flow working - register user with plan='free', upgrade to 'premium', verification confirms plan change. ✅ PLAN-BASED RESPONSE STRUCTURE: Free users get locked_features and preview counts (NO routine/diet/products), Premium users get full data in both /api/scan/analyze and /api/scan/{scan_id} endpoints. ✅ SCAN LIMIT ENFORCEMENT: Free users correctly blocked after 1 scan with 403 'scan_limit_reached' error and upgrade_required=true flag, scan_count properly increments. ✅ SUBSCRIPTION STATUS: Works correctly for both free and premium users. All critical fixes are production-ready and working as specified."
 
   - task: "User Login API"
     implemented: true
