@@ -306,6 +306,9 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Tabbed results view with analysis, routine, and products"
+      - working: "NA"
+        agent: "main"
+        comment: "NEW: Added Nutrition tab with diet recommendations (eat more, avoid, supplements, hydration tips) and proper disclaimer"
 
   - task: "Multi-language Support"
     implemented: true
