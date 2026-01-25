@@ -1,552 +1,549 @@
 #!/usr/bin/env python3
 """
-SkinAdvisor AI Backend API Testing Suite
-Tests all backend endpoints for functionality and integration
+Backend Test Suite for SkinAdvisor AI - Monetization & Paywall System
+Testing the NEW subscription endpoints and paywall functionality
 """
 
 import requests
 import json
-import uuid
-import time
+import base64
+import os
 from datetime import datetime
+import uuid
 
 # Configuration
-BASE_URL = "https://skinsmart-ai-4.preview.emergentagent.com/api"
-TEST_USER_EMAIL = f"testuser_{uuid.uuid4().hex[:8]}@skinadvisor.com"
-TEST_USER_PASSWORD = "SecurePass123!"
-TEST_USER_NAME = "Sarah Johnson"
+BACKEND_URL = "https://skinsmart-ai-4.preview.emergentagent.com/api"
+TEST_EMAIL_PREFIX = "test_paywall_user"
+TEST_PASSWORD = "TestPass123!"
 
-class BackendTester:
+class PaywallTester:
     def __init__(self):
-        self.base_url = BASE_URL
         self.session = requests.Session()
-        self.auth_token = None
-        self.user_id = None
-        self.test_results = []
-        
-    def log_test(self, test_name, success, message, response_data=None):
-        """Log test results"""
-        result = {
-            'test': test_name,
-            'success': success,
-            'message': message,
-            'timestamp': datetime.now().isoformat(),
-            'response_data': response_data
+        self.test_user_token = None
+        self.test_user_id = None
+        self.test_user_email = None
+        self.results = {
+            "timestamp": datetime.now().isoformat(),
+            "tests": [],
+            "summary": {"passed": 0, "failed": 0, "total": 0}
         }
-        self.test_results.append(result)
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} {test_name}: {message}")
-        if response_data and not success:
-            print(f"   Response: {json.dumps(response_data, indent=2)}")
     
-    def test_health_check(self):
-        """Test basic API health"""
+    def log_test(self, test_name, passed, details="", response_data=None):
+        """Log test result"""
+        result = {
+            "test": test_name,
+            "passed": passed,
+            "details": details,
+            "response_data": response_data,
+            "timestamp": datetime.now().isoformat()
+        }
+        self.results["tests"].append(result)
+        self.results["summary"]["total"] += 1
+        if passed:
+            self.results["summary"]["passed"] += 1
+            print(f"✅ {test_name}: PASSED - {details}")
+        else:
+            self.results["summary"]["failed"] += 1
+            print(f"❌ {test_name}: FAILED - {details}")
+    
+    def make_request(self, method, endpoint, data=None, headers=None, expect_status=200):
+        """Make HTTP request with error handling"""
+        url = f"{BACKEND_URL}{endpoint}"
+        default_headers = {"Content-Type": "application/json"}
+        if headers:
+            default_headers.update(headers)
+        
         try:
-            response = self.session.get(f"{self.base_url}/health", timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                self.log_test("Health Check", True, f"API is healthy: {data}")
-                return True
-            else:
-                self.log_test("Health Check", False, f"Health check failed with status {response.status_code}")
-                return False
+            if method.upper() == "GET":
+                response = self.session.get(url, headers=default_headers)
+            elif method.upper() == "POST":
+                response = self.session.post(url, json=data, headers=default_headers)
+            elif method.upper() == "PUT":
+                response = self.session.put(url, json=data, headers=default_headers)
+            elif method.upper() == "DELETE":
+                response = self.session.delete(url, headers=default_headers)
+            
+            return response
         except Exception as e:
-            self.log_test("Health Check", False, f"Health check error: {str(e)}")
-            return False
+            print(f"Request error: {str(e)}")
+            return None
     
-    def test_user_registration(self):
-        """Test user registration endpoint"""
-        try:
-            payload = {
-                "email": TEST_USER_EMAIL,
-                "password": TEST_USER_PASSWORD,
-                "name": TEST_USER_NAME,
-                "language": "en"
-            }
+    def test_1_register_new_user(self):
+        """Test 1: Register a NEW user and verify plan='free' and scan_count=0"""
+        # Generate unique email for this test
+        unique_id = str(uuid.uuid4())[:8]
+        self.test_user_email = f"{TEST_EMAIL_PREFIX}_{unique_id}@test.com"
+        
+        user_data = {
+            "email": self.test_user_email,
+            "password": TEST_PASSWORD,
+            "name": "Test Paywall User",
+            "language": "en"
+        }
+        
+        response = self.make_request("POST", "/auth/register", user_data)
+        
+        if response and response.status_code == 200:
+            data = response.json()
+            user = data.get("user", {})
             
-            response = self.session.post(f"{self.base_url}/auth/register", json=payload, timeout=10)
+            # Store token for subsequent tests
+            self.test_user_token = data.get("access_token")
+            self.test_user_id = user.get("id")
             
-            if response.status_code == 200:
-                data = response.json()
-                if 'access_token' in data and 'user' in data:
-                    self.auth_token = data['access_token']
-                    self.user_id = data['user']['id']
-                    self.log_test("User Registration", True, f"User registered successfully with ID: {self.user_id}")
-                    return True
-                else:
-                    self.log_test("User Registration", False, "Missing access_token or user in response", data)
-                    return False
+            # Verify new user has plan='free' and scan_count=0
+            plan = user.get("plan")
+            scan_count = user.get("scan_count")
+            
+            if plan == "free" and scan_count == 0:
+                self.log_test(
+                    "Register New User with Free Plan",
+                    True,
+                    f"User created with plan='{plan}' and scan_count={scan_count}",
+                    {"plan": plan, "scan_count": scan_count, "user_id": self.test_user_id}
+                )
             else:
-                self.log_test("User Registration", False, f"Registration failed with status {response.status_code}", response.json() if response.content else None)
-                return False
+                self.log_test(
+                    "Register New User with Free Plan",
+                    False,
+                    f"Expected plan='free' and scan_count=0, got plan='{plan}' and scan_count={scan_count}",
+                    {"plan": plan, "scan_count": scan_count}
+                )
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test(
+                "Register New User with Free Plan",
+                False,
+                f"Registration failed: {error_msg}",
+                {"status_code": response.status_code if response else None}
+            )
+    
+    def test_2_login_returns_plan_and_scan_count(self):
+        """Test 2: Verify login returns plan and scan_count in response"""
+        login_data = {
+            "email": self.test_user_email,
+            "password": TEST_PASSWORD
+        }
+        
+        response = self.make_request("POST", "/auth/login", login_data)
+        
+        if response and response.status_code == 200:
+            data = response.json()
+            user = data.get("user", {})
+            
+            plan = user.get("plan")
+            scan_count = user.get("scan_count")
+            
+            if plan is not None and scan_count is not None:
+                self.log_test(
+                    "Login Returns Plan and Scan Count",
+                    True,
+                    f"Login response includes plan='{plan}' and scan_count={scan_count}",
+                    {"plan": plan, "scan_count": scan_count}
+                )
+            else:
+                self.log_test(
+                    "Login Returns Plan and Scan Count",
+                    False,
+                    f"Login response missing plan or scan_count. plan={plan}, scan_count={scan_count}",
+                    {"plan": plan, "scan_count": scan_count}
+                )
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test(
+                "Login Returns Plan and Scan Count",
+                False,
+                f"Login failed: {error_msg}",
+                {"status_code": response.status_code if response else None}
+            )
+    
+    def test_3_subscription_status_free_user(self):
+        """Test 3: GET /api/subscription/status for free user"""
+        if not self.test_user_token:
+            self.log_test("Subscription Status (Free User)", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        response = self.make_request("GET", "/subscription/status", headers=headers)
+        
+        if response and response.status_code == 200:
+            data = response.json()
+            
+            # Verify expected fields for free user
+            expected_fields = ["plan", "scan_count", "scan_limit", "can_scan", "features"]
+            missing_fields = [field for field in expected_fields if field not in data]
+            
+            if not missing_fields:
+                plan = data.get("plan")
+                scan_limit = data.get("scan_limit")
+                can_scan = data.get("can_scan")
+                features = data.get("features", {})
                 
-        except Exception as e:
-            self.log_test("User Registration", False, f"Registration error: {str(e)}")
-            return False
-    
-    def test_user_login(self):
-        """Test user login endpoint"""
-        try:
-            payload = {
-                "email": TEST_USER_EMAIL,
-                "password": TEST_USER_PASSWORD
-            }
-            
-            response = self.session.post(f"{self.base_url}/auth/login", json=payload, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'access_token' in data and 'user' in data:
-                    # Update token in case it's different
-                    self.auth_token = data['access_token']
-                    self.log_test("User Login", True, f"Login successful for user: {data['user']['email']}")
-                    return True
-                else:
-                    self.log_test("User Login", False, "Missing access_token or user in response", data)
-                    return False
-            else:
-                self.log_test("User Login", False, f"Login failed with status {response.status_code}", response.json() if response.content else None)
-                return False
-                
-        except Exception as e:
-            self.log_test("User Login", False, f"Login error: {str(e)}")
-            return False
-    
-    def test_get_user_profile(self):
-        """Test get current user profile endpoint"""
-        if not self.auth_token:
-            self.log_test("Get User Profile", False, "No auth token available")
-            return False
-            
-        try:
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            response = self.session.get(f"{self.base_url}/auth/me", headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'id' in data and 'email' in data and 'name' in data:
-                    self.log_test("Get User Profile", True, f"Profile retrieved for user: {data['email']}")
-                    return True
-                else:
-                    self.log_test("Get User Profile", False, "Missing required fields in profile response", data)
-                    return False
-            else:
-                self.log_test("Get User Profile", False, f"Profile retrieval failed with status {response.status_code}", response.json() if response.content else None)
-                return False
-                
-        except Exception as e:
-            self.log_test("Get User Profile", False, f"Profile retrieval error: {str(e)}")
-            return False
-    
-    def test_languages_api(self):
-        """Test languages endpoint - should return 9 languages"""
-        try:
-            response = self.session.get(f"{self.base_url}/languages", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) == 9:
-                    # Check if all required fields are present
-                    required_fields = ['code', 'name', 'rtl']
-                    all_valid = all(all(field in lang for field in required_fields) for lang in data)
+                # Verify free user constraints
+                if (plan == "free" and 
+                    scan_limit == 1 and 
+                    can_scan == True and  # Should be true since scan_count=0
+                    isinstance(features, dict)):
                     
-                    if all_valid:
-                        language_codes = [lang['code'] for lang in data]
-                        self.log_test("Languages API", True, f"Retrieved 9 languages: {', '.join(language_codes)}")
-                        return True
-                    else:
-                        self.log_test("Languages API", False, "Some languages missing required fields", data)
-                        return False
+                    self.log_test(
+                        "Subscription Status (Free User)",
+                        True,
+                        f"Free user status correct: plan={plan}, scan_limit={scan_limit}, can_scan={can_scan}",
+                        data
+                    )
                 else:
-                    self.log_test("Languages API", False, f"Expected 9 languages, got {len(data) if isinstance(data, list) else 'non-list'}", data)
-                    return False
+                    self.log_test(
+                        "Subscription Status (Free User)",
+                        False,
+                        f"Incorrect free user status: plan={plan}, scan_limit={scan_limit}, can_scan={can_scan}",
+                        data
+                    )
             else:
-                self.log_test("Languages API", False, f"Languages API failed with status {response.status_code}", response.json() if response.content else None)
-                return False
-                
-        except Exception as e:
-            self.log_test("Languages API", False, f"Languages API error: {str(e)}")
-            return False
+                self.log_test(
+                    "Subscription Status (Free User)",
+                    False,
+                    f"Missing required fields: {missing_fields}",
+                    data
+                )
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test(
+                "Subscription Status (Free User)",
+                False,
+                f"Request failed: {error_msg}",
+                {"status_code": response.status_code if response else None}
+            )
     
-    def test_translations_api(self):
-        """Test translations endpoints for English and French"""
-        languages_to_test = ['en', 'fr']
-        all_passed = True
+    def test_4_subscription_pricing(self):
+        """Test 4: GET /api/subscription/pricing (no auth required)"""
+        response = self.make_request("GET", "/subscription/pricing")
         
-        for lang in languages_to_test:
-            try:
-                response = self.session.get(f"{self.base_url}/translations/{lang}", timeout=10)
+        if response and response.status_code == 200:
+            data = response.json()
+            
+            # Verify pricing structure
+            monthly = data.get("monthly", {})
+            yearly = data.get("yearly", {})
+            features = data.get("features", [])
+            
+            monthly_price = monthly.get("price")
+            yearly_price = yearly.get("price")
+            
+            if (monthly_price == 9.99 and 
+                yearly_price == 59.99 and 
+                isinstance(features, list) and 
+                len(features) > 0):
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    if isinstance(data, dict) and len(data) > 0:
-                        # Check for some key translations
-                        key_translations = ['app_name', 'welcome', 'login', 'register', 'scan_skin']
-                        missing_keys = [key for key in key_translations if key not in data]
-                        
-                        if not missing_keys:
-                            self.log_test(f"Translations API ({lang})", True, f"Retrieved {len(data)} translations for {lang}")
-                        else:
-                            self.log_test(f"Translations API ({lang})", False, f"Missing key translations: {missing_keys}")
-                            all_passed = False
-                    else:
-                        self.log_test(f"Translations API ({lang})", False, f"Invalid translations format for {lang}", data)
-                        all_passed = False
+                self.log_test(
+                    "Subscription Pricing",
+                    True,
+                    f"Pricing correct: monthly=€{monthly_price}, yearly=€{yearly_price}, {len(features)} features",
+                    data
+                )
+            else:
+                self.log_test(
+                    "Subscription Pricing",
+                    False,
+                    f"Incorrect pricing: monthly={monthly_price}, yearly={yearly_price}, features_count={len(features)}",
+                    data
+                )
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test(
+                "Subscription Pricing",
+                False,
+                f"Request failed: {error_msg}",
+                {"status_code": response.status_code if response else None}
+            )
+    
+    def test_5_upgrade_to_premium(self):
+        """Test 5: POST /api/subscription/upgrade"""
+        if not self.test_user_token:
+            self.log_test("Upgrade to Premium", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        upgrade_data = {"plan": "premium"}
+        
+        response = self.make_request("POST", "/subscription/upgrade", upgrade_data, headers)
+        
+        if response and response.status_code == 200:
+            data = response.json()
+            
+            success = data.get("success")
+            plan = data.get("plan")
+            features_unlocked = data.get("features_unlocked", [])
+            
+            if (success == True and 
+                plan == "premium" and 
+                isinstance(features_unlocked, list) and 
+                len(features_unlocked) > 0):
+                
+                self.log_test(
+                    "Upgrade to Premium",
+                    True,
+                    f"Upgrade successful: plan={plan}, {len(features_unlocked)} features unlocked",
+                    data
+                )
+            else:
+                self.log_test(
+                    "Upgrade to Premium",
+                    False,
+                    f"Upgrade response incorrect: success={success}, plan={plan}, features_count={len(features_unlocked)}",
+                    data
+                )
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test(
+                "Upgrade to Premium",
+                False,
+                f"Upgrade failed: {error_msg}",
+                {"status_code": response.status_code if response else None}
+            )
+    
+    def test_6_subscription_status_premium_user(self):
+        """Test 6: GET /api/subscription/status for premium user"""
+        if not self.test_user_token:
+            self.log_test("Subscription Status (Premium User)", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        response = self.make_request("GET", "/subscription/status", headers=headers)
+        
+        if response and response.status_code == 200:
+            data = response.json()
+            
+            plan = data.get("plan")
+            scan_limit = data.get("scan_limit")
+            can_scan = data.get("can_scan")
+            features = data.get("features", {})
+            
+            # Verify premium user status
+            if (plan == "premium" and 
+                scan_limit == -1 and  # Unlimited
+                can_scan == True and 
+                isinstance(features, dict)):
+                
+                # Check that premium features are enabled
+                premium_features = ["unlimited_scans", "full_routine", "diet_plan", "product_recommendations"]
+                enabled_features = [f for f in premium_features if features.get(f) == True]
+                
+                if len(enabled_features) == len(premium_features):
+                    self.log_test(
+                        "Subscription Status (Premium User)",
+                        True,
+                        f"Premium status correct: plan={plan}, scan_limit={scan_limit}, can_scan={can_scan}, all premium features enabled",
+                        data
+                    )
                 else:
-                    self.log_test(f"Translations API ({lang})", False, f"Translations API failed for {lang} with status {response.status_code}")
-                    all_passed = False
+                    self.log_test(
+                        "Subscription Status (Premium User)",
+                        False,
+                        f"Premium features not all enabled: {enabled_features} of {premium_features}",
+                        data
+                    )
+            else:
+                self.log_test(
+                    "Subscription Status (Premium User)",
+                    False,
+                    f"Incorrect premium status: plan={plan}, scan_limit={scan_limit}, can_scan={can_scan}",
+                    data
+                )
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test(
+                "Subscription Status (Premium User)",
+                False,
+                f"Request failed: {error_msg}",
+                {"status_code": response.status_code if response else None}
+            )
+    
+    def test_7_scan_limit_enforcement_new_free_user(self):
+        """Test 7: Test scan limit enforcement for a NEW free user"""
+        # Create another free user to test scan limits
+        unique_id = str(uuid.uuid4())[:8]
+        free_user_email = f"test_free_scan_{unique_id}@test.com"
+        
+        # Register new free user
+        user_data = {
+            "email": free_user_email,
+            "password": TEST_PASSWORD,
+            "name": "Test Free Scan User",
+            "language": "en"
+        }
+        
+        response = self.make_request("POST", "/auth/register", user_data)
+        
+        if not response or response.status_code != 200:
+            self.log_test("Scan Limit Enforcement", False, "Failed to create test free user")
+            return
+        
+        free_user_token = response.json().get("access_token")
+        
+        # Create a simple test image (base64 encoded 1x1 pixel)
+        test_image_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        
+        headers = {"Authorization": f"Bearer {free_user_token}"}
+        
+        # First scan should work (scan_count = 0, limit = 1)
+        scan_data = {
+            "image_base64": test_image_b64,
+            "language": "en"
+        }
+        
+        first_scan = self.make_request("POST", "/scan/analyze", scan_data, headers)
+        
+        if first_scan and first_scan.status_code == 200:
+            first_data = first_scan.json()
+            user_plan = first_data.get("user_plan")
+            
+            if user_plan == "free":
+                # Second scan should fail with 403
+                second_scan = self.make_request("POST", "/scan/analyze", scan_data, headers)
+                
+                if second_scan and second_scan.status_code == 403:
+                    error_data = second_scan.json()
+                    error_type = error_data.get("detail", {}).get("error") if isinstance(error_data.get("detail"), dict) else None
+                    upgrade_required = error_data.get("detail", {}).get("upgrade_required") if isinstance(error_data.get("detail"), dict) else None
                     
-            except Exception as e:
-                self.log_test(f"Translations API ({lang})", False, f"Translations API error for {lang}: {str(e)}")
-                all_passed = False
-        
-        return all_passed
-    
-    def test_profile_update(self):
-        """Test profile update endpoint"""
-        if not self.auth_token:
-            self.log_test("Profile Update", False, "No auth token available")
-            return False
-            
-        try:
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            payload = {
-                "age": 28,
-                "gender": "female",
-                "skin_goals": ["anti-aging", "hydration", "acne-control"],
-                "country": "United States",
-                "language": "en"
-            }
-            
-            response = self.session.put(f"{self.base_url}/profile", json=payload, headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'profile' in data and data['profile']:
-                    profile = data['profile']
-                    # Verify the updated data
-                    if (profile.get('age') == 28 and 
-                        profile.get('gender') == 'female' and 
-                        profile.get('country') == 'United States'):
-                        self.log_test("Profile Update", True, "Profile updated successfully with correct data")
-                        return True
+                    if error_type == "scan_limit_reached" and upgrade_required == True:
+                        self.log_test(
+                            "Scan Limit Enforcement",
+                            True,
+                            "Free user correctly blocked after 1 scan with proper error response",
+                            {"first_scan_status": 200, "second_scan_status": 403, "error": error_type}
+                        )
                     else:
-                        self.log_test("Profile Update", False, "Profile data not updated correctly", data)
-                        return False
+                        self.log_test(
+                            "Scan Limit Enforcement",
+                            False,
+                            f"Incorrect error response: error={error_type}, upgrade_required={upgrade_required}",
+                            error_data
+                        )
                 else:
-                    self.log_test("Profile Update", False, "Missing profile in response", data)
-                    return False
+                    status = second_scan.status_code if second_scan else "No response"
+                    self.log_test(
+                        "Scan Limit Enforcement",
+                        False,
+                        f"Second scan should return 403, got {status}",
+                        {"second_scan_status": status}
+                    )
             else:
-                self.log_test("Profile Update", False, f"Profile update failed with status {response.status_code}", response.json() if response.content else None)
-                return False
-                
-        except Exception as e:
-            self.log_test("Profile Update", False, f"Profile update error: {str(e)}")
-            return False
+                self.log_test(
+                    "Scan Limit Enforcement",
+                    False,
+                    f"First scan should return user_plan='free', got '{user_plan}'",
+                    first_data
+                )
+        else:
+            status = first_scan.status_code if first_scan else "No response"
+            self.log_test(
+                "Scan Limit Enforcement",
+                False,
+                f"First scan failed with status {status}",
+                {"first_scan_status": status}
+            )
     
-    def test_scan_history(self):
-        """Test scan history endpoint - should be empty for new user"""
-        if not self.auth_token:
-            self.log_test("Scan History", False, "No auth token available")
-            return False
+    def test_8_response_structure_free_vs_premium(self):
+        """Test 8: Verify different response structures for free vs premium users"""
+        # Test with the premium user (from earlier upgrade)
+        if not self.test_user_token:
+            self.log_test("Response Structure Comparison", False, "No premium user token available")
+            return
+        
+        # Create a simple test image
+        test_image_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        
+        headers = {"Authorization": f"Bearer {self.test_user_token}"}
+        scan_data = {
+            "image_base64": test_image_b64,
+            "language": "en"
+        }
+        
+        # Premium user scan
+        premium_scan = self.make_request("POST", "/scan/analyze", scan_data, headers)
+        
+        if premium_scan and premium_scan.status_code == 200:
+            premium_data = premium_scan.json()
+            user_plan = premium_data.get("user_plan")
             
-        try:
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            response = self.session.get(f"{self.base_url}/scan/history", headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    if len(data) == 0:
-                        self.log_test("Scan History", True, "Scan history is empty for new user (as expected)")
-                        return True
-                    else:
-                        self.log_test("Scan History", True, f"Scan history retrieved with {len(data)} scans")
-                        return True
+            if user_plan == "premium":
+                # Check premium response has full data
+                has_routine = "routine" in premium_data
+                has_products = "products" in premium_data
+                has_diet = "diet_recommendations" in premium_data
+                
+                if has_routine and has_products and has_diet:
+                    self.log_test(
+                        "Response Structure (Premium User)",
+                        True,
+                        "Premium user gets full response with routine, products, and diet recommendations",
+                        {"user_plan": user_plan, "has_routine": has_routine, "has_products": has_products, "has_diet": has_diet}
+                    )
                 else:
-                    self.log_test("Scan History", False, "Scan history response is not a list", data)
-                    return False
+                    self.log_test(
+                        "Response Structure (Premium User)",
+                        False,
+                        f"Premium response missing data: routine={has_routine}, products={has_products}, diet={has_diet}",
+                        premium_data
+                    )
             else:
-                self.log_test("Scan History", False, f"Scan history failed with status {response.status_code}", response.json() if response.content else None)
-                return False
-                
-        except Exception as e:
-            self.log_test("Scan History", False, f"Scan history error: {str(e)}")
-            return False
-    
-    def test_account_deletion(self):
-        """Test account deletion endpoint"""
-        if not self.auth_token:
-            self.log_test("Account Deletion", False, "No auth token available")
-            return False
-            
-        try:
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            response = self.session.delete(f"{self.base_url}/account", headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'message' in data and 'deleted' in data['message'].lower():
-                    self.log_test("Account Deletion", True, "Account deleted successfully")
-                    return True
-                else:
-                    self.log_test("Account Deletion", False, "Unexpected deletion response", data)
-                    return False
-            else:
-                self.log_test("Account Deletion", False, f"Account deletion failed with status {response.status_code}", response.json() if response.content else None)
-                return False
-                
-        except Exception as e:
-            self.log_test("Account Deletion", False, f"Account deletion error: {str(e)}")
-            return False
-    
-    def test_diet_recommendations_structure(self, diet_recs):
-        """Verify diet recommendations structure"""
-        required_fields = ['eat_more', 'avoid', 'hydration_tip', 'supplements_optional']
-        
-        # Check all required fields exist
-        for field in required_fields:
-            if field not in diet_recs:
-                return False, f"Missing required field: {field}"
-        
-        # Check eat_more structure
-        if not isinstance(diet_recs['eat_more'], list):
-            return False, "eat_more should be a list"
-        
-        for item in diet_recs['eat_more']:
-            if not isinstance(item, dict) or 'name' not in item or 'reason' not in item:
-                return False, "eat_more items should have 'name' and 'reason' fields"
-        
-        # Check avoid structure
-        if not isinstance(diet_recs['avoid'], list):
-            return False, "avoid should be a list"
-        
-        for item in diet_recs['avoid']:
-            if not isinstance(item, dict) or 'name' not in item or 'reason' not in item:
-                return False, "avoid items should have 'name' and 'reason' fields"
-        
-        # Check hydration_tip
-        if not isinstance(diet_recs['hydration_tip'], str):
-            return False, "hydration_tip should be a string"
-        
-        # Check supplements_optional structure
-        if not isinstance(diet_recs['supplements_optional'], list):
-            return False, "supplements_optional should be a list"
-        
-        for item in diet_recs['supplements_optional']:
-            if not isinstance(item, dict) or 'name' not in item or 'reason' not in item:
-                return False, "supplements_optional items should have 'name' and 'reason' fields"
-        
-        return True, "Structure validation passed"
-    
-    def test_diet_recommendations_with_mock_scan(self):
-        """Test diet recommendations by creating a mock scan"""
-        if not self.auth_token:
-            self.log_test("Diet Recommendations - Mock Scan", False, "No auth token available")
-            return False
-        
-        try:
-            # Create a simple 1x1 pixel base64 image for testing
-            test_image_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
-            
-            analyze_data = {
-                "image_base64": test_image_b64,
-                "language": "en"
-            }
-            
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            response = self.session.post(f"{self.base_url}/scan/analyze", 
-                                       json=analyze_data, 
-                                       headers=headers, 
-                                       timeout=30)
-            
-            if response.status_code == 200:
-                scan_result = response.json()
-                
-                # Check if diet_recommendations exists in the analyze response
-                if 'diet_recommendations' not in scan_result:
-                    self.log_test("Diet Recommendations - Mock Scan", False, "diet_recommendations field missing from analyze response")
-                    return False
-                
-                diet_recs = scan_result['diet_recommendations']
-                
-                # Verify structure
-                structure_valid, message = self.test_diet_recommendations_structure(diet_recs)
-                
-                if structure_valid:
-                    self.log_test("Diet Recommendations - Mock Scan", True, f"Diet recommendations present and valid in analyze response. Found {len(diet_recs['eat_more'])} eat_more items, {len(diet_recs['avoid'])} avoid items, {len(diet_recs['supplements_optional'])} supplements")
-                    
-                    # Test deterministic behavior by calling the same scan detail endpoint twice
-                    scan_id = scan_result['id']
-                    return self.test_diet_recommendations_deterministic(scan_id)
-                else:
-                    self.log_test("Diet Recommendations - Mock Scan", False, f"Invalid structure: {message}")
-                    return False
-                    
-            else:
-                self.log_test("Diet Recommendations - Mock Scan", False, f"Scan analyze failed: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Diet Recommendations - Mock Scan", False, f"Error: {str(e)}")
-            return False
-    
-    def test_diet_recommendations_deterministic(self, scan_id):
-        """Test that diet recommendations are deterministic"""
-        if not self.auth_token:
-            self.log_test("Diet Recommendations - Deterministic", False, "No auth token available")
-            return False
-        
-        try:
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            
-            # Call the same scan detail endpoint twice
-            response1 = self.session.get(f"{self.base_url}/scan/{scan_id}", headers=headers, timeout=10)
-            response2 = self.session.get(f"{self.base_url}/scan/{scan_id}", headers=headers, timeout=10)
-            
-            if response1.status_code == 200 and response2.status_code == 200:
-                scan_data1 = response1.json()
-                scan_data2 = response2.json()
-                
-                if 'diet_recommendations' not in scan_data1 or 'diet_recommendations' not in scan_data2:
-                    self.log_test("Diet Recommendations - Deterministic", False, "diet_recommendations missing from scan detail response")
-                    return False
-                
-                diet_recs1 = scan_data1['diet_recommendations']
-                diet_recs2 = scan_data2['diet_recommendations']
-                
-                if diet_recs1 == diet_recs2:
-                    self.log_test("Diet Recommendations - Deterministic", True, "Diet recommendations are deterministic - same scan returns identical results")
-                    return True
-                else:
-                    self.log_test("Diet Recommendations - Deterministic", False, "Diet recommendations are not deterministic - same scan returns different results")
-                    return False
-            else:
-                self.log_test("Diet Recommendations - Deterministic", False, f"Scan detail failed: {response1.status_code}, {response2.status_code}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Diet Recommendations - Deterministic", False, f"Error: {str(e)}")
-            return False
-    
-    def test_diet_recommendations_existing_scans(self):
-        """Test diet recommendations with existing scans"""
-        if not self.auth_token:
-            self.log_test("Diet Recommendations - Existing Scans", False, "No auth token available")
-            return False
-        
-        try:
-            headers = {"Authorization": f"Bearer {self.auth_token}"}
-            
-            # Get scan history
-            response = self.session.get(f"{self.base_url}/scan/history", headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                scans = response.json()
-                
-                if len(scans) == 0:
-                    self.log_test("Diet Recommendations - Existing Scans", True, "No existing scans found - this is expected for new user")
-                    return True
-                
-                # Test the first scan
-                scan_id = scans[0]['id']
-                scan_response = self.session.get(f"{self.base_url}/scan/{scan_id}", headers=headers, timeout=10)
-                
-                if scan_response.status_code == 200:
-                    scan_data = scan_response.json()
-                    
-                    if 'diet_recommendations' in scan_data:
-                        diet_recs = scan_data['diet_recommendations']
-                        structure_valid, message = self.test_diet_recommendations_structure(diet_recs)
-                        
-                        if structure_valid:
-                            self.log_test("Diet Recommendations - Existing Scans", True, f"Diet recommendations found and valid in existing scan {scan_id}")
-                            return True
-                        else:
-                            self.log_test("Diet Recommendations - Existing Scans", False, f"Invalid structure in existing scan: {message}")
-                            return False
-                    else:
-                        # This is expected for older scans - the endpoint should generate them
-                        self.log_test("Diet Recommendations - Existing Scans", True, "Older scan without diet_recommendations - endpoint should generate them on-the-fly")
-                        return True
-                else:
-                    self.log_test("Diet Recommendations - Existing Scans", False, f"Failed to get scan detail: {scan_response.status_code}")
-                    return False
-            else:
-                self.log_test("Diet Recommendations - Existing Scans", False, f"Failed to get scan history: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Diet Recommendations - Existing Scans", False, f"Error: {str(e)}")
-            return False
+                self.log_test(
+                    "Response Structure (Premium User)",
+                    False,
+                    f"Expected user_plan='premium', got '{user_plan}'",
+                    premium_data
+                )
+        else:
+            status = premium_scan.status_code if premium_scan else "No response"
+            self.log_test(
+                "Response Structure (Premium User)",
+                False,
+                f"Premium scan failed with status {status}",
+                {"premium_scan_status": status}
+            )
     
     def run_all_tests(self):
-        """Run all backend tests in sequence"""
-        print(f"\n🧪 Starting SkinAdvisor AI Backend API Tests")
-        print(f"📍 Base URL: {self.base_url}")
-        print(f"👤 Test User: {TEST_USER_EMAIL}")
+        """Run all paywall tests in sequence"""
+        print("🧪 Starting Monetization & Paywall System Tests")
         print("=" * 60)
         
         # Test sequence
-        tests = [
-            ("Health Check", self.test_health_check),
-            ("User Registration", self.test_user_registration),
-            ("User Login", self.test_user_login),
-            ("Get User Profile", self.test_get_user_profile),
-            ("Languages API", self.test_languages_api),
-            ("Translations API", self.test_translations_api),
-            ("Profile Update", self.test_profile_update),
-            ("Scan History", self.test_scan_history),
-            ("Diet Recommendations - Existing Scans", self.test_diet_recommendations_existing_scans),
-            ("Diet Recommendations - Mock Scan", self.test_diet_recommendations_with_mock_scan),
-            ("Account Deletion", self.test_account_deletion)
-        ]
+        self.test_1_register_new_user()
+        self.test_2_login_returns_plan_and_scan_count()
+        self.test_3_subscription_status_free_user()
+        self.test_4_subscription_pricing()
+        self.test_5_upgrade_to_premium()
+        self.test_6_subscription_status_premium_user()
+        self.test_7_scan_limit_enforcement_new_free_user()
+        self.test_8_response_structure_free_vs_premium()
         
-        passed = 0
-        total = len(tests)
-        
-        for test_name, test_func in tests:
-            print(f"\n🔍 Running: {test_name}")
-            try:
-                if test_func():
-                    passed += 1
-            except Exception as e:
-                self.log_test(test_name, False, f"Unexpected error: {str(e)}")
-        
-        # Summary
+        # Print summary
         print("\n" + "=" * 60)
-        print(f"📊 TEST SUMMARY")
+        print("🏁 TEST SUMMARY")
+        print("=" * 60)
+        passed = self.results["summary"]["passed"]
+        failed = self.results["summary"]["failed"]
+        total = self.results["summary"]["total"]
+        
         print(f"✅ Passed: {passed}/{total}")
-        print(f"❌ Failed: {total - passed}/{total}")
+        print(f"❌ Failed: {failed}/{total}")
+        print(f"📊 Success Rate: {(passed/total*100):.1f}%" if total > 0 else "No tests run")
         
-        if passed == total:
-            print("🎉 All tests passed!")
-        else:
-            print("⚠️  Some tests failed. Check details above.")
+        if failed > 0:
+            print("\n🔍 FAILED TESTS:")
+            for test in self.results["tests"]:
+                if not test["passed"]:
+                    print(f"   ❌ {test['test']}: {test['details']}")
         
-        return passed, total, self.test_results
-
-def main():
-    """Main test execution"""
-    tester = BackendTester()
-    passed, total, results = tester.run_all_tests()
-    
-    # Save detailed results
-    with open('/app/backend_test_results.json', 'w') as f:
-        json.dump({
-            'summary': {
-                'passed': passed,
-                'total': total,
-                'success_rate': f"{(passed/total)*100:.1f}%",
-                'timestamp': datetime.now().isoformat()
-            },
-            'detailed_results': results
-        }, f, indent=2)
-    
-    print(f"\n📄 Detailed results saved to: /app/backend_test_results.json")
-    
-    return passed == total
+        # Save results to file
+        with open("/app/paywall_test_results.json", "w") as f:
+            json.dump(self.results, f, indent=2)
+        
+        print(f"\n📄 Detailed results saved to: /app/paywall_test_results.json")
+        
+        return self.results
 
 if __name__ == "__main__":
-    success = main()
-    exit(0 if success else 1)
+    tester = PaywallTester()
+    results = tester.run_all_tests()
