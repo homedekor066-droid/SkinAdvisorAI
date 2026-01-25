@@ -131,6 +131,33 @@ export default function ScanResultScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Score Section - PROMINENT */}
         <Card style={styles.scoreCard}>
+          {/* Skin Type - PROMINENT */}
+          <View style={[styles.skinTypeHeader, { borderBottomColor: theme.border }]}>
+            <View style={styles.skinTypeRow}>
+              <Ionicons name="person-circle-outline" size={24} color={getSkinTypeColor(analysis?.skin_type || 'normal')} />
+              <Text style={[styles.skinTypeHeaderLabel, { color: theme.textSecondary }]}>
+                {t('skin_type')}:
+              </Text>
+              <View style={[
+                styles.skinTypeBadgeLarge,
+                { backgroundColor: getSkinTypeColor(analysis?.skin_type || 'normal') + '20' }
+              ]}>
+                <Text style={[
+                  styles.skinTypeTextLarge,
+                  { color: getSkinTypeColor(analysis?.skin_type || 'normal') }
+                ]}>
+                  {t(analysis?.skin_type || 'normal') || analysis?.skin_type || 'Normal'}
+                </Text>
+              </View>
+            </View>
+            {analysis?.skin_type_confidence && (
+              <Text style={[styles.skinTypeConfidence, { color: theme.textMuted }]}>
+                {Math.round(analysis.skin_type_confidence * 100)}% {t('confidence') || 'confidence'}
+              </Text>
+            )}
+          </View>
+
+          {/* Score */}
           <View style={styles.scoreHeader}>
             <View style={styles.scoreCircleContainer}>
               <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
