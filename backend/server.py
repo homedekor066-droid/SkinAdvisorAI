@@ -796,6 +796,16 @@ LANGUAGE_PROMPTS = {
     'hi': 'Hindi'
 }
 
+# Minimum optimization issues that should ALWAYS be suggested
+# (because no face is truly perfect)
+UNIVERSAL_OPTIMIZATION_ISSUES = [
+    {'name': 'Hydration optimization', 'severity': 2, 'confidence': 0.9, 'description': 'Skin hydration can always be improved for better elasticity and glow'},
+    {'name': 'Pore refinement', 'severity': 2, 'confidence': 0.85, 'description': 'Pore appearance can be minimized with proper care'},
+    {'name': 'Skin barrier health', 'severity': 1, 'confidence': 0.9, 'description': 'Maintaining skin barrier integrity prevents future issues'},
+    {'name': 'Anti-aging prevention', 'severity': 1, 'confidence': 0.95, 'description': 'Preventive care helps maintain youthful skin longer'},
+    {'name': 'Tone uniformity', 'severity': 2, 'confidence': 0.8, 'description': 'Minor tone variations can be improved with consistent care'},
+]
+
 def parse_json_response(response: str) -> dict:
     """Parse JSON from AI response with multiple fallback strategies"""
     # Try to find JSON in code blocks first
