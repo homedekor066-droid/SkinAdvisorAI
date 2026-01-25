@@ -330,17 +330,30 @@ export default function ScanResultScreen() {
             </View>
           </View>
 
-          {/* CTA Button */}
-          <TouchableOpacity 
-            style={[styles.perfectSkinButton, { backgroundColor: theme.primary }]}
-            onPress={goToPaywall}
-          >
-            <Ionicons name="sparkles" size={20} color="#FFFFFF" />
-            <Text style={styles.perfectSkinButtonText}>
-              See how to reach perfect skin
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+          {/* CTA Button - Different for free vs premium users */}
+          {isLocked ? (
+            <TouchableOpacity 
+              style={[styles.perfectSkinButton, { backgroundColor: theme.primary }]}
+              onPress={goToPaywall}
+            >
+              <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+              <Text style={styles.perfectSkinButtonText}>
+                See how to reach perfect skin
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.perfectSkinButton, { backgroundColor: theme.success }]}
+              onPress={() => setActiveTab('routine')}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+              <Text style={styles.perfectSkinButtonText}>
+                View Your Personalized Routine
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
 
           {/* Score Factors */}
           {scoreFactors.length > 0 && (
