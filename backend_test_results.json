@@ -9,165 +9,165 @@
     {
       "test": "1.1 Register Score Test User",
       "success": true,
-      "details": "User registered: test_score_check_1769377856@test.com",
+      "details": "User registered: test_score_check_1769379464@test.com",
       "error": "",
-      "timestamp": "2026-01-25T21:50:56.821116"
+      "timestamp": "2026-01-25T22:17:44.517747"
     },
     {
       "test": "1.2 Initial Plan Check",
       "success": true,
       "details": "User plan is 'free' as expected",
       "error": "",
-      "timestamp": "2026-01-25T21:50:56.821147"
+      "timestamp": "2026-01-25T22:17:44.517787"
     },
     {
       "test": "1.3 Scoring System Test",
       "success": true,
       "details": "Score 75 is in expected range (70-84)",
       "error": "",
-      "timestamp": "2026-01-25T21:51:19.515223"
+      "timestamp": "2026-01-25T22:17:44.558102"
     },
     {
       "test": "1.4 Score Structure Check",
       "success": true,
       "details": "All required score fields present",
       "error": "",
-      "timestamp": "2026-01-25T21:51:19.515250"
+      "timestamp": "2026-01-25T22:17:44.558127"
     },
     {
       "test": "2.1 Register Subscription Test User",
       "success": true,
-      "details": "User registered: test_subscription_1769377879@test.com",
+      "details": "User registered: test_subscription_1769379464@test.com",
       "error": "",
-      "timestamp": "2026-01-25T21:51:19.802408"
+      "timestamp": "2026-01-25T22:17:44.819419"
     },
     {
       "test": "2.2 Initial Plan Check",
       "success": true,
       "details": "Initial plan is 'free'",
       "error": "",
-      "timestamp": "2026-01-25T21:51:19.802442"
+      "timestamp": "2026-01-25T22:17:44.819452"
     },
     {
       "test": "2.3 Subscription Upgrade",
       "success": true,
       "details": "Upgrade successful: Successfully upgraded to Premium!",
       "error": "",
-      "timestamp": "2026-01-25T21:51:19.839382"
+      "timestamp": "2026-01-25T22:17:44.857120"
     },
     {
       "test": "2.4 Plan Verification",
       "success": true,
       "details": "User plan is now 'premium'",
       "error": "",
-      "timestamp": "2026-01-25T21:51:19.878419"
+      "timestamp": "2026-01-25T22:17:44.894946"
     },
     {
       "test": "3.1 Create Free User",
       "success": true,
-      "details": "Free user registered: test_free_1769377879@test.com",
+      "details": "Free user registered: test_free_1769379464@test.com",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.175424"
+      "timestamp": "2026-01-25T22:17:45.191312"
     },
     {
       "test": "3.2 Free User Scan Response",
       "success": true,
       "details": "Free user gets locked_features",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.212558"
+      "timestamp": "2026-01-25T22:17:45.231617"
     },
     {
       "test": "3.3 Free User Limited Response",
       "success": true,
       "details": "Free user doesn't get full routine/diet",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.212587"
+      "timestamp": "2026-01-25T22:17:45.231645"
     },
     {
       "test": "3.4 Free User Scan Detail",
       "success": true,
       "details": "Free user gets limited scan detail",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.249465"
+      "timestamp": "2026-01-25T22:17:45.269672"
     },
     {
       "test": "3.5 Premium User Full Response",
       "success": true,
       "details": "Premium user gets full routine/diet/products",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.284666"
+      "timestamp": "2026-01-25T22:17:45.309969"
     },
     {
       "test": "3.6 Premium User Scan Detail",
       "success": true,
       "details": "Premium user gets full scan detail",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.325761"
+      "timestamp": "2026-01-25T22:17:45.349397"
     },
     {
       "test": "4.1 Create Limit Test User",
       "success": true,
-      "details": "Limit test user registered: test_limit_1769377880@test.com",
+      "details": "Limit test user registered: test_limit_1769379465@test.com",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.624977"
+      "timestamp": "2026-01-25T22:17:45.610097"
     },
     {
       "test": "4.2 Initial Scan Count",
       "success": true,
       "details": "Initial scan_count is 0",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.625008"
+      "timestamp": "2026-01-25T22:17:45.610128"
     },
     {
       "test": "4.3 First Scan (Should Succeed)",
       "success": true,
       "details": "First scan completed successfully",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.665998"
+      "timestamp": "2026-01-25T22:17:45.647135"
     },
     {
       "test": "4.4 Scan Count Increment",
       "success": true,
       "details": "scan_count incremented to 1",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.740831"
+      "timestamp": "2026-01-25T22:17:45.683978"
     },
     {
       "test": "4.5 Second Scan (Should Fail)",
       "success": true,
       "details": "Second scan blocked with scan_limit_reached",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.775570"
+      "timestamp": "2026-01-25T22:17:45.757622"
     },
     {
       "test": "4.6 Upgrade Required Flag",
       "success": true,
       "details": "upgrade_required flag is present",
       "error": "",
-      "timestamp": "2026-01-25T21:51:20.775599"
+      "timestamp": "2026-01-25T22:17:45.757655"
     },
     {
       "test": "5.1 Create Status Test User",
       "success": true,
-      "details": "Status test user registered: test_status_1769377880@test.com",
+      "details": "Status test user registered: test_status_1769379465@test.com",
       "error": "",
-      "timestamp": "2026-01-25T21:51:21.075588"
+      "timestamp": "2026-01-25T22:17:46.018941"
     },
     {
       "test": "5.2 Free User Status",
       "success": true,
       "details": "All 3 status fields correct",
       "error": "",
-      "timestamp": "2026-01-25T21:51:21.107885"
+      "timestamp": "2026-01-25T22:17:46.051049"
     },
     {
       "test": "5.3 Premium User Status",
       "success": true,
       "details": "All 3 premium status fields correct",
       "error": "",
-      "timestamp": "2026-01-25T21:51:21.147710"
+      "timestamp": "2026-01-25T22:17:46.084315"
     }
   ],
   "backend_url": "https://skinsmart-ai-4.preview.emergentagent.com/api",
-  "test_time": "2026-01-25T21:51:21.148447"
+  "test_time": "2026-01-25T22:17:46.085020"
 }
