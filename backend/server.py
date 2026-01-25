@@ -593,6 +593,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         email=current_user['email'],
         name=current_user['name'],
         profile=UserProfile(**current_user.get('profile', {})) if current_user.get('profile') else None,
+        plan=current_user.get('plan', 'free'),
+        scan_count=current_user.get('scan_count', 0),
         created_at=current_user['created_at']
     )
 
