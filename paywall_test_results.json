@@ -1,0 +1,141 @@
+{
+  "timestamp": "2026-01-25T21:17:37.466555",
+  "tests": [
+    {
+      "test": "Register New User with Free Plan",
+      "passed": true,
+      "details": "User created with plan='free' and scan_count=0",
+      "response_data": {
+        "plan": "free",
+        "scan_count": 0,
+        "user_id": "c055fe25-5c15-4608-99bf-367bf14ac517"
+      },
+      "timestamp": "2026-01-25T21:17:37.799154"
+    },
+    {
+      "test": "Login Returns Plan and Scan Count",
+      "passed": true,
+      "details": "Login response includes plan='free' and scan_count=0",
+      "response_data": {
+        "plan": "free",
+        "scan_count": 0
+      },
+      "timestamp": "2026-01-25T21:17:38.068194"
+    },
+    {
+      "test": "Subscription Status (Free User)",
+      "passed": true,
+      "details": "Free user status correct: plan=free, scan_limit=1, can_scan=True",
+      "response_data": {
+        "plan": "free",
+        "scan_count": 0,
+        "scan_limit": 1,
+        "can_scan": true,
+        "features": {
+          "unlimited_scans": false,
+          "full_routine": false,
+          "diet_plan": false,
+          "product_recommendations": false,
+          "progress_tracking": false,
+          "detailed_explanations": false
+        }
+      },
+      "timestamp": "2026-01-25T21:17:38.080370"
+    },
+    {
+      "test": "Subscription Pricing",
+      "passed": true,
+      "details": "Pricing correct: monthly=\u20ac9.99, yearly=\u20ac59.99, 6 features",
+      "response_data": {
+        "monthly": {
+          "price": 9.99,
+          "currency": "EUR",
+          "display": "\u20ac9.99/month",
+          "period": "month"
+        },
+        "yearly": {
+          "price": 59.99,
+          "currency": "EUR",
+          "display": "\u20ac59.99/year",
+          "period": "year",
+          "savings": "50%",
+          "monthly_equivalent": 5.0
+        },
+        "features": [
+          "Full daily skincare routine",
+          "Personalized diet & foods to avoid",
+          "Unlimited skin scans",
+          "Progress tracking & before/after",
+          "Product recommendations",
+          "Detailed explanations"
+        ]
+      },
+      "timestamp": "2026-01-25T21:17:38.093973"
+    },
+    {
+      "test": "Upgrade to Premium",
+      "passed": true,
+      "details": "Upgrade successful: plan=premium, 6 features unlocked",
+      "response_data": {
+        "success": true,
+        "message": "Successfully upgraded to Premium!",
+        "plan": "premium",
+        "features_unlocked": [
+          "Unlimited skin scans",
+          "Full personalized routine",
+          "Diet & nutrition plan",
+          "Product recommendations",
+          "Progress tracking",
+          "Detailed explanations"
+        ]
+      },
+      "timestamp": "2026-01-25T21:17:38.143195"
+    },
+    {
+      "test": "Subscription Status (Premium User)",
+      "passed": true,
+      "details": "Premium status correct: plan=premium, scan_limit=-1, can_scan=True, all premium features enabled",
+      "response_data": {
+        "plan": "premium",
+        "scan_count": 0,
+        "scan_limit": -1,
+        "can_scan": true,
+        "features": {
+          "unlimited_scans": true,
+          "full_routine": true,
+          "diet_plan": true,
+          "product_recommendations": true,
+          "progress_tracking": true,
+          "detailed_explanations": true
+        }
+      },
+      "timestamp": "2026-01-25T21:17:38.154881"
+    },
+    {
+      "test": "Scan Limit Enforcement",
+      "passed": false,
+      "details": "Second scan should return 403, got No response",
+      "response_data": {
+        "second_scan_status": "No response"
+      },
+      "timestamp": "2026-01-25T21:17:38.400897"
+    },
+    {
+      "test": "Response Structure (Premium User)",
+      "passed": true,
+      "details": "Premium user gets full response with routine, products, and diet recommendations",
+      "response_data": {
+        "user_plan": "premium",
+        "has_routine": true,
+        "has_products": true,
+        "has_diet": true
+      },
+      "timestamp": "2026-01-25T21:17:38.411092"
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 1,
+    "total": 8
+  }
+}
