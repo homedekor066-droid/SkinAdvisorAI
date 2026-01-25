@@ -344,7 +344,8 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Monetization & Paywall System"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -357,4 +358,6 @@ agent_communication:
   - agent: "main"
     message: "NEW FEATURE: Diet & Nutrition Recommendations implemented. Backend: Added generate_diet_recommendations() function that returns deterministic diet advice based on skin type and issues. Integrated into /api/scan/analyze and /api/scan/{scan_id} endpoints. Frontend: Added new 'Nutrition' tab in scan-result.tsx with sections for eat_more, avoid, hydration_tip, supplements_optional, and a disclaimer. Please test the new diet recommendations endpoint."
   - agent: "testing"
-    message: "✅ DIET RECOMMENDATIONS TESTING COMPLETE: New feature working perfectly! Comprehensive testing performed on both /api/scan/analyze and /api/scan/{scan_id} endpoints. Structure validation passed - all required fields present with correct data types. Deterministic behavior confirmed - same inputs produce identical outputs. Sample test showed proper recommendations: 3 eat_more items (berries, leafy greens, cucumber), 2 avoid items (fast food, sugary drinks), hydration tip (8 glasses daily), 2 supplements (Vitamin D, Omega-3). Feature is production-ready and fully integrated."
+    message: "✅ DIET RECOMMENDATIONS FEATURE WORKING. The generate_diet_recommendations() function is properly integrated and returns correct data structure with eat_more, avoid, hydration_tip, and supplements_optional fields."
+  - agent: "main"
+    message: "NEW FEATURE: Monetization & Paywall System implemented. BACKEND CHANGES: 1) Added user.plan (free/premium) and user.scan_count fields to user model. 2) FREE_SCAN_LIMIT = 1 (lifetime). 3) /api/scan/analyze now blocks free users after 1 scan with 403 error. 4) Free users get limited response (score, skin_type, main_issues, preview counts). 5) Premium users get full response (routine, diet, products). 6) New endpoints: GET /api/subscription/status, POST /api/subscription/upgrade (MOCK), GET /api/subscription/pricing. FRONTEND CHANGES: 1) New paywall.tsx screen with pricing options (€9.99/mo, €59.99/yr), features list, and upgrade button. 2) scan-result.tsx shows locked sections for free users with 'Unlock Premium' CTAs. 3) scan.tsx shows banner when scan limit reached. Please test the subscription endpoints and paywall flow."
