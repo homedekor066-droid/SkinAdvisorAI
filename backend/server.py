@@ -1418,15 +1418,20 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
             'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at']
         }
     else:
-        # FREE USER: Return limited response
-        main_issues = sorted(
-            analysis.get('issues', []),
-            key=lambda x: x.get('severity', 0),
-            reverse=True
-        )[:3]
-        main_issues_simplified = [
-            {'issue': issue.get('name', 'Unknown'), 'severity': issue.get('severity', 0)}
-            for issue in main_issues
+        # FREE USER: Return issues visible but LOCKED (details hidden)
+        # User MUST see issues exist - builds trust and conversion
+        all_issues = analysis.get('issues', [])
+        issue_count = len(all_issues)
+        
+        # Return issue names ONLY (no severity, no description - those are locked)
+        issues_preview = [
+            {
+                'name': issue.get('name', 'Skin concern detected'),
+                'locked': True,
+                'severity_locked': True,
+                'description_locked': True
+            }
+            for issue in all_issues
         ]
         
         routine = scan.get('routine', {})
@@ -1435,15 +1440,19 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
         return {
             'id': scan['id'],
             'user_plan': 'free',
+            'locked': True,
             'image_base64': scan.get('image_base64'),
             'image_hash': scan.get('image_hash'),
             'analysis': {
                 'skin_type': analysis.get('skin_type'),
                 'overall_score': score_data.get('score', 75),
                 'score_label': score_data.get('label', 'good'),
-                'main_issues': main_issues_simplified
+                # FREE USERS SEE: Issue names and count (but details locked)
+                'issue_count': issue_count,
+                'issues_preview': issues_preview,
             },
             'locked_features': [
+                'issue_details',
                 'full_routine',
                 'diet_plan',
                 'product_recommendations',
@@ -1451,12 +1460,13 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
                 'detailed_explanations'
             ],
             'preview': {
+                'issue_count': issue_count,
                 'routine_steps_count': len(routine.get('morning_routine', [])) + len(routine.get('evening_routine', [])) + len(routine.get('weekly_routine', [])),
                 'diet_items_count': len(diet_recommendations.get('eat_more', [])) + len(diet_recommendations.get('avoid', [])),
                 'products_count': len(products)
             },
             'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at'],
-            'upgrade_message': "Your personalized routine is ready. Unlock to see exact steps for morning & night."
+            'upgrade_message': "Unlock full skin analysis, routine & diet plan"
         }
 
 @api_router.delete("/scan/{scan_id}")
