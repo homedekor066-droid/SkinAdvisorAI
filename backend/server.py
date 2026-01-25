@@ -544,6 +544,8 @@ async def register(user_data: UserCreate):
             'skin_goals': [],
             'country': None
         },
+        'plan': 'free',  # NEW: Default plan is free
+        'scan_count': 0,  # NEW: Track number of scans
         'created_at': datetime.utcnow()
     }
     
@@ -557,6 +559,8 @@ async def register(user_data: UserCreate):
             email=user_data.email,
             name=user_data.name,
             profile=UserProfile(**user['profile']),
+            plan=user['plan'],
+            scan_count=user['scan_count'],
             created_at=user['created_at']
         )
     )
