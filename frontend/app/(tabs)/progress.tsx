@@ -83,10 +83,13 @@ export default function ProgressScreen() {
     return colors[skinType?.toLowerCase()] || theme.primary;
   };
 
+  // Score color based on score value (YELLOW for most users)
   const getScoreColor = (score: number) => {
-    if (score >= 80) return theme.success;
-    if (score >= 60) return theme.warning;
-    return theme.error;
+    if (score >= 90) return '#4CAF50'; // Excellent - Soft Green (rare)
+    if (score >= 75) return '#FFC107'; // Good - Yellow
+    if (score >= 60) return '#FFB300'; // Average - Yellow
+    if (score >= 40) return '#FF9800'; // Needs attention - Orange
+    return '#F44336'; // Poor - Red
   };
 
   // Calculate progress metrics
