@@ -1470,4 +1470,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  // Locked Issues Styles
+  issueSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  lockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  lockedBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  lockedIssueCard: {
+    opacity: 0.95,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderStyle: 'dashed',
+  },
+  blurredContent: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  blurredText: {
+    fontSize: 13,
+    letterSpacing: 1,
+  },
+  unlockIssuesCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 8,
+  },
+  unlockIssuesCTAText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
