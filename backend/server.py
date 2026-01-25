@@ -1132,6 +1132,7 @@ async def analyze_skin(
             },
             'routine': scan['routine'],
             'products': scan['products'],
+            'diet_recommendations': diet_recommendations,
             'created_at': scan['created_at'].isoformat(),
             'image_hash': image_hash
         }
