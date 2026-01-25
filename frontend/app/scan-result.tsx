@@ -220,7 +220,7 @@ export default function ScanResultScreen() {
 
         {/* Tabs */}
         <View style={[styles.tabs, { backgroundColor: theme.surface }]}>
-          {(['analysis', 'routine', 'products'] as const).map((tab) => (
+          {(['analysis', 'routine', 'nutrition', 'products'] as const).map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[
@@ -229,12 +229,23 @@ export default function ScanResultScreen() {
               ]}
               onPress={() => setActiveTab(tab)}
             >
+              <Ionicons 
+                name={
+                  tab === 'analysis' ? 'analytics-outline' :
+                  tab === 'routine' ? 'time-outline' :
+                  tab === 'nutrition' ? 'nutrition-outline' : 'leaf-outline'
+                } 
+                size={16} 
+                color={activeTab === tab ? '#FFFFFF' : theme.textSecondary} 
+                style={{ marginBottom: 2 }}
+              />
               <Text style={[
                 styles.tabText,
                 { color: activeTab === tab ? '#FFFFFF' : theme.textSecondary }
               ]}>
                 {tab === 'analysis' ? t('skin_issues') :
-                 tab === 'routine' ? t('my_routines') : t('products')}
+                 tab === 'routine' ? t('my_routines') : 
+                 tab === 'nutrition' ? 'Nutrition' : t('products')}
               </Text>
             </TouchableOpacity>
           ))}
