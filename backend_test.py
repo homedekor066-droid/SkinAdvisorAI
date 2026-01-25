@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Backend Testing for SkinAdvisor AI - CRITICAL FIXES VALIDATION
+Backend Testing for SkinAdvisor AI - CRITICAL MONETIZATION UX FIX
 Testing Areas:
-1. NEW SCORING SYSTEM VALIDATION
-2. SUBSCRIPTION FLOW TEST  
-3. PLAN-BASED RESPONSE STRUCTURE
-4. SCAN LIMIT ENFORCEMENT
+1. FREE USER RESPONSE STRUCTURE - Issues visible but locked
+2. PREMIUM USER RESPONSE STRUCTURE - Full issue details
+3. NO "EMPTY ISSUES" BUG - Free users see issues exist
+4. SCAN ENDPOINTS - Both /analyze and /{scan_id}
 """
 
 import requests
