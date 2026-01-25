@@ -1407,6 +1407,104 @@ async def compare_scans(scan_id_1: str, scan_id_2: str, current_user: dict = Dep
         'issue_changes': issue_changes
     }
 
+# ==================== SUBSCRIPTION ENDPOINTS ====================
+
+@api_router.get("/subscription/status")
+async def get_subscription_status(current_user: dict = Depends(get_current_user)):
+    """Get user's subscription status and limits"""
+    user_plan = current_user.get('plan', 'free')
+    scan_count = current_user.get('scan_count', 0)
+    
+    if user_plan == 'premium':
+        return SubscriptionStatus(
+            plan='premium',
+            scan_count=scan_count,
+            scan_limit=-1,  # Unlimited
+            can_scan=True,
+            features={
+                'unlimited_scans': True,
+                'full_routine': True,
+                'diet_plan': True,
+                'product_recommendations': True,
+                'progress_tracking': True,
+                'detailed_explanations': True
+            }
+        )
+    else:
+        return SubscriptionStatus(
+            plan='free',
+            scan_count=scan_count,
+            scan_limit=FREE_SCAN_LIMIT,
+            can_scan=scan_count < FREE_SCAN_LIMIT,
+            features={
+                'unlimited_scans': False,
+                'full_routine': False,
+                'diet_plan': False,
+                'product_recommendations': False,
+                'progress_tracking': False,
+                'detailed_explanations': False
+            }
+        )
+
+@api_router.post("/subscription/upgrade")
+async def upgrade_subscription(request: UpgradeRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Upgrade user to premium (MOCK - for testing)
+    In production, this would integrate with Apple/Google IAP or Stripe
+    """
+    if request.plan != 'premium':
+        raise HTTPException(status_code=400, detail="Invalid plan. Only 'premium' is supported.")
+    
+    # Update user's plan in database
+    await db.users.update_one(
+        {'id': current_user['id']},
+        {'$set': {'plan': 'premium'}}
+    )
+    
+    logger.info(f"User {current_user['id']} upgraded to premium (MOCK)")
+    
+    return {
+        "success": True,
+        "message": "Successfully upgraded to Premium!",
+        "plan": "premium",
+        "features_unlocked": [
+            "Unlimited skin scans",
+            "Full personalized routine",
+            "Diet & nutrition plan",
+            "Product recommendations",
+            "Progress tracking",
+            "Detailed explanations"
+        ]
+    }
+
+@api_router.get("/subscription/pricing")
+async def get_pricing():
+    """Get subscription pricing info"""
+    return {
+        "monthly": {
+            "price": 9.99,
+            "currency": "EUR",
+            "display": "€9.99/month",
+            "period": "month"
+        },
+        "yearly": {
+            "price": 59.99,
+            "currency": "EUR",
+            "display": "€59.99/year",
+            "period": "year",
+            "savings": "50%",
+            "monthly_equivalent": 5.00
+        },
+        "features": [
+            "Full daily skincare routine",
+            "Personalized diet & foods to avoid",
+            "Unlimited skin scans",
+            "Progress tracking & before/after",
+            "Product recommendations",
+            "Detailed explanations"
+        ]
+    }
+
 # ==================== TRANSLATIONS ====================
 
 BASE_TRANSLATIONS = {
