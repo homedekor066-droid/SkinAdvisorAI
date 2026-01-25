@@ -111,7 +111,7 @@ export default function ScanResultScreen() {
     );
   }
 
-  const { analysis, routine, products, created_at, image_base64 } = scan;
+  const { analysis, routine, products, diet_recommendations, created_at, image_base64 } = scan;
   const overallScore = analysis?.overall_score || 75;
   const scoreColor = getScoreColor(overallScore);
   const scoreInfo = getScoreInfo(overallScore, t);
