@@ -208,36 +208,15 @@ export default function ScanResultScreen() {
           )}
         </Card>
 
-        {/* Image and Skin Type */}
-        <View style={styles.topSection}>
-          {image_base64 && (
+        {/* Image Preview */}
+        {image_base64 && (
+          <View style={styles.imageSection}>
             <Image
               source={{ uri: `data:image/jpeg;base64,${image_base64}` }}
               style={styles.scanImage}
             />
-          )}
-          <View style={styles.skinTypeSection}>
-            <Text style={[styles.skinTypeLabel, { color: theme.textSecondary }]}>
-              {t('skin_type')}
-            </Text>
-            <View style={[
-              styles.skinTypeBadge,
-              { backgroundColor: getSkinTypeColor(analysis?.skin_type || 'normal') + '20' }
-            ]}>
-              <Text style={[
-                styles.skinTypeText,
-                { color: getSkinTypeColor(analysis?.skin_type || 'normal') }
-              ]}>
-                {t(analysis?.skin_type || 'normal') || analysis?.skin_type}
-              </Text>
-            </View>
-            {analysis?.skin_type_confidence && (
-              <Text style={[styles.confidenceText, { color: theme.textMuted }]}>
-                {t('confidence') || 'Confidence'}: {Math.round(analysis.skin_type_confidence * 100)}%
-              </Text>
-            )}
           </View>
-        </View>
+        )}
 
         {/* Tabs */}
         <View style={[styles.tabs, { backgroundColor: theme.surface }]}>
