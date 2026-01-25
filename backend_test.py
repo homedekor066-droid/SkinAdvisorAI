@@ -497,6 +497,8 @@ class BackendTester:
             ("Translations API", self.test_translations_api),
             ("Profile Update", self.test_profile_update),
             ("Scan History", self.test_scan_history),
+            ("Diet Recommendations - Existing Scans", self.test_diet_recommendations_existing_scans),
+            ("Diet Recommendations - Mock Scan", self.test_diet_recommendations_with_mock_scan),
             ("Account Deletion", self.test_account_deletion)
         ]
         
