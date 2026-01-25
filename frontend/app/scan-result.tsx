@@ -18,6 +18,24 @@ import { Card, Button } from '../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
+// Score color mapping
+const getScoreColor = (score: number) => {
+  if (score >= 90) return '#27AE60'; // Excellent - Green
+  if (score >= 75) return '#2ECC71'; // Good - Light Green
+  if (score >= 60) return '#F39C12'; // Average - Orange
+  if (score >= 40) return '#E67E22'; // Below Average - Dark Orange
+  return '#E74C3C'; // Poor - Red
+};
+
+// Score label mapping
+const getScoreInfo = (score: number, t: (key: string) => string) => {
+  if (score >= 90) return { label: t('score_excellent') || 'Excellent', icon: 'star' as const };
+  if (score >= 75) return { label: t('score_good') || 'Good skin condition', icon: 'checkmark-circle' as const };
+  if (score >= 60) return { label: t('score_average') || 'Average', icon: 'remove-circle' as const };
+  if (score >= 40) return { label: t('score_below_average') || 'Below average', icon: 'alert-circle' as const };
+  return { label: t('score_poor') || 'Poor skin condition', icon: 'close-circle' as const };
+};
+
 export default function ScanResultScreen() {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -62,6 +80,12 @@ export default function ScanResultScreen() {
     return theme.error;
   };
 
+  const getSeverityLabel = (severity: number) => {
+    if (severity <= 3) return t('mild') || 'mild';
+    if (severity <= 6) return t('moderate') || 'moderate';
+    return t('severe') || 'severe';
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -88,6 +112,10 @@ export default function ScanResultScreen() {
   }
 
   const { analysis, routine, products, created_at, image_base64 } = scan;
+  const overallScore = analysis?.overall_score || 75;
+  const scoreColor = getScoreColor(overallScore);
+  const scoreInfo = getScoreInfo(overallScore, t);
+  const scoreFactors = analysis?.score_factors || [];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -101,7 +129,59 @@ export default function ScanResultScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Image and Score */}
+        {/* Score Section - PROMINENT */}
+        <Card style={styles.scoreCard}>
+          <View style={styles.scoreHeader}>
+            <View style={styles.scoreCircleContainer}>
+              <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
+                <Text style={[styles.scoreValue, { color: scoreColor }]}>
+                  {overallScore}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.scoreLabelContainer}>
+              <View style={styles.scoreLabelRow}>
+                <Ionicons name={scoreInfo.icon} size={24} color={scoreColor} />
+                <Text style={[styles.scoreLabel, { color: scoreColor }]}>
+                  {scoreInfo.label}
+                </Text>
+              </View>
+              <Text style={[styles.scoreDescription, { color: theme.textSecondary }]}>
+                {t('overall_score')}
+              </Text>
+            </View>
+          </View>
+
+          {/* Score Info Tooltip */}
+          <View style={[styles.scoreInfoBox, { backgroundColor: theme.surface }]}>
+            <Ionicons name="information-circle-outline" size={16} color={theme.info} />
+            <Text style={[styles.scoreInfoText, { color: theme.textSecondary }]}>
+              {t('score_info') || 'Score represents overall skin health based on detected issues and their severity.'}
+            </Text>
+          </View>
+
+          {/* Score Factors */}
+          {scoreFactors.length > 0 && (
+            <View style={styles.factorsSection}>
+              <Text style={[styles.factorsTitle, { color: theme.text }]}>
+                {t('main_factors') || 'Main factors affecting your score'}:
+              </Text>
+              {scoreFactors.slice(0, 4).map((factor: any, index: number) => (
+                <View key={index} style={styles.factorItem}>
+                  <View style={[styles.factorDot, { backgroundColor: getSeverityColor(factor.severity) }]} />
+                  <Text style={[styles.factorText, { color: theme.text }]}>
+                    {factor.issue}
+                  </Text>
+                  <Text style={[styles.factorSeverity, { color: getSeverityColor(factor.severity) }]}>
+                    ({factor.severity_label || getSeverityLabel(factor.severity)})
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </Card>
+
+        {/* Image and Skin Type */}
         <View style={styles.topSection}>
           {image_base64 && (
             <Image
@@ -109,32 +189,28 @@ export default function ScanResultScreen() {
               style={styles.scanImage}
             />
           )}
-          <View style={styles.scoreSection}>
+          <View style={styles.skinTypeSection}>
+            <Text style={[styles.skinTypeLabel, { color: theme.textSecondary }]}>
+              {t('skin_type')}
+            </Text>
             <View style={[
-              styles.scoreCircle,
-              { borderColor: getSkinTypeColor(analysis?.skin_type || 'normal') }
+              styles.skinTypeBadge,
+              { backgroundColor: getSkinTypeColor(analysis?.skin_type || 'normal') + '20' }
             ]}>
-              <Text style={[styles.scoreValue, { color: theme.text }]}>
-                {analysis?.overall_score || 0}
-              </Text>
-              <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
-                {t('overall_score')}
+              <Text style={[
+                styles.skinTypeText,
+                { color: getSkinTypeColor(analysis?.skin_type || 'normal') }
+              ]}>
+                {t(analysis?.skin_type || 'normal') || analysis?.skin_type}
               </Text>
             </View>
+            {analysis?.skin_type_confidence && (
+              <Text style={[styles.confidenceText, { color: theme.textMuted }]}>
+                {t('confidence') || 'Confidence'}: {Math.round(analysis.skin_type_confidence * 100)}%
+              </Text>
+            )}
           </View>
         </View>
-
-        {/* Skin Type Badge */}
-        {analysis && (
-          <View style={[
-            styles.skinTypeBadge,
-            { backgroundColor: getSkinTypeColor(analysis.skin_type) + '15' }
-          ]}>
-            <Text style={[styles.skinTypeBadgeText, { color: getSkinTypeColor(analysis.skin_type) }]}>
-              {t('skin_type')}: {t(analysis.skin_type) || analysis.skin_type}
-            </Text>
-          </View>
-        )}
 
         {/* Tabs */}
         <View style={[styles.tabs, { backgroundColor: theme.surface }]}>
@@ -172,44 +248,62 @@ export default function ScanResultScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               {t('skin_issues')} ({analysis.issues?.length || 0})
             </Text>
-            {analysis.issues?.map((issue, index) => (
-              <Card key={index} style={styles.issueCard}>
-                <View style={styles.issueHeader}>
-                  <Text style={[styles.issueName, { color: theme.text }]}>
-                    {issue.name}
-                  </Text>
-                  <View style={[
-                    styles.severityBadge,
-                    { backgroundColor: getSeverityColor(issue.severity) + '20' }
-                  ]}>
-                    <Text style={[styles.severityText, { color: getSeverityColor(issue.severity) }]}>
-                      {issue.severity}/10
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.issueDescription, { color: theme.textSecondary }]}>
-                  {issue.description}
+            
+            {(!analysis.issues || analysis.issues.length === 0) ? (
+              <Card style={styles.noIssuesCard}>
+                <Ionicons name="checkmark-circle" size={32} color={theme.success} />
+                <Text style={[styles.noIssuesText, { color: theme.text }]}>
+                  No significant issues detected
                 </Text>
-                <View style={[styles.severityBar, { backgroundColor: theme.border }]}>
-                  <View
-                    style={[
-                      styles.severityFill,
-                      {
-                        width: `${issue.severity * 10}%`,
-                        backgroundColor: getSeverityColor(issue.severity)
-                      }
-                    ]}
-                  />
-                </View>
+                <Text style={[styles.noIssuesSubtext, { color: theme.textSecondary }]}>
+                  Your skin appears healthy!
+                </Text>
               </Card>
-            ))}
+            ) : (
+              analysis.issues?.map((issue: any, index: number) => (
+                <Card key={index} style={styles.issueCard}>
+                  <View style={styles.issueHeader}>
+                    <Text style={[styles.issueName, { color: theme.text }]}>
+                      {issue.name}
+                    </Text>
+                    <View style={[
+                      styles.severityBadge,
+                      { backgroundColor: getSeverityColor(issue.severity) + '20' }
+                    ]}>
+                      <Text style={[styles.severityText, { color: getSeverityColor(issue.severity) }]}>
+                        {issue.severity}/10 • {getSeverityLabel(issue.severity)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.issueDescription, { color: theme.textSecondary }]}>
+                    {issue.description}
+                  </Text>
+                  {issue.confidence && (
+                    <Text style={[styles.issueConfidence, { color: theme.textMuted }]}>
+                      {t('confidence')}: {Math.round(issue.confidence * 100)}%
+                    </Text>
+                  )}
+                  <View style={[styles.severityBar, { backgroundColor: theme.border }]}>
+                    <View
+                      style={[
+                        styles.severityFill,
+                        {
+                          width: `${issue.severity * 10}%`,
+                          backgroundColor: getSeverityColor(issue.severity)
+                        }
+                      ]}
+                    />
+                  </View>
+                </Card>
+              ))
+            )}
 
             {/* Recommendations */}
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               {t('recommendations')}
             </Text>
             <Card>
-              {analysis.recommendations?.map((rec, index) => (
+              {analysis.recommendations?.map((rec: string, index: number) => (
                 <View key={index} style={styles.recommendationItem}>
                   <Ionicons name="checkmark-circle" size={20} color={theme.success} />
                   <Text style={[styles.recommendationText, { color: theme.text }]}>
@@ -227,7 +321,7 @@ export default function ScanResultScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               {t('morning_routine')}
             </Text>
-            {routine.morning_routine?.map((step, index) => (
+            {routine.morning_routine?.map((step: any, index: number) => (
               <Card key={index} style={styles.routineCard}>
                 <View style={styles.stepHeader}>
                   <View style={[styles.stepNumber, { backgroundColor: theme.primary }]}>
@@ -262,7 +356,7 @@ export default function ScanResultScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               {t('evening_routine')}
             </Text>
-            {routine.evening_routine?.map((step, index) => (
+            {routine.evening_routine?.map((step: any, index: number) => (
               <Card key={index} style={styles.routineCard}>
                 <View style={styles.stepHeader}>
                   <View style={[styles.stepNumber, { backgroundColor: theme.info }]}>
@@ -289,7 +383,7 @@ export default function ScanResultScreen() {
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
                   {t('weekly_routine')}
                 </Text>
-                {routine.weekly_routine?.map((step, index) => (
+                {routine.weekly_routine?.map((step: any, index: number) => (
                   <Card key={index} style={styles.routineCard}>
                     <View style={styles.stepHeader}>
                       <View style={[styles.stepNumber, { backgroundColor: theme.warning }]}>
@@ -319,7 +413,7 @@ export default function ScanResultScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               {t('products')} ({products.length})
             </Text>
-            {products.map((product, index) => (
+            {products.map((product: any, index: number) => (
               <Card key={index} style={styles.productCard}>
                 <View style={styles.productHeader}>
                   <View style={[styles.productIcon, { backgroundColor: theme.primary + '20' }]}>
@@ -345,7 +439,7 @@ export default function ScanResultScreen() {
                     Key Ingredients:
                   </Text>
                   <View style={styles.ingredientTags}>
-                    {product.key_ingredients?.slice(0, 4).map((ingredient, i) => (
+                    {product.key_ingredients?.slice(0, 4).map((ingredient: string, i: number) => (
                       <View key={i} style={[styles.ingredientTag, { backgroundColor: theme.surface }]}>
                         <Text style={[styles.ingredientTagText, { color: theme.textSecondary }]}>
                           {ingredient}
@@ -414,46 +508,122 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
+  // Score Card Styles
+  scoreCard: {
+    marginBottom: 20,
+    padding: 20,
+  },
+  scoreHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  scoreCircleContainer: {
+    marginRight: 20,
+  },
+  scoreCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+  },
+  scoreLabelContainer: {
+    flex: 1,
+  },
+  scoreLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  scoreLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  scoreDescription: {
+    fontSize: 14,
+  },
+  scoreInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  scoreInfoText: {
+    flex: 1,
+    fontSize: 12,
+    marginLeft: 8,
+    lineHeight: 18,
+  },
+  factorsSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+    paddingTop: 16,
+  },
+  factorsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  factorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  factorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  factorText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  factorSeverity: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  // Other styles
   topSection: {
     flexDirection: 'row',
     marginBottom: 16,
   },
   scanImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
-  },
-  scoreSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scoreCircle: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    borderWidth: 4,
+    borderRadius: 16,
+  },
+  skinTypeSection: {
+    flex: 1,
+    marginLeft: 16,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  scoreValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  scoreLabel: {
-    fontSize: 10,
+  skinTypeLabel: {
+    fontSize: 12,
+    marginBottom: 8,
   },
   skinTypeBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  skinTypeBadgeText: {
-    fontSize: 14,
+  skinTypeText: {
+    fontSize: 16,
     fontWeight: '600',
     textTransform: 'capitalize',
+  },
+  confidenceText: {
+    fontSize: 11,
   },
   tabs: {
     flexDirection: 'row',
@@ -486,6 +656,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
+  noIssuesCard: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    marginBottom: 20,
+  },
+  noIssuesText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  noIssuesSubtext: {
+    fontSize: 14,
+    marginTop: 4,
+  },
   issueCard: {
     marginBottom: 12,
   },
@@ -498,6 +682,7 @@ const styles = StyleSheet.create({
   issueName: {
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,
   },
   severityBadge: {
     paddingHorizontal: 10,
@@ -505,13 +690,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   severityText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   issueDescription: {
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  issueConfidence: {
+    fontSize: 11,
+    marginBottom: 8,
   },
   severityBar: {
     height: 4,
