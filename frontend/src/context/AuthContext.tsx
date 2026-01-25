@@ -15,6 +15,8 @@ interface User {
     country?: string;
     language?: string;
   };
+  plan: string;  // 'free' or 'premium'
+  scan_count: number;
   created_at: string;
 }
 
