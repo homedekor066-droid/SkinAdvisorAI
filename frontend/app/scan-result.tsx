@@ -45,7 +45,7 @@ export default function ScanResultScreen() {
 
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'analysis' | 'routine' | 'products'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'routine' | 'nutrition' | 'products'>('analysis');
 
   useEffect(() => {
     fetchScanResult();
