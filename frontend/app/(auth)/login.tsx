@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +17,9 @@ import { useI18n } from '../../src/context/I18nContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { Button, Input } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
@@ -28,6 +32,15 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  
+  // Forgot password states
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [resetStep, setResetStep] = useState<'email' | 'token' | 'success'>('email');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -51,6 +64,80 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail.trim()) {
+      Alert.alert(t('error'), 'Please enter your email');
+      return;
+    }
+    
+    setResetLoading(true);
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/forgot-password`, {
+        email: resetEmail.trim()
+      });
+      
+      // In production, token would be sent via email
+      // For demo, we show the token directly
+      if (response.data.reset_token) {
+        setResetToken(response.data.reset_token);
+        setResetStep('token');
+        Alert.alert(
+          'Reset Token Generated',
+          'In production, this would be sent to your email. For this demo, the token has been pre-filled.'
+        );
+      } else {
+        Alert.alert(t('success'), response.data.message);
+        setResetStep('token');
+      }
+    } catch (error: any) {
+      Alert.alert(t('error'), error.response?.data?.detail || 'Failed to send reset email');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetToken.trim()) {
+      Alert.alert(t('error'), 'Please enter the reset token');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      Alert.alert(t('error'), 'Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      Alert.alert(t('error'), 'Passwords do not match');
+      return;
+    }
+    
+    setResetLoading(true);
+    try {
+      await axios.post(`${API_URL}/api/auth/reset-password`, {
+        token: resetToken.trim(),
+        new_password: newPassword
+      });
+      
+      setResetStep('success');
+      setTimeout(() => {
+        closeForgotModal();
+        Alert.alert(t('success'), 'Password reset successfully. You can now login with your new password.');
+      }, 1500);
+    } catch (error: any) {
+      Alert.alert(t('error'), error.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const closeForgotModal = () => {
+    setShowForgotModal(false);
+    setResetEmail('');
+    setResetToken('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setResetStep('email');
   };
 
   return (
@@ -106,11 +193,24 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Forgot Password Link */}
+            <TouchableOpacity
+              style={styles.forgotButton}
+              onPress={() => {
+                setResetEmail(email);
+                setShowForgotModal(true);
+              }}
+            >
+              <Text style={[styles.forgotText, { color: theme.primary }]}>
+                {t('forgot_password') || 'Forgot Password?'}
+              </Text>
+            </TouchableOpacity>
+
             <Button
               title={t('login')}
               onPress={handleLogin}
               loading={loading}
-              style={{ marginTop: 16 }}
+              style={{ marginTop: 8 }}
             />
 
             <View style={styles.footer}>
@@ -126,6 +226,105 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeForgotModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                {t('reset_password') || 'Reset Password'}
+              </Text>
+              <TouchableOpacity onPress={closeForgotModal}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            {resetStep === 'email' && (
+              <>
+                <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
+                  Enter your email address and we'll send you a reset link.
+                </Text>
+                <Input
+                  label={t('email')}
+                  value={resetEmail}
+                  onChangeText={setResetEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="your@email.com"
+                />
+                <Button
+                  title={t('send_reset_link') || 'Send Reset Link'}
+                  onPress={handleForgotPassword}
+                  loading={resetLoading}
+                  style={{ marginTop: 16 }}
+                />
+              </>
+            )}
+
+            {resetStep === 'token' && (
+              <>
+                <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
+                  Enter the reset token and your new password.
+                </Text>
+                <Input
+                  label="Reset Token"
+                  value={resetToken}
+                  onChangeText={setResetToken}
+                  placeholder="Enter reset token"
+                />
+                <Input
+                  label={t('new_password') || 'New Password'}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry
+                  placeholder="••••••••"
+                />
+                <Input
+                  label={t('confirm_password') || 'Confirm Password'}
+                  value={confirmNewPassword}
+                  onChangeText={setConfirmNewPassword}
+                  secureTextEntry
+                  placeholder="••••••••"
+                />
+                <View style={styles.modalButtons}>
+                  <Button
+                    title="Back"
+                    onPress={() => setResetStep('email')}
+                    variant="outline"
+                    style={{ flex: 1, marginRight: 8 }}
+                  />
+                  <Button
+                    title={t('reset_password') || 'Reset Password'}
+                    onPress={handleResetPassword}
+                    loading={resetLoading}
+                    style={{ flex: 1, marginLeft: 8 }}
+                  />
+                </View>
+              </>
+            )}
+
+            {resetStep === 'success' && (
+              <View style={styles.successContainer}>
+                <View style={[styles.successIcon, { backgroundColor: theme.success + '20' }]}>
+                  <Ionicons name="checkmark-circle" size={48} color={theme.success} />
+                </View>
+                <Text style={[styles.successText, { color: theme.text }]}>
+                  Password Reset Successfully!
+                </Text>
+              </View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -171,6 +370,16 @@ const styles = StyleSheet.create({
     right: 16,
     top: 42,
   },
+  forgotButton: {
+    alignSelf: 'flex-end',
+    marginTop: -8,
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -181,6 +390,52 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalDescription: {
+    fontSize: 14,
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: 16,
+  },
+  successContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successText: {
+    fontSize: 18,
     fontWeight: '600',
   },
 });
