@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://skinscan-app-6.preview.emergentagent.com/api"
+BASE_URL = "https://skinsmart-ai-4.preview.emergentagent.com/api"
 TEST_USER_EMAIL = f"testuser_{uuid.uuid4().hex[:8]}@skinadvisor.com"
 TEST_USER_PASSWORD = "SecurePass123!"
 TEST_USER_NAME = "Sarah Johnson"
