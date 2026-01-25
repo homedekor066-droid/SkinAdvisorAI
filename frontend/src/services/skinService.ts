@@ -61,11 +61,29 @@ export interface ScoreData {
   total_deduction: number;
 }
 
+export interface FoodItem {
+  name: string;
+  reason: string;
+}
+
+export interface SupplementItem {
+  name: string;
+  reason: string;
+}
+
+export interface DietRecommendations {
+  eat_more: FoodItem[];
+  avoid: FoodItem[];
+  hydration_tip: string;
+  supplements_optional: SupplementItem[];
+}
+
 export interface ScanResult {
   id: string;
   analysis: SkinAnalysisResult;
   routine: SkincareRoutine;
   products: ProductRecommendation[];
+  diet_recommendations?: DietRecommendations;
   created_at: string;
   image_base64?: string;
   image_hash?: string;
