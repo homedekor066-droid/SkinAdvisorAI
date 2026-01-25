@@ -126,10 +126,10 @@ export default function HomeScreen() {
                   <View
                     style={[
                       styles.scoreCircle,
-                      { borderColor: getSkinTypeColor(latestScan.analysis.skin_type) },
+                      { borderColor: getScoreColor(latestScan.analysis.overall_score || 75) },
                     ]}
                   >
-                    <Text style={[styles.scoreText, { color: theme.text }]}>
+                    <Text style={[styles.scoreText, { color: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
                       {latestScan.analysis.overall_score}
                     </Text>
                     <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
