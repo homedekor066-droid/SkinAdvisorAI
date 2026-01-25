@@ -1277,6 +1277,7 @@ async def analyze_skin(
             return {
                 'id': scan['id'],
                 'user_plan': 'premium',
+                'locked': False,
                 'analysis': {
                     'skin_type': scan['analysis']['skin_type'],
                     'skin_type_confidence': scan['analysis']['skin_type_confidence'],
@@ -1296,43 +1297,51 @@ async def analyze_skin(
                 'image_hash': image_hash
             }
         else:
-            # FREE USER: Return limited response
-            # Extract main issues (top 3 by severity)
-            main_issues = sorted(
-                scan['analysis']['issues'],
-                key=lambda x: x.get('severity', 0),
-                reverse=True
-            )[:3]
-            main_issues_simplified = [
-                {'issue': issue.get('name', 'Unknown'), 'severity': issue.get('severity', 0)}
-                for issue in main_issues
+            # FREE USER: Return issues visible but LOCKED (details hidden)
+            # User MUST see issues exist - builds trust and conversion
+            all_issues = scan['analysis']['issues']
+            issue_count = len(all_issues)
+            
+            # Return issue names ONLY (no severity, no description - those are locked)
+            issues_preview = [
+                {
+                    'name': issue.get('name', 'Skin concern detected'),
+                    'locked': True,  # Severity and description are locked
+                    'severity_locked': True,
+                    'description_locked': True
+                }
+                for issue in all_issues
             ]
             
             return {
                 'id': scan['id'],
                 'user_plan': 'free',
+                'locked': True,
                 'analysis': {
                     'skin_type': scan['analysis']['skin_type'],
                     'overall_score': score_data['score'],
                     'score_label': score_data['label'],
-                    'main_issues': main_issues_simplified
+                    # FREE USERS SEE: Issue names and count (but details locked)
+                    'issue_count': issue_count,
+                    'issues_preview': issues_preview,  # Names visible, details locked
                 },
-                # Don't return full data - only preview counts
                 'locked_features': [
+                    'issue_details',       # Severity, description locked
                     'full_routine',
-                    'diet_plan',
+                    'diet_plan', 
                     'product_recommendations',
                     'progress_tracking',
                     'detailed_explanations'
                 ],
                 'preview': {
+                    'issue_count': issue_count,
                     'routine_steps_count': len(routine.get('morning_routine', [])) + len(routine.get('evening_routine', [])) + len(routine.get('weekly_routine', [])),
                     'diet_items_count': len(diet_recommendations.get('eat_more', [])) + len(diet_recommendations.get('avoid', [])),
                     'products_count': len(products)
                 },
                 'created_at': scan['created_at'].isoformat(),
                 'image_hash': image_hash,
-                'upgrade_message': "You discovered what's affecting your skin. Now unlock the exact steps to fix it."
+                'upgrade_message': "You discovered what's affecting your skin. Unlock full analysis to see severity and solutions."
             }
         
     except HTTPException:
