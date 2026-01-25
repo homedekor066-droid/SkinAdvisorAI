@@ -627,39 +627,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  // Other styles
-  topSection: {
-    flexDirection: 'row',
+  // Image Section
+  imageSection: {
     marginBottom: 16,
+    alignItems: 'center',
   },
   scanImage: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     borderRadius: 16,
-  },
-  skinTypeSection: {
-    flex: 1,
-    marginLeft: 16,
-    justifyContent: 'center',
-  },
-  skinTypeLabel: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  skinTypeBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 8,
-  },
-  skinTypeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  confidenceText: {
-    fontSize: 11,
   },
   tabs: {
     flexDirection: 'row',
