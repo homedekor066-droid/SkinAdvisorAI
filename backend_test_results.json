@@ -1,94 +1,173 @@
 {
   "summary": {
-    "passed": 9,
-    "total": 11,
-    "success_rate": "81.8%",
-    "timestamp": "2026-01-25T20:51:02.635102"
+    "total_tests": 23,
+    "passed_tests": 23,
+    "failed_tests": 0,
+    "success_rate": "100.0%"
   },
-  "detailed_results": [
+  "test_results": [
     {
-      "test": "Health Check",
+      "test": "1.1 Register Score Test User",
       "success": true,
-      "message": "API is healthy: {'status': 'healthy'}",
-      "timestamp": "2026-01-25T20:50:21.876935",
-      "response_data": null
+      "details": "User registered: test_score_check_1769377856@test.com",
+      "error": "",
+      "timestamp": "2026-01-25T21:50:56.821116"
     },
     {
-      "test": "User Registration",
+      "test": "1.2 Initial Plan Check",
       "success": true,
-      "message": "User registered successfully with ID: 1cdbb558-8776-4b6b-8373-3590517a47c7",
-      "timestamp": "2026-01-25T20:50:22.125825",
-      "response_data": null
+      "details": "User plan is 'free' as expected",
+      "error": "",
+      "timestamp": "2026-01-25T21:50:56.821147"
     },
     {
-      "test": "User Login",
+      "test": "1.3 Scoring System Test",
       "success": true,
-      "message": "Login successful for user: testuser_01c522e7@skinadvisor.com",
-      "timestamp": "2026-01-25T20:50:22.357042",
-      "response_data": null
+      "details": "Score 75 is in expected range (70-84)",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:19.515223"
     },
     {
-      "test": "Get User Profile",
+      "test": "1.4 Score Structure Check",
       "success": true,
-      "message": "Profile retrieved for user: testuser_01c522e7@skinadvisor.com",
-      "timestamp": "2026-01-25T20:50:22.367753",
-      "response_data": null
+      "details": "All required score fields present",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:19.515250"
     },
     {
-      "test": "Languages API",
+      "test": "2.1 Register Subscription Test User",
       "success": true,
-      "message": "Retrieved 9 languages: en, fr, tr, it, es, de, ar, zh, hi",
-      "timestamp": "2026-01-25T20:50:22.415152",
-      "response_data": null
+      "details": "User registered: test_subscription_1769377879@test.com",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:19.802408"
     },
     {
-      "test": "Translations API (en)",
+      "test": "2.2 Initial Plan Check",
       "success": true,
-      "message": "Retrieved 64 translations for en",
-      "timestamp": "2026-01-25T20:50:22.428790",
-      "response_data": null
+      "details": "Initial plan is 'free'",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:19.802442"
     },
     {
-      "test": "Translations API (fr)",
+      "test": "2.3 Subscription Upgrade",
       "success": true,
-      "message": "Retrieved 64 translations for fr",
-      "timestamp": "2026-01-25T20:50:22.436740",
-      "response_data": null
+      "details": "Upgrade successful: Successfully upgraded to Premium!",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:19.839382"
     },
     {
-      "test": "Profile Update",
+      "test": "2.4 Plan Verification",
       "success": true,
-      "message": "Profile updated successfully with correct data",
-      "timestamp": "2026-01-25T20:50:22.450803",
-      "response_data": null
+      "details": "User plan is now 'premium'",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:19.878419"
     },
     {
-      "test": "Scan History",
+      "test": "3.1 Create Free User",
       "success": true,
-      "message": "Scan history is empty for new user (as expected)",
-      "timestamp": "2026-01-25T20:50:22.568318",
-      "response_data": null
+      "details": "Free user registered: test_free_1769377879@test.com",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.175424"
     },
     {
-      "test": "Diet Recommendations - Existing Scans",
+      "test": "3.2 Free User Scan Response",
       "success": true,
-      "message": "No existing scans found - this is expected for new user",
-      "timestamp": "2026-01-25T20:50:22.577479",
-      "response_data": null
+      "details": "Free user gets locked_features",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.212558"
     },
     {
-      "test": "Diet Recommendations - Mock Scan",
-      "success": false,
-      "message": "Error: HTTPSConnectionPool(host='skinsmart-ai-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)",
-      "timestamp": "2026-01-25T20:50:52.578571",
-      "response_data": null
+      "test": "3.3 Free User Limited Response",
+      "success": true,
+      "details": "Free user doesn't get full routine/diet",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.212587"
     },
     {
-      "test": "Account Deletion",
-      "success": false,
-      "message": "Account deletion error: HTTPSConnectionPool(host='skinsmart-ai-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=10)",
-      "timestamp": "2026-01-25T20:51:02.634941",
-      "response_data": null
+      "test": "3.4 Free User Scan Detail",
+      "success": true,
+      "details": "Free user gets limited scan detail",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.249465"
+    },
+    {
+      "test": "3.5 Premium User Full Response",
+      "success": true,
+      "details": "Premium user gets full routine/diet/products",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.284666"
+    },
+    {
+      "test": "3.6 Premium User Scan Detail",
+      "success": true,
+      "details": "Premium user gets full scan detail",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.325761"
+    },
+    {
+      "test": "4.1 Create Limit Test User",
+      "success": true,
+      "details": "Limit test user registered: test_limit_1769377880@test.com",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.624977"
+    },
+    {
+      "test": "4.2 Initial Scan Count",
+      "success": true,
+      "details": "Initial scan_count is 0",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.625008"
+    },
+    {
+      "test": "4.3 First Scan (Should Succeed)",
+      "success": true,
+      "details": "First scan completed successfully",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.665998"
+    },
+    {
+      "test": "4.4 Scan Count Increment",
+      "success": true,
+      "details": "scan_count incremented to 1",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.740831"
+    },
+    {
+      "test": "4.5 Second Scan (Should Fail)",
+      "success": true,
+      "details": "Second scan blocked with scan_limit_reached",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.775570"
+    },
+    {
+      "test": "4.6 Upgrade Required Flag",
+      "success": true,
+      "details": "upgrade_required flag is present",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:20.775599"
+    },
+    {
+      "test": "5.1 Create Status Test User",
+      "success": true,
+      "details": "Status test user registered: test_status_1769377880@test.com",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:21.075588"
+    },
+    {
+      "test": "5.2 Free User Status",
+      "success": true,
+      "details": "All 3 status fields correct",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:21.107885"
+    },
+    {
+      "test": "5.3 Premium User Status",
+      "success": true,
+      "details": "All 3 premium status fields correct",
+      "error": "",
+      "timestamp": "2026-01-25T21:51:21.147710"
     }
-  ]
+  ],
+  "backend_url": "https://skinsmart-ai-4.preview.emergentagent.com/api",
+  "test_time": "2026-01-25T21:51:21.148447"
 }
