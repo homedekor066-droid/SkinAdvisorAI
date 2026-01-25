@@ -70,12 +70,26 @@ class UserResponse(BaseModel):
     email: str
     name: str
     profile: Optional[UserProfile] = None
+    plan: str = "free"
+    scan_count: int = 0
     created_at: datetime
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+# ==================== SUBSCRIPTION MODELS ====================
+
+class SubscriptionStatus(BaseModel):
+    plan: str  # "free" or "premium"
+    scan_count: int
+    scan_limit: int  # 1 for free, unlimited (-1) for premium
+    can_scan: bool
+    features: Dict[str, bool]
+
+class UpgradeRequest(BaseModel):
+    plan: str = "premium"  # For now just premium
 
 class SkinAnalysisRequest(BaseModel):
     image_base64: str
