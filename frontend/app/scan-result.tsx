@@ -470,6 +470,100 @@ export default function ScanResultScreen() {
           </View>
         )}
 
+        {/* Nutrition Tab Content */}
+        {activeTab === 'nutrition' && diet_recommendations && (
+          <View style={styles.tabContent}>
+            {/* Hydration Tip Card */}
+            <Card style={[styles.hydrationCard, { backgroundColor: '#E3F2FD' }]}>
+              <View style={styles.hydrationHeader}>
+                <Ionicons name="water-outline" size={28} color="#1976D2" />
+                <Text style={[styles.hydrationTitle, { color: '#1976D2' }]}>
+                  Hydration Tip
+                </Text>
+              </View>
+              <Text style={[styles.hydrationText, { color: '#0D47A1' }]}>
+                {diet_recommendations.hydration_tip}
+              </Text>
+            </Card>
+
+            {/* Foods to Eat More */}
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              <Ionicons name="checkmark-circle" size={20} color={theme.success} /> Foods to Eat More
+            </Text>
+            {diet_recommendations.eat_more?.map((food, index) => (
+              <Card key={index} style={styles.foodCard}>
+                <View style={styles.foodHeader}>
+                  <View style={[styles.foodIconContainer, { backgroundColor: '#E8F5E9' }]}>
+                    <Ionicons name="leaf" size={20} color="#4CAF50" />
+                  </View>
+                  <Text style={[styles.foodName, { color: theme.text }]}>
+                    {food.name}
+                  </Text>
+                </View>
+                <Text style={[styles.foodReason, { color: theme.textSecondary }]}>
+                  {food.reason}
+                </Text>
+              </Card>
+            ))}
+
+            {/* Foods to Avoid */}
+            <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 20 }]}>
+              <Ionicons name="close-circle" size={20} color={theme.error} /> Foods to Limit/Avoid
+            </Text>
+            {diet_recommendations.avoid?.map((food, index) => (
+              <Card key={index} style={styles.foodCard}>
+                <View style={styles.foodHeader}>
+                  <View style={[styles.foodIconContainer, { backgroundColor: '#FFEBEE' }]}>
+                    <Ionicons name="ban" size={20} color="#F44336" />
+                  </View>
+                  <Text style={[styles.foodName, { color: theme.text }]}>
+                    {food.name}
+                  </Text>
+                </View>
+                <Text style={[styles.foodReason, { color: theme.textSecondary }]}>
+                  {food.reason}
+                </Text>
+              </Card>
+            ))}
+
+            {/* Optional Supplements */}
+            {diet_recommendations.supplements_optional && diet_recommendations.supplements_optional.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 20 }]}>
+                  <Ionicons name="medical" size={20} color={theme.info} /> Optional Supplements
+                </Text>
+                <Card style={styles.supplementsCard}>
+                  {diet_recommendations.supplements_optional.map((supplement, index) => (
+                    <View key={index} style={[
+                      styles.supplementItem,
+                      index < diet_recommendations.supplements_optional!.length - 1 && styles.supplementBorder
+                    ]}>
+                      <View style={styles.supplementHeader}>
+                        <Ionicons name="add-circle-outline" size={18} color={theme.info} />
+                        <Text style={[styles.supplementName, { color: theme.text }]}>
+                          {supplement.name}
+                        </Text>
+                      </View>
+                      <Text style={[styles.supplementReason, { color: theme.textSecondary }]}>
+                        {supplement.reason}
+                      </Text>
+                    </View>
+                  ))}
+                </Card>
+              </>
+            )}
+
+            {/* Nutrition Disclaimer */}
+            <View style={[styles.nutritionDisclaimer, { backgroundColor: '#FFF3E0' }]}>
+              <Ionicons name="information-circle" size={20} color="#E65100" />
+              <Text style={[styles.nutritionDisclaimerText, { color: '#E65100' }]}>
+                Nutrition suggestions are general wellness advice and not medical treatment. 
+                Consult a healthcare professional before making significant dietary changes.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Disclaimer */}
         <View style={[styles.disclaimer, { backgroundColor: theme.surface }]}>
           <Ionicons name="information-circle-outline" size={16} color={theme.textMuted} />
