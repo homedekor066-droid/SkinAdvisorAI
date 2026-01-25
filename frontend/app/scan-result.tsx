@@ -429,74 +429,133 @@ export default function ScanResultScreen() {
               </Text>
             </Card>
 
-            {/* Issues */}
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {t('skin_issues')} ({analysis.issues?.length || 0})
-            </Text>
-            
-            {(!analysis.issues || analysis.issues.length === 0) ? (
-              <Card style={styles.noIssuesCard}>
-                <Ionicons name="checkmark-circle" size={32} color={theme.success} />
-                <Text style={[styles.noIssuesText, { color: theme.text }]}>
-                  No significant issues detected
-                </Text>
-                <Text style={[styles.noIssuesSubtext, { color: theme.textSecondary }]}>
-                  Your skin appears healthy!
-                </Text>
-              </Card>
-            ) : (
-              analysis.issues?.map((issue: any, index: number) => (
-                <Card key={index} style={styles.issueCard}>
-                  <View style={styles.issueHeader}>
-                    <Text style={[styles.issueName, { color: theme.text }]}>
-                      {issue.name}
-                    </Text>
-                    <View style={[
-                      styles.severityBadge,
-                      { backgroundColor: getSeverityColor(issue.severity) + '20' }
-                    ]}>
-                      <Text style={[styles.severityText, { color: getSeverityColor(issue.severity) }]}>
-                        {issue.severity}/10 • {getSeverityLabel(issue.severity)}
+            {/* Issues Section */}
+            {isLocked ? (
+              // FREE USER: Show issues with LOCKED details
+              <>
+                <View style={styles.issueSectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                    {t('skin_issues')} ({analysis.issue_count || analysis.issues_preview?.length || 0})
+                  </Text>
+                  <View style={[styles.lockedBadge, { backgroundColor: theme.primary + '20' }]}>
+                    <Ionicons name="lock-closed" size={12} color={theme.primary} />
+                    <Text style={[styles.lockedBadgeText, { color: theme.primary }]}>Details Locked</Text>
+                  </View>
+                </View>
+                
+                {/* Show Issue Names (but lock severity/description) */}
+                {(analysis.issues_preview || []).map((issue: any, index: number) => (
+                  <Card key={index} style={[styles.issueCard, styles.lockedIssueCard]}>
+                    <View style={styles.issueHeader}>
+                      <Text style={[styles.issueName, { color: theme.text }]}>
+                        {issue.name}
+                      </Text>
+                      <View style={[styles.severityBadge, { backgroundColor: '#F5F5F5' }]}>
+                        <Ionicons name="lock-closed" size={12} color="#9E9E9E" />
+                        <Text style={[styles.severityText, { color: '#9E9E9E' }]}>
+                          Locked
+                        </Text>
+                      </View>
+                    </View>
+                    {/* Blurred description placeholder */}
+                    <View style={styles.blurredContent}>
+                      <Text style={[styles.blurredText, { color: '#BDBDBD' }]}>
+                        ████████ ██████ ████████████ ██████████
                       </Text>
                     </View>
-                  </View>
-                  <Text style={[styles.issueDescription, { color: theme.textSecondary }]}>
-                    {issue.description}
+                    <View style={[styles.severityBar, { backgroundColor: '#E8E8E8' }]}>
+                      <View style={[styles.severityFill, { width: '60%', backgroundColor: '#E0E0E0' }]} />
+                    </View>
+                  </Card>
+                ))}
+                
+                {/* Unlock CTA for Issues */}
+                <TouchableOpacity 
+                  style={[styles.unlockIssuesCTA, { backgroundColor: theme.primary }]}
+                  onPress={goToPaywall}
+                >
+                  <Ionicons name="lock-open-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.unlockIssuesCTAText}>
+                    Unlock full skin analysis
                   </Text>
-                  {issue.confidence && (
-                    <Text style={[styles.issueConfidence, { color: theme.textMuted }]}>
-                      {t('confidence')}: {Math.round(issue.confidence * 100)}%
+                </TouchableOpacity>
+              </>
+            ) : (
+              // PREMIUM USER: Show full issue details
+              <>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t('skin_issues')} ({analysis.issues?.length || 0})
+                </Text>
+                
+                {(!analysis.issues || analysis.issues.length === 0) ? (
+                  <Card style={styles.noIssuesCard}>
+                    <Ionicons name="checkmark-circle" size={32} color={theme.success} />
+                    <Text style={[styles.noIssuesText, { color: theme.text }]}>
+                      No significant issues detected
                     </Text>
-                  )}
-                  <View style={[styles.severityBar, { backgroundColor: theme.border }]}>
-                    <View
-                      style={[
-                        styles.severityFill,
-                        {
-                          width: `${issue.severity * 10}%`,
-                          backgroundColor: getSeverityColor(issue.severity)
-                        }
-                      ]}
-                    />
-                  </View>
-                </Card>
-              ))
+                    <Text style={[styles.noIssuesSubtext, { color: theme.textSecondary }]}>
+                      Your skin appears healthy!
+                    </Text>
+                  </Card>
+                ) : (
+                  analysis.issues?.map((issue: any, index: number) => (
+                    <Card key={index} style={styles.issueCard}>
+                      <View style={styles.issueHeader}>
+                        <Text style={[styles.issueName, { color: theme.text }]}>
+                          {issue.name}
+                        </Text>
+                        <View style={[
+                          styles.severityBadge,
+                          { backgroundColor: getSeverityColor(issue.severity) + '20' }
+                        ]}>
+                          <Text style={[styles.severityText, { color: getSeverityColor(issue.severity) }]}>
+                            {issue.severity}/10 • {getSeverityLabel(issue.severity)}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.issueDescription, { color: theme.textSecondary }]}>
+                        {issue.description}
+                      </Text>
+                      {issue.confidence && (
+                        <Text style={[styles.issueConfidence, { color: theme.textMuted }]}>
+                          {t('confidence')}: {Math.round(issue.confidence * 100)}%
+                        </Text>
+                      )}
+                      <View style={[styles.severityBar, { backgroundColor: theme.border }]}>
+                        <View
+                          style={[
+                            styles.severityFill,
+                            {
+                              width: `${issue.severity * 10}%`,
+                              backgroundColor: getSeverityColor(issue.severity)
+                            }
+                          ]}
+                        />
+                      </View>
+                    </Card>
+                  ))
+                )}
+              </>
             )}
 
-            {/* Recommendations */}
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {t('recommendations')}
-            </Text>
-            <Card>
-              {analysis.recommendations?.map((rec: string, index: number) => (
-                <View key={index} style={styles.recommendationItem}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.success} />
-                  <Text style={[styles.recommendationText, { color: theme.text }]}>
-                    {rec}
-                  </Text>
-                </View>
-              ))}
-            </Card>
+            {/* Recommendations - Only for Premium */}
+            {!isLocked && (
+              <>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t('recommendations')}
+                </Text>
+                <Card>
+                  {analysis.recommendations?.map((rec: string, index: number) => (
+                    <View key={index} style={styles.recommendationItem}>
+                      <Ionicons name="checkmark-circle" size={20} color={theme.success} />
+                      <Text style={[styles.recommendationText, { color: theme.text }]}>
+                        {rec}
+                      </Text>
+                    </View>
+                  ))}
+                </Card>
+              </>
+            )}
           </View>
         )}
 
