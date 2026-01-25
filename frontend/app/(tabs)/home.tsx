@@ -199,7 +199,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={() => router.push('/(tabs)/profile')}
+              onPress={() => router.push('/my-routine')}
             >
               <View style={[styles.actionIcon, { backgroundColor: theme.info + '20' }]}>
                 <Ionicons name="calendar-outline" size={24} color={theme.info} />
