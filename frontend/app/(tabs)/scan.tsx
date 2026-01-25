@@ -124,6 +124,27 @@ export default function ScanScreen() {
         </Text>
       </View>
 
+      {/* Scan Limit Banner for Free Users */}
+      {!canScan && (
+        <TouchableOpacity 
+          style={[styles.limitBanner, { backgroundColor: theme.primary }]}
+          onPress={() => router.push('/paywall')}
+        >
+          <View style={styles.limitBannerContent}>
+            <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+            <View style={styles.limitBannerText}>
+              <Text style={styles.limitBannerTitle}>
+                You've used your free scan
+              </Text>
+              <Text style={styles.limitBannerSubtitle}>
+                Upgrade to Premium for unlimited scans
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.content}>
         {image ? (
           <View style={styles.previewContainer}>
