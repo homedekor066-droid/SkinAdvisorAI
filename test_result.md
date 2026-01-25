@@ -210,6 +210,18 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Account deletion working correctly. Successfully deletes user account and associated scans with proper authentication."
 
+  - task: "Diet & Nutrition Recommendations API"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW FEATURE: Implemented deterministic diet recommendations based on skin type and issues. Returns eat_more, avoid, hydration_tip, and supplements_optional. Integrated into /api/scan/analyze and /api/scan/{scan_id} endpoints."
+
 frontend:
   - task: "Onboarding Flow"
     implemented: true
