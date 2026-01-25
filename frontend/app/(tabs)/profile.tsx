@@ -7,13 +7,17 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useI18n } from '../../src/context/I18nContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { Card, Button } from '../../src/components';
+import { Card, Button, Input } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
@@ -22,10 +26,25 @@ const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 export default function ProfileScreen() {
   const { theme, isDarkMode, toggleTheme } = useTheme();
   const { t, language, languages, setLanguage } = useI18n();
-  const { user, token, logout, updateProfile } = useAuth();
+  const { user, token, logout, refreshUser } = useAuth();
   const router = useRouter();
+  
   const [showLanguages, setShowLanguages] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Modal states
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  
+  // Form states
+  const [newName, setNewName] = useState(user?.name || '');
+  const [newEmail, setNewEmail] = useState(user?.email || '');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -74,17 +93,128 @@ export default function ProfileScreen() {
 
   const handleLanguageChange = async (langCode: string) => {
     await setLanguage(langCode);
-    if (token) {
-      try {
-        await updateProfile({ ...user?.profile, language: langCode });
-      } catch (error) {
-        console.error('Failed to update profile language:', error);
-      }
-    }
     setShowLanguages(false);
   };
 
+  const handleUpdateName = async () => {
+    if (!newName.trim() || newName.trim().length < 2) {
+      Alert.alert(t('error'), 'Name must be at least 2 characters');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.put(`${API_URL}/api/profile/name`, 
+        { name: newName.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await refreshUser();
+      setShowNameModal(false);
+      Alert.alert(t('success'), 'Name updated successfully');
+    } catch (error: any) {
+      Alert.alert(t('error'), error.response?.data?.detail || 'Failed to update name');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!newEmail.trim() || !emailPassword) {
+      Alert.alert(t('error'), 'Please fill in all fields');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.put(`${API_URL}/api/profile/email`, 
+        { email: newEmail.trim(), password: emailPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await refreshUser();
+      setShowEmailModal(false);
+      setEmailPassword('');
+      Alert.alert(t('success'), 'Email updated successfully');
+    } catch (error: any) {
+      Alert.alert(t('error'), error.response?.data?.detail || 'Failed to update email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert(t('error'), 'Please fill in all fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert(t('error'), 'Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert(t('error'), 'Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.put(`${API_URL}/api/profile/password`, 
+        { current_password: currentPassword, new_password: newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      Alert.alert(t('success'), 'Password updated successfully');
+    } catch (error: any) {
+      Alert.alert(t('error'), error.response?.data?.detail || 'Failed to update password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const currentLanguage = languages.find(l => l.code === language);
+
+  const renderModal = (
+    visible: boolean,
+    onClose: () => void,
+    title: string,
+    children: React.ReactNode,
+    onSubmit: () => void
+  ) => (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+          {children}
+          <View style={styles.modalButtons}>
+            <Button
+              title={t('cancel')}
+              onPress={onClose}
+              variant="outline"
+              style={{ flex: 1, marginRight: 8 }}
+            />
+            <Button
+              title={t('save')}
+              onPress={onSubmit}
+              loading={loading}
+              style={{ flex: 1, marginLeft: 8 }}
+            />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -111,6 +241,87 @@ export default function ProfileScreen() {
           </Text>
         </Card>
 
+        {/* Account Settings */}
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          {t('account_settings') || 'Account Settings'}
+        </Text>
+
+        <Card style={styles.settingsCard}>
+          {/* Change Name */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              setNewName(user?.name || '');
+              setShowNameModal(true);
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: theme.primary + '20' }]}>
+                <Ionicons name="person-outline" size={20} color={theme.primary} />
+              </View>
+              <View>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>
+                  {t('change_name') || 'Change Name'}
+                </Text>
+                <Text style={[styles.settingValue, { color: theme.textSecondary }]}>
+                  {user?.name}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+          {/* Change Email */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              setNewEmail(user?.email || '');
+              setEmailPassword('');
+              setShowEmailModal(true);
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: theme.info + '20' }]}>
+                <Ionicons name="mail-outline" size={20} color={theme.info} />
+              </View>
+              <View>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>
+                  {t('change_email') || 'Change Email'}
+                </Text>
+                <Text style={[styles.settingValue, { color: theme.textSecondary }]}>
+                  {user?.email}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+          {/* Change Password */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+              setShowPasswordModal(true);
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: theme.warning + '20' }]}>
+                <Ionicons name="lock-closed-outline" size={20} color={theme.warning} />
+              </View>
+              <Text style={[styles.settingLabel, { color: theme.text }]}>
+                {t('change_password') || 'Change Password'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+          </TouchableOpacity>
+        </Card>
+
         {/* Settings */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>
           {t('settings')}
@@ -123,8 +334,8 @@ export default function ProfileScreen() {
             onPress={() => setShowLanguages(!showLanguages)}
           >
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: theme.info + '20' }]}>
-                <Ionicons name="language" size={20} color={theme.info} />
+              <View style={[styles.settingIcon, { backgroundColor: theme.success + '20' }]}>
+                <Ionicons name="language" size={20} color={theme.success} />
               </View>
               <View>
                 <Text style={[styles.settingLabel, { color: theme.text }]}>
@@ -261,6 +472,76 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Name Modal */}
+      {renderModal(
+        showNameModal,
+        () => setShowNameModal(false),
+        t('change_name') || 'Change Name',
+        <Input
+          label={t('name')}
+          value={newName}
+          onChangeText={setNewName}
+          placeholder="Your name"
+        />,
+        handleUpdateName
+      )}
+
+      {/* Email Modal */}
+      {renderModal(
+        showEmailModal,
+        () => setShowEmailModal(false),
+        t('change_email') || 'Change Email',
+        <>
+          <Input
+            label={t('email')}
+            value={newEmail}
+            onChangeText={setNewEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="your@email.com"
+          />
+          <Input
+            label={t('current_password') || 'Current Password'}
+            value={emailPassword}
+            onChangeText={setEmailPassword}
+            secureTextEntry
+            placeholder="Enter your password"
+          />
+        </>,
+        handleUpdateEmail
+      )}
+
+      {/* Password Modal */}
+      {renderModal(
+        showPasswordModal,
+        () => setShowPasswordModal(false),
+        t('change_password') || 'Change Password',
+        <>
+          <Input
+            label={t('current_password') || 'Current Password'}
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            secureTextEntry
+            placeholder="••••••••"
+          />
+          <Input
+            label={t('new_password') || 'New Password'}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+            placeholder="••••••••"
+          />
+          <Input
+            label={t('confirm_password') || 'Confirm Password'}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            placeholder="••••••••"
+          />
+        </>,
+        handleUpdatePassword
+      )}
     </SafeAreaView>
   );
 }
@@ -327,6 +608,7 @@ const styles = StyleSheet.create({
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   settingIcon: {
     width: 40,
@@ -374,5 +656,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 8,
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: 16,
   },
 });
