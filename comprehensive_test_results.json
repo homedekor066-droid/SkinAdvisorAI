@@ -1,0 +1,67 @@
+{
+  "status": "SUCCESS",
+  "free_user_scan": {
+    "id": "fd44e6ba-8d1b-4243-a09d-479f52f256df",
+    "user_plan": "free",
+    "locked": true,
+    "analysis": {
+      "skin_type": "combination",
+      "overall_score": 73,
+      "score_label": "average",
+      "issue_count": 3,
+      "issues_preview": [
+        {
+          "name": "Hydration optimization",
+          "locked": true,
+          "severity_locked": true,
+          "description_locked": true
+        },
+        {
+          "name": "Pore refinement",
+          "locked": true,
+          "severity_locked": true,
+          "description_locked": true
+        },
+        {
+          "name": "Skin barrier health",
+          "locked": true,
+          "severity_locked": true,
+          "description_locked": true
+        }
+      ]
+    },
+    "locked_features": [
+      "issue_details",
+      "full_routine",
+      "diet_plan",
+      "product_recommendations",
+      "progress_tracking",
+      "detailed_explanations"
+    ],
+    "preview": {
+      "issue_count": 3,
+      "routine_steps_count": 12,
+      "diet_items_count": 5,
+      "products_count": 7
+    },
+    "created_at": "2026-01-25T22:23:06.496482",
+    "image_hash": "fd64832213e6332b",
+    "upgrade_message": "You discovered what's affecting your skin. Unlock full analysis to see severity and solutions."
+  },
+  "validation_results": [
+    "\u2705 user_plan = 'free'",
+    "\u2705 locked = true",
+    "\ud83d\udcca issue_count = 3",
+    "\ud83d\udcca issues_preview length = 3",
+    "\u2705 CRITICAL: Issues detected (as expected)",
+    "\u2705 CRITICAL: issues_preview not empty",
+    "  \u2705 Issue 1: 'Hydration optimization' (locked: True)",
+    "  \u2705 Issue 2: 'Pore refinement' (locked: True)",
+    "  \u2705 Issue 3: 'Skin barrier health' (locked: True)",
+    "\u2705 CRITICAL: Issue details properly locked (no severity/description)",
+    "\u2705 issue_count matches issues_preview length",
+    "\u2705 locked_features: 6 features locked",
+    "\u2705 Premium features properly locked"
+  ],
+  "timestamp": "2026-01-25T22:23:06.635260"
+}
