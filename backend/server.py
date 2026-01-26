@@ -1700,7 +1700,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'Quick Actions',
         'latest_analysis': 'Latest Analysis',
         'issues_detected': 'issues detected',
-        'score': 'Score'
+        'score': 'Score',
+        'onboarding_1_title': 'Scan Your Skin',
+        'onboarding_1_desc': 'Take a photo of your face and get instant AI-powered skin analysis',
+        'onboarding_2_title': 'Track Progress',
+        'onboarding_2_desc': 'Monitor your skin health over time with detailed reports',
+        'onboarding_3_title': 'Get Recommendations',
+        'onboarding_3_desc': 'Receive personalized skincare routines and product suggestions',
+        'next': 'Next',
+        'get_started': 'Get Started',
+        'skip': 'Skip'
     },
     'fr': {
         'app_name': 'SkinAdvisor AI',
