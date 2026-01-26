@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import jwt
 import bcrypt
 import base64
-from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+from openai import OpenAI
 import json
 import re
 import secrets
