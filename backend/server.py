@@ -1764,7 +1764,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'Actions rapides',
         'latest_analysis': 'Dernière analyse',
         'issues_detected': 'problèmes détectés',
-        'score': 'Score'
+        'score': 'Score',
+        'onboarding_1_title': 'Analysez votre peau',
+        'onboarding_1_desc': 'Prenez une photo de votre visage et obtenez une analyse instantanée par IA',
+        'onboarding_2_title': 'Suivez vos progrès',
+        'onboarding_2_desc': 'Surveillez la santé de votre peau au fil du temps',
+        'onboarding_3_title': 'Recevez des recommandations',
+        'onboarding_3_desc': 'Obtenez des routines de soins personnalisées',
+        'next': 'Suivant',
+        'get_started': 'Commencer',
+        'skip': 'Passer'
     },
     'tr': {
         'app_name': 'SkinAdvisor AI',
@@ -1810,7 +1819,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'Hızlı İşlemler',
         'latest_analysis': 'Son Analiz',
         'issues_detected': 'sorun tespit edildi',
-        'score': 'Puan'
+        'score': 'Puan',
+        'onboarding_1_title': 'Cildinizi Tarayın',
+        'onboarding_1_desc': 'Yüzünüzün fotoğrafını çekin ve anında yapay zeka analizi alın',
+        'onboarding_2_title': 'İlerlemenizi Takip Edin',
+        'onboarding_2_desc': 'Cilt sağlığınızı zaman içinde izleyin',
+        'onboarding_3_title': 'Öneriler Alın',
+        'onboarding_3_desc': 'Kişiselleştirilmiş cilt bakım rutinleri alın',
+        'next': 'İleri',
+        'get_started': 'Başla',
+        'skip': 'Atla'
     },
     'it': {
         'app_name': 'SkinAdvisor AI',
@@ -1829,7 +1847,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'Azioni rapide',
         'latest_analysis': 'Ultima analisi',
         'issues_detected': 'problemi rilevati',
-        'score': 'Punteggio'
+        'score': 'Punteggio',
+        'onboarding_1_title': 'Scansiona la tua pelle',
+        'onboarding_1_desc': 'Scatta una foto del tuo viso e ottieni un\'analisi istantanea',
+        'onboarding_2_title': 'Monitora i progressi',
+        'onboarding_2_desc': 'Monitora la salute della tua pelle nel tempo',
+        'onboarding_3_title': 'Ricevi consigli',
+        'onboarding_3_desc': 'Ottieni routine personalizzate per la cura della pelle',
+        'next': 'Avanti',
+        'get_started': 'Inizia',
+        'skip': 'Salta'
     },
     'es': {
         'app_name': 'SkinAdvisor AI',
@@ -1848,7 +1875,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'Acciones rápidas',
         'latest_analysis': 'Último análisis',
         'issues_detected': 'problemas detectados',
-        'score': 'Puntuación'
+        'score': 'Puntuación',
+        'onboarding_1_title': 'Escanea tu piel',
+        'onboarding_1_desc': 'Toma una foto de tu rostro y obtén un análisis instantáneo',
+        'onboarding_2_title': 'Sigue tu progreso',
+        'onboarding_2_desc': 'Monitorea la salud de tu piel con el tiempo',
+        'onboarding_3_title': 'Recibe recomendaciones',
+        'onboarding_3_desc': 'Obtén rutinas de cuidado personalizadas',
+        'next': 'Siguiente',
+        'get_started': 'Comenzar',
+        'skip': 'Omitir'
     },
     'de': {
         'app_name': 'SkinAdvisor AI',
@@ -1867,7 +1903,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'Schnellaktionen',
         'latest_analysis': 'Letzte Analyse',
         'issues_detected': 'Probleme erkannt',
-        'score': 'Punktzahl'
+        'score': 'Punktzahl',
+        'onboarding_1_title': 'Scannen Sie Ihre Haut',
+        'onboarding_1_desc': 'Machen Sie ein Foto Ihres Gesichts und erhalten Sie eine sofortige Analyse',
+        'onboarding_2_title': 'Fortschritt verfolgen',
+        'onboarding_2_desc': 'Überwachen Sie Ihre Hautgesundheit im Laufe der Zeit',
+        'onboarding_3_title': 'Empfehlungen erhalten',
+        'onboarding_3_desc': 'Erhalten Sie personalisierte Hautpflege-Routinen',
+        'next': 'Weiter',
+        'get_started': 'Loslegen',
+        'skip': 'Überspringen'
     },
     'ar': {
         'app_name': 'SkinAdvisor AI',
@@ -1886,7 +1931,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'إجراءات سريعة',
         'latest_analysis': 'آخر تحليل',
         'issues_detected': 'مشاكل تم اكتشافها',
-        'score': 'النتيجة'
+        'score': 'النتيجة',
+        'onboarding_1_title': 'امسح بشرتك',
+        'onboarding_1_desc': 'التقط صورة لوجهك واحصل على تحليل فوري',
+        'onboarding_2_title': 'تتبع تقدمك',
+        'onboarding_2_desc': 'راقب صحة بشرتك مع مرور الوقت',
+        'onboarding_3_title': 'احصل على توصيات',
+        'onboarding_3_desc': 'احصل على روتين مخصص للعناية بالبشرة',
+        'next': 'التالي',
+        'get_started': 'ابدأ',
+        'skip': 'تخطي'
     },
     'zh': {
         'app_name': 'SkinAdvisor AI',
@@ -1905,7 +1959,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': '快捷操作',
         'latest_analysis': '最新分析',
         'issues_detected': '检测到的问题',
-        'score': '分数'
+        'score': '分数',
+        'onboarding_1_title': '扫描您的皮肤',
+        'onboarding_1_desc': '拍摄面部照片，获得即时AI分析',
+        'onboarding_2_title': '跟踪进度',
+        'onboarding_2_desc': '随时监测您的皮肤健康状况',
+        'onboarding_3_title': '获取建议',
+        'onboarding_3_desc': '获得个性化的护肤方案',
+        'next': '下一步',
+        'get_started': '开始',
+        'skip': '跳过'
     },
     'hi': {
         'app_name': 'SkinAdvisor AI',
@@ -1924,7 +1987,16 @@ BASE_TRANSLATIONS = {
         'quick_actions': 'त्वरित कार्य',
         'latest_analysis': 'नवीनतम विश्लेषण',
         'issues_detected': 'समस्याएं पाई गईं',
-        'score': 'स्कोर'
+        'score': 'स्कोर',
+        'onboarding_1_title': 'अपनी त्वचा स्कैन करें',
+        'onboarding_1_desc': 'अपने चेहरे की फोटो लें और तुरंत AI विश्लेषण प्राप्त करें',
+        'onboarding_2_title': 'प्रगति ट्रैक करें',
+        'onboarding_2_desc': 'समय के साथ अपनी त्वचा की सेहत पर नज़र रखें',
+        'onboarding_3_title': 'सुझाव प्राप्त करें',
+        'onboarding_3_desc': 'व्यक्तिगत त्वचा देखभाल रूटीन प्राप्त करें',
+        'next': 'अगला',
+        'get_started': 'शुरू करें',
+        'skip': 'छोड़ें'
     }
 }
 
