@@ -336,7 +336,9 @@ export default function MyRoutineScreen() {
         {/* Progress Stats */}
         <View style={styles.statsRow}>
           <Card style={[styles.statCard, { flex: 1, marginRight: 8 }]}>
-            <Text style={[styles.statValue, { color: theme.primary }]}>{progress.streak}</Text>
+            <Text style={[styles.statValue, { color: theme.primary }]}>
+              {serverProgress.streak > 0 ? serverProgress.streak : progress.streak}
+            </Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak 🔥</Text>
           </Card>
           <Card style={[styles.statCard, { flex: 1, marginLeft: 8 }]}>
@@ -344,6 +346,46 @@ export default function MyRoutineScreen() {
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Today</Text>
           </Card>
         </View>
+
+        {/* Bonus Points Card (only show if bonus points > 0) */}
+        {serverProgress.bonus_points > 0 && (
+          <Card style={[styles.bonusCard, { backgroundColor: '#FFF8E1' }]}>
+            <View style={styles.bonusContent}>
+              <Ionicons name="star" size={24} color="#FFB300" />
+              <View style={styles.bonusTextContainer}>
+                <Text style={[styles.bonusTitle, { color: '#FF8F00' }]}>
+                  +{serverProgress.bonus_points} Bonus Points Earned!
+                </Text>
+                <Text style={[styles.bonusSubtitle, { color: '#5D4037' }]}>
+                  Keep your streak for more bonuses (every 7 days)
+                </Text>
+              </View>
+            </View>
+          </Card>
+        )}
+
+        {/* Next Bonus Progress */}
+        {isPremium && serverProgress.streak > 0 && (
+          <Card style={[styles.nextBonusCard, { backgroundColor: theme.surface }]}>
+            <View style={styles.nextBonusHeader}>
+              <Text style={[styles.nextBonusTitle, { color: theme.text }]}>
+                Next Bonus: {7 - (serverProgress.streak % 7)} days
+              </Text>
+              <Text style={[styles.nextBonusPoints, { color: theme.primary }]}>+3 pts</Text>
+            </View>
+            <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    backgroundColor: theme.primary,
+                    width: `${((serverProgress.streak % 7) / 7) * 100}%` 
+                  }
+                ]} 
+              />
+            </View>
+          </Card>
+        )}
 
         {/* Morning Routine */}
         <View style={styles.section}>
