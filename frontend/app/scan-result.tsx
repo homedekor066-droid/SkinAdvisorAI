@@ -1557,4 +1557,26 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
+  // Medical Disclaimer Styles
+  medicalDisclaimer: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    marginBottom: 30,
+    borderWidth: 1,
+  },
+  disclaimerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  disclaimerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  disclaimerText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
 });
