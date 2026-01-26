@@ -848,6 +848,18 @@ export default function ScanResultScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Go to My Routine Button - Premium Users */}
+        {!isLocked && (
+          <TouchableOpacity 
+            style={[styles.goToRoutineButton, { backgroundColor: theme.info }]}
+            onPress={() => router.push('/my-routine')}
+          >
+            <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.goToRoutineText}>Go to My Routine</Text>
+            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+
         {/* Disclaimer */}
         <View style={[styles.disclaimer, { backgroundColor: theme.surface }]}>
           <Ionicons name="information-circle-outline" size={16} color={theme.textMuted} />
