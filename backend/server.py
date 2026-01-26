@@ -1642,6 +1642,121 @@ async def get_pricing():
         ]
     }
 
+# ==================== ROUTINE PROGRESS ENDPOINTS ====================
+
+class RoutineProgressUpdate(BaseModel):
+    completed_tasks: List[str]
+    streak: int
+    daily_completion_rate: float
+
+@api_router.get("/routine/progress")
+async def get_routine_progress(current_user: dict = Depends(get_current_user)):
+    """Get user's routine progress and streak bonus info"""
+    progress = await db.routine_progress.find_one({'user_id': current_user['id']})
+    
+    if not progress:
+        return {
+            'streak': 0,
+            'total_days_completed': 0,
+            'bonus_points': 0,
+            'last_completed_date': None,
+            'weekly_completion_rate': 0.0
+        }
+    
+    # Calculate bonus points: +3 for every 7-day streak
+    streak = progress.get('streak', 0)
+    bonus_points = (streak // 7) * 3
+    
+    return {
+        'streak': streak,
+        'total_days_completed': progress.get('total_days_completed', 0),
+        'bonus_points': bonus_points,
+        'last_completed_date': progress.get('last_completed_date'),
+        'weekly_completion_rate': progress.get('weekly_completion_rate', 0.0)
+    }
+
+@api_router.post("/routine/complete-day")
+async def complete_routine_day(current_user: dict = Depends(get_current_user)):
+    """Mark today's routine as completed and update streak"""
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    progress = await db.routine_progress.find_one({'user_id': current_user['id']})
+    
+    if progress:
+        last_date = progress.get('last_completed_date')
+        current_streak = progress.get('streak', 0)
+        total_days = progress.get('total_days_completed', 0)
+        
+        if last_date:
+            if isinstance(last_date, str):
+                last_date = datetime.fromisoformat(last_date.replace('Z', '+00:00'))
+            
+            days_diff = (today - last_date.replace(tzinfo=None)).days
+            
+            if days_diff == 0:
+                # Already completed today
+                return {
+                    'streak': current_streak,
+                    'bonus_earned': 0,
+                    'message': 'Already completed today!'
+                }
+            elif days_diff == 1:
+                # Consecutive day - increase streak
+                new_streak = current_streak + 1
+            else:
+                # Streak broken - start over
+                new_streak = 1
+        else:
+            new_streak = 1
+        
+        total_days += 1
+    else:
+        new_streak = 1
+        total_days = 1
+    
+    # Calculate bonus earned
+    old_bonus = ((progress.get('streak', 0) if progress else 0) // 7) * 3
+    new_bonus = (new_streak // 7) * 3
+    bonus_earned = new_bonus - old_bonus
+    
+    # Update progress
+    await db.routine_progress.update_one(
+        {'user_id': current_user['id']},
+        {
+            '$set': {
+                'user_id': current_user['id'],
+                'streak': new_streak,
+                'total_days_completed': total_days,
+                'last_completed_date': today.isoformat(),
+                'updated_at': datetime.utcnow().isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    # If bonus earned, notify
+    message = f'{new_streak} day streak!'
+    if bonus_earned > 0:
+        message = f'🎉 {new_streak} day streak! +{bonus_earned} bonus points earned!'
+    
+    return {
+        'streak': new_streak,
+        'total_days_completed': total_days,
+        'bonus_earned': bonus_earned,
+        'total_bonus': new_bonus,
+        'message': message
+    }
+
+@api_router.post("/routine/reset-streak")
+async def reset_streak(current_user: dict = Depends(get_current_user)):
+    """Reset user's streak (for testing or manual reset)"""
+    await db.routine_progress.update_one(
+        {'user_id': current_user['id']},
+        {'$set': {'streak': 0, 'last_completed_date': None}},
+        upsert=True
+    )
+    return {'success': True, 'message': 'Streak reset'}
+
 # ==================== TRANSLATIONS ====================
 
 BASE_TRANSLATIONS = {
