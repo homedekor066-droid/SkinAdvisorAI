@@ -64,18 +64,26 @@ export default function MyRoutineScreen() {
   const [lastScanDate, setLastScanDate] = useState<Date | null>(null);
 
   const isPremium = user?.plan === 'premium';
+  
+  // User-specific storage keys
+  const userId = user?.id || 'guest';
+  const TASKS_KEY = `routine_tasks_${userId}`;
+  const PROGRESS_KEY = `routine_progress_${userId}`;
+  const DATE_KEY = `routine_date_${userId}`;
 
   // Load saved routine state
   useEffect(() => {
-    loadRoutineState();
-    checkLastScanDate();
-  }, [token]);
+    if (user?.id) {
+      loadRoutineState();
+      checkLastScanDate();
+    }
+  }, [token, user?.id]);
 
   const loadRoutineState = async () => {
     try {
-      const savedTasks = await AsyncStorage.getItem('routine_tasks');
-      const savedProgress = await AsyncStorage.getItem('routine_progress');
-      const savedDate = await AsyncStorage.getItem('routine_date');
+      const savedTasks = await AsyncStorage.getItem(TASKS_KEY);
+      const savedProgress = await AsyncStorage.getItem(PROGRESS_KEY);
+      const savedDate = await AsyncStorage.getItem(DATE_KEY);
       
       const today = format(new Date(), 'yyyy-MM-dd');
       
@@ -97,7 +105,7 @@ export default function MyRoutineScreen() {
         
         // Reset tasks for new day
         setTasks(DEFAULT_ROUTINE);
-        await AsyncStorage.setItem('routine_date', today);
+        await AsyncStorage.setItem(DATE_KEY, today);
       } else if (savedTasks) {
         setTasks(JSON.parse(savedTasks));
       }
@@ -124,9 +132,9 @@ export default function MyRoutineScreen() {
 
   const saveRoutineState = async (newTasks: RoutineTask[], newProgress: RoutineProgress) => {
     try {
-      await AsyncStorage.setItem('routine_tasks', JSON.stringify(newTasks));
-      await AsyncStorage.setItem('routine_progress', JSON.stringify(newProgress));
-      await AsyncStorage.setItem('routine_date', format(new Date(), 'yyyy-MM-dd'));
+      await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(newTasks));
+      await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(newProgress));
+      await AsyncStorage.setItem(DATE_KEY, format(new Date(), 'yyyy-MM-dd'));
     } catch (error) {
       console.error('Failed to save routine state:', error);
     }
