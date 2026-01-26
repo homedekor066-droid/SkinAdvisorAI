@@ -1352,7 +1352,7 @@ async def analyze_skin(
 
 @api_router.get("/scan/history")
 async def get_scan_history(current_user: dict = Depends(get_current_user)):
-    """Get user's scan history with score data for progress tracking"""
+    """Get user's scan history with score data and images for progress tracking"""
     scans = await db.scans.find(
         {'user_id': current_user['id']}
     ).sort('created_at', -1).to_list(100)
@@ -1363,7 +1363,7 @@ async def get_scan_history(current_user: dict = Depends(get_current_user)):
             'analysis': scan.get('analysis'),
             'score_data': scan.get('score_data'),
             'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at'],
-            'has_image': bool(scan.get('image_base64')),
+            'image_base64': scan.get('image_base64'),  # Include image for history display
             'image_hash': scan.get('image_hash')
         }
         for scan in scans
