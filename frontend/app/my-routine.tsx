@@ -1,0 +1,484 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../src/context/ThemeContext';
+import { useI18n } from '../src/context/I18nContext';
+import { useAuth } from '../src/context/AuthContext';
+import { skinService } from '../src/services/skinService';
+import { Card } from '../src/components';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { format, differenceInDays, startOfDay, isToday, isYesterday } from 'date-fns';
+
+interface RoutineTask {
+  id: string;
+  name: string;
+  type: 'morning' | 'evening' | 'weekly';
+  completed: boolean;
+  icon: string;
+}
+
+interface RoutineProgress {
+  streak: number;
+  lastCompletedDate: string | null;
+  weeklyCompletionRate: number;
+  totalTasksCompleted: number;
+}
+
+const DEFAULT_ROUTINE: RoutineTask[] = [
+  { id: 'cleanser_am', name: 'Cleanser', type: 'morning', completed: false, icon: 'water-outline' },
+  { id: 'toner_am', name: 'Toner', type: 'morning', completed: false, icon: 'flask-outline' },
+  { id: 'serum_am', name: 'Serum', type: 'morning', completed: false, icon: 'sparkles-outline' },
+  { id: 'moisturizer_am', name: 'Moisturizer', type: 'morning', completed: false, icon: 'leaf-outline' },
+  { id: 'sunscreen', name: 'Sunscreen (SPF 30+)', type: 'morning', completed: false, icon: 'sunny-outline' },
+  { id: 'cleanser_pm', name: 'Cleanser', type: 'evening', completed: false, icon: 'water-outline' },
+  { id: 'treatment', name: 'Treatment', type: 'evening', completed: false, icon: 'medical-outline' },
+  { id: 'moisturizer_pm', name: 'Night Cream', type: 'evening', completed: false, icon: 'moon-outline' },
+  { id: 'exfoliate', name: 'Exfoliate', type: 'weekly', completed: false, icon: 'refresh-outline' },
+  { id: 'mask', name: 'Face Mask', type: 'weekly', completed: false, icon: 'happy-outline' },
+];
+
+export default function MyRoutineScreen() {
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { token, user } = useAuth();
+  const router = useRouter();
+  
+  const [tasks, setTasks] = useState<RoutineTask[]>(DEFAULT_ROUTINE);
+  const [progress, setProgress] = useState<RoutineProgress>({
+    streak: 0,
+    lastCompletedDate: null,
+    weeklyCompletionRate: 0,
+    totalTasksCompleted: 0,
+  });
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastScanDate, setLastScanDate] = useState<Date | null>(null);
+
+  const isPremium = user?.plan === 'premium';
+
+  // Load saved routine state
+  useEffect(() => {
+    loadRoutineState();
+    checkLastScanDate();
+  }, [token]);
+
+  const loadRoutineState = async () => {
+    try {
+      const savedTasks = await AsyncStorage.getItem('routine_tasks');
+      const savedProgress = await AsyncStorage.getItem('routine_progress');
+      const savedDate = await AsyncStorage.getItem('routine_date');
+      
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      // If saved date is not today, reset daily tasks but keep streak
+      if (savedDate !== today) {
+        // Check if streak should continue
+        if (savedProgress) {
+          const parsedProgress = JSON.parse(savedProgress);
+          const lastDate = parsedProgress.lastCompletedDate;
+          
+          if (lastDate) {
+            const daysDiff = differenceInDays(new Date(), new Date(lastDate));
+            if (daysDiff > 1) {
+              // Streak broken
+              setProgress(prev => ({ ...prev, streak: 0 }));
+            }
+          }
+        }
+        
+        // Reset tasks for new day
+        setTasks(DEFAULT_ROUTINE);
+        await AsyncStorage.setItem('routine_date', today);
+      } else if (savedTasks) {
+        setTasks(JSON.parse(savedTasks));
+      }
+      
+      if (savedProgress) {
+        setProgress(JSON.parse(savedProgress));
+      }
+    } catch (error) {
+      console.error('Failed to load routine state:', error);
+    }
+  };
+
+  const checkLastScanDate = async () => {
+    if (!token) return;
+    try {
+      const scans = await skinService.getScanHistory(token);
+      if (scans.length > 0) {
+        setLastScanDate(new Date(scans[0].created_at));
+      }
+    } catch (error) {
+      console.error('Failed to check scan history:', error);
+    }
+  };
+
+  const saveRoutineState = async (newTasks: RoutineTask[], newProgress: RoutineProgress) => {
+    try {
+      await AsyncStorage.setItem('routine_tasks', JSON.stringify(newTasks));
+      await AsyncStorage.setItem('routine_progress', JSON.stringify(newProgress));
+      await AsyncStorage.setItem('routine_date', format(new Date(), 'yyyy-MM-dd'));
+    } catch (error) {
+      console.error('Failed to save routine state:', error);
+    }
+  };
+
+  const toggleTask = async (taskId: string) => {
+    if (!isPremium) {
+      Alert.alert(
+        'Premium Feature',
+        'Track your daily routine progress with Premium.',
+        [
+          { text: 'Later', style: 'cancel' },
+          { text: 'Upgrade', onPress: () => router.push('/paywall') }
+        ]
+      );
+      return;
+    }
+
+    const newTasks = tasks.map(task =>
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    );
+    setTasks(newTasks);
+
+    // Calculate completion and update progress
+    const completedCount = newTasks.filter(t => t.completed).length;
+    const completionRate = Math.round((completedCount / newTasks.length) * 100);
+    
+    let newStreak = progress.streak;
+    const allDailyComplete = newTasks
+      .filter(t => t.type !== 'weekly')
+      .every(t => t.completed);
+    
+    if (allDailyComplete && !isToday(new Date(progress.lastCompletedDate || 0))) {
+      newStreak = progress.streak + 1;
+    }
+
+    const newProgress: RoutineProgress = {
+      streak: newStreak,
+      lastCompletedDate: allDailyComplete ? new Date().toISOString() : progress.lastCompletedDate,
+      weeklyCompletionRate: completionRate,
+      totalTasksCompleted: progress.totalTasksCompleted + (newTasks.find(t => t.id === taskId)?.completed ? 1 : -1),
+    };
+    
+    setProgress(newProgress);
+    await saveRoutineState(newTasks, newProgress);
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadRoutineState();
+    await checkLastScanDate();
+    setRefreshing(false);
+  }, [token]);
+
+  // Calculate today's progress
+  const morningTasks = tasks.filter(t => t.type === 'morning');
+  const eveningTasks = tasks.filter(t => t.type === 'evening');
+  const weeklyTasks = tasks.filter(t => t.type === 'weekly');
+  
+  const morningCompleted = morningTasks.filter(t => t.completed).length;
+  const eveningCompleted = eveningTasks.filter(t => t.completed).length;
+  const dailyProgress = Math.round(((morningCompleted + eveningCompleted) / (morningTasks.length + eveningTasks.length)) * 100);
+
+  // Check if weekly scan is due
+  const showWeeklyScanReminder = lastScanDate && differenceInDays(new Date(), lastScanDate) >= 7;
+
+  const renderTaskItem = (task: RoutineTask) => (
+    <TouchableOpacity
+      key={task.id}
+      style={[
+        styles.taskItem,
+        { backgroundColor: task.completed ? theme.success + '15' : theme.surface },
+        !isPremium && styles.taskItemLocked
+      ]}
+      onPress={() => toggleTask(task.id)}
+    >
+      <View style={[styles.taskIcon, { backgroundColor: task.completed ? theme.success + '20' : theme.primary + '15' }]}>
+        <Ionicons 
+          name={task.icon as any} 
+          size={20} 
+          color={task.completed ? theme.success : theme.primary} 
+        />
+      </View>
+      <Text style={[styles.taskName, { color: theme.text }]}>{task.name}</Text>
+      <View style={[
+        styles.checkbox,
+        { borderColor: task.completed ? theme.success : theme.border },
+        task.completed && { backgroundColor: theme.success }
+      ]}>
+        {task.completed && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: theme.text }]}>My Routine</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Weekly Scan Reminder */}
+        {showWeeklyScanReminder && (
+          <TouchableOpacity 
+            style={[styles.reminderBanner, { backgroundColor: '#E3F2FD' }]}
+            onPress={() => router.push('/(tabs)/scan')}
+          >
+            <Ionicons name="scan-outline" size={24} color="#1976D2" />
+            <View style={styles.reminderText}>
+              <Text style={[styles.reminderTitle, { color: '#1976D2' }]}>
+                Weekly Skin Scan Ready
+              </Text>
+              <Text style={[styles.reminderSubtitle, { color: '#0D47A1' }]}>
+                Track your progress with a new scan
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#1976D2" />
+          </TouchableOpacity>
+        )}
+
+        {/* Progress Stats */}
+        <View style={styles.statsRow}>
+          <Card style={[styles.statCard, { flex: 1, marginRight: 8 }]}>
+            <Text style={[styles.statValue, { color: theme.primary }]}>{progress.streak}</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak 🔥</Text>
+          </Card>
+          <Card style={[styles.statCard, { flex: 1, marginLeft: 8 }]}>
+            <Text style={[styles.statValue, { color: theme.success }]}>{dailyProgress}%</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Today</Text>
+          </Card>
+        </View>
+
+        {/* Consistency Bonus Info */}
+        {isPremium && progress.weeklyCompletionRate >= 80 && (
+          <View style={[styles.bonusBanner, { backgroundColor: '#E8F5E9' }]}>
+            <Ionicons name="trophy" size={20} color="#4CAF50" />
+            <Text style={[styles.bonusText, { color: '#2E7D32' }]}>
+              Routine consistency bonus applied: +3 to your next score!
+            </Text>
+          </View>
+        )}
+
+        {/* Morning Routine */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="sunny" size={20} color="#FFC107" />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Morning Routine</Text>
+            <Text style={[styles.sectionProgress, { color: theme.textSecondary }]}>
+              {morningCompleted}/{morningTasks.length}
+            </Text>
+          </View>
+          {morningTasks.map(renderTaskItem)}
+        </View>
+
+        {/* Evening Routine */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="moon" size={20} color="#7C4DFF" />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Evening Routine</Text>
+            <Text style={[styles.sectionProgress, { color: theme.textSecondary }]}>
+              {eveningCompleted}/{eveningTasks.length}
+            </Text>
+          </View>
+          {eveningTasks.map(renderTaskItem)}
+        </View>
+
+        {/* Weekly Tasks */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="calendar" size={20} color="#00BCD4" />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Weekly</Text>
+          </View>
+          {weeklyTasks.map(renderTaskItem)}
+        </View>
+
+        {/* Premium Lock */}
+        {!isPremium && (
+          <TouchableOpacity 
+            style={[styles.premiumBanner, { backgroundColor: theme.primary }]}
+            onPress={() => router.push('/paywall')}
+          >
+            <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+            <View style={styles.premiumBannerText}>
+              <Text style={styles.premiumBannerTitle}>
+                Unlock Routine Tracking
+              </Text>
+              <Text style={styles.premiumBannerSubtitle}>
+                Track habits, build streaks, improve your skin
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  reminderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  reminderText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  reminderTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reminderSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  statCard: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  statValue: {
+    fontSize: 32,
+    fontWeight: '700',
+  },
+  statLabel: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  bonusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  bonusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 10,
+    flex: 1,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
+  },
+  sectionProgress: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  taskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  taskItemLocked: {
+    opacity: 0.6,
+  },
+  taskIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  taskName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 10,
+  },
+  premiumBannerText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  premiumBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  premiumBannerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 13,
+    marginTop: 2,
+  },
+});
