@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Image,
+  ImageBackground,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -204,31 +205,34 @@ export default function ProgressScreen() {
                 </View>
 
                 <View style={styles.scanContent}>
-                  {/* Photo Circle with Score Overlay */}
+                  {/* Photo Circle with Score Overlay - Score centered on top of photo */}
                   <View style={[styles.photoCircleContainer, { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
                     {scan.image_base64 ? (
-                      <Image
+                      <ImageBackground
                         source={{ uri: `data:image/jpeg;base64,${scan.image_base64}` }}
-                        style={styles.scanPhoto}
-                        resizeMode="cover"
-                      />
+                        style={styles.scanPhotoBackground}
+                        imageStyle={styles.scanPhotoBackgroundImage}
+                      >
+                        {/* Score centered on photo with dark overlay */}
+                        <View style={styles.scorePhotoOverlay}>
+                          <Text style={styles.scoreOnPhotoText}>
+                            {scan.analysis?.overall_score || '--'}
+                          </Text>
+                        </View>
+                      </ImageBackground>
                     ) : (
                       <View style={[styles.placeholderCircle, { backgroundColor: theme.surface }]}>
-                        <Ionicons name="person-outline" size={28} color={theme.textMuted} />
+                        <Text style={[styles.placeholderScoreText, { color: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                          {scan.analysis?.overall_score || '--'}
+                        </Text>
                       </View>
                     )}
-                    {/* Score overlay on photo */}
-                    <View style={[styles.scoreOverlay, { backgroundColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
-                      <Text style={styles.scoreOverlayText}>
-                        {scan.analysis?.overall_score || '--'}
-                      </Text>
-                    </View>
                   </View>
                   
                   {scan.analysis && (
                     <>
                       <View style={styles.scanDetails}>
-                        {/* Score Badge */}
+                        {/* Score Badge with matching color text */}
                         <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(scan.analysis.overall_score) + '20' }]}>
                           <Text style={[styles.scoreBadgeText, { color: getScoreColor(scan.analysis.overall_score) }]}>
                             Score: {scan.analysis.overall_score}
@@ -399,11 +403,30 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     overflow: 'hidden',
     marginRight: 16,
-    position: 'relative',
   },
-  scanPhoto: {
+  scanPhotoBackground: {
     width: '100%',
     height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanPhotoBackgroundImage: {
+    borderRadius: 29,
+  },
+  scorePhotoOverlay: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreOnPhotoText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   placeholderCircle: {
     width: '100%',
@@ -411,21 +434,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scoreOverlay: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  scoreOverlayText: {
-    color: '#FFFFFF',
-    fontSize: 11,
+  placeholderScoreText: {
+    fontSize: 20,
     fontWeight: '700',
   },
   scoreBadge: {
