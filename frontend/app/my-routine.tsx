@@ -63,6 +63,11 @@ export default function MyRoutineScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastScanDate, setLastScanDate] = useState<Date | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [serverProgress, setServerProgress] = useState<{
+    streak: number;
+    bonus_points: number;
+    total_days_completed: number;
+  }>({ streak: 0, bonus_points: 0, total_days_completed: 0 });
 
   const isPremium = user?.plan === 'premium';
   
