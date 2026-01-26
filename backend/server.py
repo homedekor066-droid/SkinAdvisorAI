@@ -1698,7 +1698,9 @@ BASE_TRANSLATIONS = {
         'severe': 'severe',
         'confidence': 'confidence',
         'quick_actions': 'Quick Actions',
-        'latest_analysis': 'Latest Analysis'
+        'latest_analysis': 'Latest Analysis',
+        'issues_detected': 'issues detected',
+        'score': 'Score'
     },
     'fr': {
         'app_name': 'SkinAdvisor AI',
@@ -1751,7 +1753,9 @@ BASE_TRANSLATIONS = {
         'score_good': 'Bon état de la peau',
         'score_excellent': 'Excellent',
         'quick_actions': 'Actions rapides',
-        'latest_analysis': 'Dernière analyse'
+        'latest_analysis': 'Dernière analyse',
+        'issues_detected': 'problèmes détectés',
+        'score': 'Score'
     },
     'tr': {
         'app_name': 'SkinAdvisor AI',
@@ -1795,7 +1799,9 @@ BASE_TRANSLATIONS = {
         'normal': 'Normal',
         'sensitive': 'Hassas',
         'quick_actions': 'Hızlı İşlemler',
-        'latest_analysis': 'Son Analiz'
+        'latest_analysis': 'Son Analiz',
+        'issues_detected': 'sorun tespit edildi',
+        'score': 'Puan'
     },
     'it': {
         'app_name': 'SkinAdvisor AI',
