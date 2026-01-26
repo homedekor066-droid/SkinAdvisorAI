@@ -95,7 +95,7 @@ export interface ScanHistoryItem {
   analysis: SkinAnalysisResult;
   score_data?: ScoreData;
   created_at: string;
-  has_image: boolean;
+  image_base64?: string;
   image_hash?: string;
 }
 
