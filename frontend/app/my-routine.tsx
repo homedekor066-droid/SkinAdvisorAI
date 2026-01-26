@@ -212,8 +212,30 @@ export default function MyRoutineScreen() {
       .filter(t => t.type !== 'weekly')
       .every(t => t.completed);
     
+    // If all daily tasks completed, sync with server
     if (allDailyComplete && !isToday(new Date(progress.lastCompletedDate || 0))) {
-      newStreak = progress.streak + 1;
+      try {
+        const result = await skinService.completeRoutineDay(token!);
+        newStreak = result.streak;
+        setServerProgress(prev => ({
+          ...prev,
+          streak: result.streak,
+          bonus_points: result.total_bonus,
+          total_days_completed: result.total_days_completed
+        }));
+        
+        // Show bonus notification if earned
+        if (result.bonus_earned > 0) {
+          Alert.alert(
+            '🎉 Bonus Points Earned!',
+            result.message,
+            [{ text: 'Awesome!', style: 'default' }]
+          );
+        }
+      } catch (error) {
+        console.error('Failed to sync with server:', error);
+        newStreak = progress.streak + 1;
+      }
     }
 
     const newProgress: RoutineProgress = {
