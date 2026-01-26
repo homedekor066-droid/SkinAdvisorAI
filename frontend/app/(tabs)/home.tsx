@@ -69,6 +69,10 @@ export default function HomeScreen() {
 
   const latestScan = recentScans[0];
 
+  // Check if weekly scan reminder should show (more than 7 days since last scan)
+  const showWeeklyScanReminder = latestScan && 
+    (new Date().getTime() - new Date(latestScan.created_at).getTime()) > 7 * 24 * 60 * 60 * 1000;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
@@ -95,6 +99,25 @@ export default function HomeScreen() {
             <Ionicons name="notifications-outline" size={24} color={theme.text} />
           </TouchableOpacity>
         </View>
+
+        {/* Weekly Scan Reminder Banner */}
+        {showWeeklyScanReminder && (
+          <TouchableOpacity 
+            style={[styles.reminderBanner, { backgroundColor: '#E3F2FD' }]}
+            onPress={() => router.push('/(tabs)/scan')}
+          >
+            <Ionicons name="scan-outline" size={24} color="#1976D2" />
+            <View style={styles.reminderText}>
+              <Text style={[styles.reminderTitle, { color: '#1976D2' }]}>
+                Your weekly skin scan is ready
+              </Text>
+              <Text style={[styles.reminderSubtitle, { color: '#0D47A1' }]}>
+                Track your progress with a new scan
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#1976D2" />
+          </TouchableOpacity>
+        )}
 
         {/* Quick Scan Card */}
         <Card style={[styles.scanCard, { backgroundColor: theme.primary }]}>
