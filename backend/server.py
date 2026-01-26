@@ -1818,7 +1818,9 @@ BASE_TRANSLATIONS = {
         'skin_type': 'Tipo di pelle',
         'skin_issues': 'Problemi della pelle',
         'quick_actions': 'Azioni rapide',
-        'latest_analysis': 'Ultima analisi'
+        'latest_analysis': 'Ultima analisi',
+        'issues_detected': 'problemi rilevati',
+        'score': 'Punteggio'
     },
     'es': {
         'app_name': 'SkinAdvisor AI',
@@ -1835,7 +1837,9 @@ BASE_TRANSLATIONS = {
         'skin_type': 'Tipo de piel',
         'skin_issues': 'Problemas de piel',
         'quick_actions': 'Acciones rápidas',
-        'latest_analysis': 'Último análisis'
+        'latest_analysis': 'Último análisis',
+        'issues_detected': 'problemas detectados',
+        'score': 'Puntuación'
     },
     'de': {
         'app_name': 'SkinAdvisor AI',
@@ -1852,7 +1856,9 @@ BASE_TRANSLATIONS = {
         'skin_type': 'Hauttyp',
         'skin_issues': 'Hautprobleme',
         'quick_actions': 'Schnellaktionen',
-        'latest_analysis': 'Letzte Analyse'
+        'latest_analysis': 'Letzte Analyse',
+        'issues_detected': 'Probleme erkannt',
+        'score': 'Punktzahl'
     },
     'ar': {
         'app_name': 'SkinAdvisor AI',
@@ -1869,7 +1875,9 @@ BASE_TRANSLATIONS = {
         'skin_type': 'نوع البشرة',
         'skin_issues': 'مشاكل البشرة',
         'quick_actions': 'إجراءات سريعة',
-        'latest_analysis': 'آخر تحليل'
+        'latest_analysis': 'آخر تحليل',
+        'issues_detected': 'مشاكل تم اكتشافها',
+        'score': 'النتيجة'
     },
     'zh': {
         'app_name': 'SkinAdvisor AI',
@@ -1886,7 +1894,9 @@ BASE_TRANSLATIONS = {
         'skin_type': '皮肤类型',
         'skin_issues': '皮肤问题',
         'quick_actions': '快捷操作',
-        'latest_analysis': '最新分析'
+        'latest_analysis': '最新分析',
+        'issues_detected': '检测到的问题',
+        'score': '分数'
     },
     'hi': {
         'app_name': 'SkinAdvisor AI',
@@ -1903,7 +1913,9 @@ BASE_TRANSLATIONS = {
         'skin_type': 'त्वचा का प्रकार',
         'skin_issues': 'त्वचा की समस्याएं',
         'quick_actions': 'त्वरित कार्य',
-        'latest_analysis': 'नवीनतम विश्लेषण'
+        'latest_analysis': 'नवीनतम विश्लेषण',
+        'issues_detected': 'समस्याएं पाई गईं',
+        'score': 'स्कोर'
     }
 }
 
