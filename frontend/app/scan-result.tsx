@@ -1531,4 +1531,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  // Go to Routine Button
+  goToRoutineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 8,
+  },
+  goToRoutineText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
 });
