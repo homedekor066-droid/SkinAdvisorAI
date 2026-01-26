@@ -270,16 +270,6 @@ export default function MyRoutineScreen() {
           </Card>
         </View>
 
-        {/* Consistency Bonus Info */}
-        {isPremium && progress.weeklyCompletionRate >= 80 && (
-          <View style={[styles.bonusBanner, { backgroundColor: '#E8F5E9' }]}>
-            <Ionicons name="trophy" size={20} color="#4CAF50" />
-            <Text style={[styles.bonusText, { color: '#2E7D32' }]}>
-              Routine consistency bonus applied: +3 to your next score!
-            </Text>
-          </View>
-        )}
-
         {/* Morning Routine */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
