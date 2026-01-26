@@ -1357,17 +1357,30 @@ async def get_scan_history(current_user: dict = Depends(get_current_user)):
         {'user_id': current_user['id']}
     ).sort('created_at', -1).to_list(100)
     
-    return [
-        {
-            'id': scan['id'],
-            'analysis': scan.get('analysis'),
-            'score_data': scan.get('score_data'),
-            'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at'],
-            'image_base64': scan.get('image_base64'),  # Include image for history display
-            'image_hash': scan.get('image_hash')
+    result = []
+    for scan in scans:
+        analysis = scan.get('analysis', {})
+        score_data = scan.get('score_data', {})
+        
+        # Ensure overall_score is always present in analysis
+        overall_score = analysis.get('overall_score') or score_data.get('score', 65)
+        
+        # Merge overall_score into analysis for frontend consistency
+        analysis_with_score = {
+            **analysis,
+            'overall_score': overall_score
         }
-        for scan in scans
-    ]
+        
+        result.append({
+            'id': scan['id'],
+            'analysis': analysis_with_score,
+            'score_data': score_data,
+            'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at'],
+            'image_base64': scan.get('image_base64'),
+            'image_hash': scan.get('image_hash')
+        })
+    
+    return result
 
 @api_router.get("/scan/{scan_id}")
 async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current_user)):
