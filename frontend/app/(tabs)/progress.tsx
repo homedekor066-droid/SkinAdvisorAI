@@ -392,17 +392,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   // Photo styles
-  photoContainer: {
+  photoCircleContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
     borderWidth: 3,
     overflow: 'hidden',
     marginRight: 16,
+    position: 'relative',
   },
   scanPhoto: {
     width: '100%',
     height: '100%',
+  },
+  placeholderCircle: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreOverlay: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  scoreOverlayText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   scoreBadge: {
     paddingHorizontal: 10,
