@@ -392,4 +392,28 @@ const styles = StyleSheet.create({
   issuesText: {
     fontSize: 12,
   },
+  // Photo styles
+  photoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 3,
+    overflow: 'hidden',
+    marginRight: 16,
+  },
+  scanPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  scoreBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  scoreBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
