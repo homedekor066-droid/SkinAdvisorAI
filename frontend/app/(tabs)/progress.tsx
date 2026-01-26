@@ -204,19 +204,37 @@ export default function ProgressScreen() {
                 </View>
 
                 <View style={styles.scanContent}>
+                  {/* Scan Photo Thumbnail */}
+                  {scan.image_base64 ? (
+                    <View style={[styles.photoContainer, { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                      <Image
+                        source={{ uri: `data:image/jpeg;base64,${scan.image_base64}` }}
+                        style={styles.scanPhoto}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ) : (
+                    <View style={[styles.scoreSection]}>
+                      <View style={[
+                        styles.scoreCircle,
+                        { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }
+                      ]}>
+                        <Text style={[styles.scoreValue, { color: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                          {scan.analysis?.overall_score || '--'}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                  
                   {scan.analysis && (
                     <>
-                      <View style={styles.scoreSection}>
-                        <View style={[
-                          styles.scoreCircle,
-                          { borderColor: getScoreColor(scan.analysis.overall_score) }
-                        ]}>
-                          <Text style={[styles.scoreValue, { color: theme.text }]}>
-                            {scan.analysis.overall_score}
+                      <View style={styles.scanDetails}>
+                        {/* Score Badge */}
+                        <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(scan.analysis.overall_score) + '20' }]}>
+                          <Text style={[styles.scoreBadgeText, { color: getScoreColor(scan.analysis.overall_score) }]}>
+                            Score: {scan.analysis.overall_score}
                           </Text>
                         </View>
-                      </View>
-                      <View style={styles.scanDetails}>
                         <View style={styles.skinTypeRow}>
                           <Text style={[styles.skinTypeLabel, { color: theme.textSecondary }]}>
                             {t('skin_type')}:
@@ -234,7 +252,7 @@ export default function ProgressScreen() {
                           </View>
                         </View>
                         <Text style={[styles.issuesText, { color: theme.textMuted }]}>
-                          {scan.analysis.issues?.length || 0} issues detected
+                          {scan.analysis.issues?.length || scan.analysis.issue_count || 0} issues detected
                         </Text>
                       </View>
                       <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
