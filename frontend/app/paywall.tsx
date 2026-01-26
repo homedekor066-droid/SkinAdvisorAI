@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -15,9 +17,23 @@ import { useAuth } from '../src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
+// RevenueCat imports - will fail gracefully in Expo Go
+let Purchases: any = null;
+let PurchasesPackage: any = null;
+try {
+  const revenueCat = require('react-native-purchases');
+  Purchases = revenueCat.default;
+  PurchasesPackage = revenueCat.PurchasesPackage;
+} catch (e) {
+  console.log('[Paywall] RevenueCat not available (Expo Go mode)');
+}
+
 const { width } = Dimensions.get('window');
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+// RevenueCat API Key
+const REVENUECAT_API_KEY = 'test_UFrvEOtYX3vxvCdKOhjqgykcgKj';
 
 interface PricingOption {
   id: string;
@@ -26,13 +42,15 @@ interface PricingOption {
   period: string;
   savings?: string;
   popular?: boolean;
+  package?: any;
 }
 
-const pricingOptions: PricingOption[] = [
+// Default pricing (used when RevenueCat is not available)
+const defaultPricingOptions: PricingOption[] = [
   {
     id: 'yearly',
     name: 'Yearly',
-    price: '€59.99',
+    price: '$59.99',
     period: '/year',
     savings: 'Save 50%',
     popular: true,
@@ -40,7 +58,7 @@ const pricingOptions: PricingOption[] = [
   {
     id: 'monthly',
     name: 'Monthly',
-    price: '€9.99',
+    price: '$9.99',
     period: '/month',
   },
 ];
@@ -56,13 +74,83 @@ const features = [
 
 export default function PaywallScreen() {
   const { theme } = useTheme();
-  const { token, refreshUser } = useAuth();
+  const { token, refreshUser, user } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams<{ scanId?: string }>();
   
   const [selectedPlan, setSelectedPlan] = useState('yearly');
   const [loading, setLoading] = useState(false);
+  const [loadingOfferings, setLoadingOfferings] = useState(true);
   const [error, setError] = useState('');
+  const [pricingOptions, setPricingOptions] = useState<PricingOption[]>(defaultPricingOptions);
+  const [revenueCatAvailable, setRevenueCatAvailable] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+
+  // Initialize RevenueCat and fetch offerings
+  useEffect(() => {
+    initializeRevenueCat();
+  }, []);
+
+  const initializeRevenueCat = async () => {
+    if (!Purchases) {
+      console.log('[Paywall] RevenueCat not available, using default pricing');
+      setLoadingOfferings(false);
+      return;
+    }
+
+    try {
+      // Configure RevenueCat
+      await Purchases.configure({
+        apiKey: REVENUECAT_API_KEY,
+      });
+
+      // Login user if authenticated
+      if (user?.id) {
+        await Purchases.logIn(user.id);
+      }
+
+      // Fetch offerings
+      const offerings = await Purchases.getOfferings();
+      console.log('[Paywall] Offerings:', offerings);
+
+      if (offerings.current) {
+        const options: PricingOption[] = [];
+
+        // Yearly package
+        if (offerings.current.annual) {
+          options.push({
+            id: 'yearly',
+            name: 'Yearly',
+            price: offerings.current.annual.product.priceString,
+            period: '/year',
+            savings: 'Save 50%',
+            popular: true,
+            package: offerings.current.annual,
+          });
+        }
+
+        // Monthly package
+        if (offerings.current.monthly) {
+          options.push({
+            id: 'monthly',
+            name: 'Monthly',
+            price: offerings.current.monthly.product.priceString,
+            period: '/month',
+            package: offerings.current.monthly,
+          });
+        }
+
+        if (options.length > 0) {
+          setPricingOptions(options);
+          setRevenueCatAvailable(true);
+        }
+      }
+    } catch (e) {
+      console.error('[Paywall] RevenueCat init error:', e);
+    } finally {
+      setLoadingOfferings(false);
+    }
+  };
 
   const handleUpgrade = async () => {
     if (!token) {
@@ -73,33 +161,122 @@ export default function PaywallScreen() {
     setLoading(true);
     setError('');
 
+    const selectedOption = pricingOptions.find(o => o.id === selectedPlan);
+
+    // If RevenueCat is available and we have a package, use it
+    if (revenueCatAvailable && selectedOption?.package && Purchases) {
+      try {
+        const { customerInfo } = await Purchases.purchasePackage(selectedOption.package);
+        
+        // Check if premium entitlement is active
+        if (customerInfo.entitlements.active['premium']) {
+          // Sync with backend
+          await syncSubscriptionWithBackend();
+          
+          Alert.alert(
+            'Success!',
+            'Welcome to Premium! Enjoy all features.',
+            [{ text: 'Continue', onPress: navigateAfterPurchase }]
+          );
+        }
+      } catch (e: any) {
+        if (e.userCancelled) {
+          console.log('[Paywall] User cancelled purchase');
+        } else {
+          setError(e.message || 'Purchase failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Fallback to mock upgrade (for Expo Go testing)
+      try {
+        await axios.post(
+          `${API_URL}/api/subscription/upgrade`,
+          { plan: 'premium' },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // Refresh user data to get updated plan
+        if (refreshUser) {
+          await refreshUser();
+        }
+
+        navigateAfterPurchase();
+      } catch (err: any) {
+        setError(err.response?.data?.detail || 'Failed to upgrade. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    if (!Purchases) {
+      Alert.alert('Not Available', 'Restore purchases is only available in the production app.');
+      return;
+    }
+
+    setRestoring(true);
+    try {
+      const customerInfo = await Purchases.restorePurchases();
+      
+      if (customerInfo.entitlements.active['premium']) {
+        await syncSubscriptionWithBackend();
+        Alert.alert(
+          'Restored!',
+          'Your subscription has been restored.',
+          [{ text: 'Continue', onPress: navigateAfterPurchase }]
+        );
+      } else {
+        Alert.alert('No Subscription', 'No active subscription found to restore.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to restore purchases.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const syncSubscriptionWithBackend = async () => {
     try {
       await axios.post(
         `${API_URL}/api/subscription/upgrade`,
-        { plan: 'premium' },
+        { plan: 'premium', source: 'revenuecat' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Refresh user data to get updated plan
+      
       if (refreshUser) {
         await refreshUser();
       }
-
-      // Navigate to scan result if we have a scanId, otherwise go back
-      if (params.scanId) {
-        router.replace({
-          pathname: '/scan-result',
-          params: { scanId: params.scanId }
-        });
-      } else {
-        router.back();
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to upgrade. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      console.error('[Paywall] Failed to sync with backend:', e);
     }
   };
+
+  const navigateAfterPurchase = () => {
+    if (params.scanId) {
+      router.replace({
+        pathname: '/scan-result',
+        params: { scanId: params.scanId }
+      });
+    } else {
+      router.back();
+    }
+  };
+
+  if (loadingOfferings) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+            Loading subscription options...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -190,6 +367,16 @@ export default function PaywallScreen() {
           ))}
         </View>
 
+        {/* Test Mode Banner */}
+        {!revenueCatAvailable && (
+          <View style={[styles.testBanner, { backgroundColor: '#FFF3E0' }]}>
+            <Ionicons name="information-circle" size={20} color="#E65100" />
+            <Text style={[styles.testBannerText, { color: '#E65100' }]}>
+              Test Mode: Running in Expo Go. Real payments require a production build.
+            </Text>
+          </View>
+        )}
+
         {/* Error Message */}
         {error ? (
           <View style={[styles.errorContainer, { backgroundColor: '#FFEBEE' }]}>
@@ -211,7 +398,24 @@ export default function PaywallScreen() {
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.ctaText}>Start Premium</Text>
+            <Text style={styles.ctaText}>
+              {revenueCatAvailable ? 'Subscribe Now' : 'Start Premium (Test)'}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Restore Purchases */}
+        <TouchableOpacity
+          style={styles.restoreButton}
+          onPress={handleRestorePurchases}
+          disabled={restoring}
+        >
+          {restoring ? (
+            <ActivityIndicator size="small" color={theme.primary} />
+          ) : (
+            <Text style={[styles.restoreText, { color: theme.primary }]}>
+              Restore Purchases
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -234,6 +438,15 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',
@@ -297,7 +510,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pricingSection: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   pricingCard: {
     borderRadius: 16,
@@ -370,6 +583,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  testBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  testBannerText: {
+    fontSize: 12,
+    marginLeft: 8,
+    flex: 1,
+  },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -394,6 +619,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  restoreButton: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  restoreText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
   cancelText: {
     textAlign: 'center',
