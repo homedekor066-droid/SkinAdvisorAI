@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Image,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -146,36 +148,42 @@ export default function HomeScreen() {
             <Card>
               <View style={styles.latestResultContent}>
                 <View style={styles.scoreContainer}>
-                  <View
-                    style={[
-                      styles.scoreCircle,
-                      { borderColor: getScoreColor(latestScan.analysis.overall_score || 75) },
-                    ]}
-                  >
-                    {/* Show photo inside circle if available */}
-                    {latestScan.image_base64 ? (
-                      <Image
+                  {/* Photo with score overlay inside circle */}
+                  {latestScan.image_base64 ? (
+                    <View
+                      style={[
+                        styles.photoScoreCircle,
+                        { borderColor: getScoreColor(latestScan.analysis.overall_score || 75) },
+                      ]}
+                    >
+                      <ImageBackground
                         source={{ uri: `data:image/jpeg;base64,${latestScan.image_base64}` }}
-                        style={styles.latestScanPhoto}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <>
-                        <Text style={[styles.scoreText, { color: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
-                          {latestScan.analysis.overall_score}
-                        </Text>
-                        <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
-                          {t('overall_score') || 'Score'}
-                        </Text>
-                      </>
-                    )}
-                    {/* Score overlay badge when photo is shown */}
-                    {latestScan.image_base64 && (
-                      <View style={[styles.scoreOverlayBadge, { backgroundColor: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
-                        <Text style={styles.scoreOverlayText}>{latestScan.analysis.overall_score}</Text>
-                      </View>
-                    )}
-                  </View>
+                        style={styles.photoBackground}
+                        imageStyle={styles.photoBackgroundImage}
+                      >
+                        {/* Dark overlay for better text visibility */}
+                        <View style={styles.photoOverlay}>
+                          <Text style={styles.photoScoreText}>
+                            {latestScan.analysis.overall_score}
+                          </Text>
+                        </View>
+                      </ImageBackground>
+                    </View>
+                  ) : (
+                    <View
+                      style={[
+                        styles.scoreCircle,
+                        { borderColor: getScoreColor(latestScan.analysis.overall_score || 75) },
+                      ]}
+                    >
+                      <Text style={[styles.scoreText, { color: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
+                        {latestScan.analysis.overall_score}
+                      </Text>
+                      <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
+                        {t('overall_score') || 'Score'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <View style={styles.resultDetails}>
                   <View style={styles.skinTypeRow}>
@@ -374,6 +382,38 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 10,
+  },
+  // Photo with score overlay styles
+  photoScoreCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
+    overflow: 'hidden',
+  },
+  photoBackground: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoBackgroundImage: {
+    borderRadius: 36,
+  },
+  photoOverlay: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoScoreText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   resultDetails: {
     flex: 1,
