@@ -388,19 +388,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
   },
-  bonusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  bonusText: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginLeft: 10,
-    flex: 1,
-  },
   section: {
     marginBottom: 24,
   },
