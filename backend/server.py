@@ -1078,23 +1078,28 @@ Respond ONLY with JSON in {lang_name}:
 {{"morning_routine": [{{"order": 1, "step_name": "name", "product_type": "type", "instructions": "how to use", "ingredients_to_look_for": ["ing1"], "ingredients_to_avoid": ["ing1"]}}], "evening_routine": [...], "weekly_routine": [...], "products": [{{"product_type": "type", "name": "generic name", "description": "why", "key_ingredients": ["ing"], "suitable_for": ["{skin_type}"], "price_range": "$$"}}]}}"""
     
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"routine-gen-deterministic",
-            system_message=system_prompt
-        ).with_model("openai", "gpt-4o").with_params(temperature=0)  # DETERMINISTIC
+        if not openai_client:
+            logger.warning("OpenAI client not initialized, using fallback")
+            return get_fallback_routine(skin_type)
         
-        user_message = UserMessage(
-            text=f"""Create skincare routine for:
+        user_prompt = f"""Create skincare routine for:
 - Skin type: {skin_type}
 - Issues: {issues_text}
 
 Provide morning (4-5 steps), evening (4-5 steps), weekly (1-2 treatments), and 5-7 product recommendations.
 Return ONLY JSON in {lang_name}."""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            temperature=0,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
         )
         
-        response = await chat.send_message(user_message)
-        result = parse_json_response(response)
+        response_text = response.choices[0].message.content
+        result = parse_json_response(response_text)
         
         if result:
             return validate_routine_response(result, skin_type)
