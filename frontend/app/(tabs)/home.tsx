@@ -152,12 +152,29 @@ export default function HomeScreen() {
                       { borderColor: getScoreColor(latestScan.analysis.overall_score || 75) },
                     ]}
                   >
-                    <Text style={[styles.scoreText, { color: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
-                      {latestScan.analysis.overall_score}
-                    </Text>
-                    <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
-                      Score
-                    </Text>
+                    {/* Show photo inside circle if available */}
+                    {latestScan.image_base64 ? (
+                      <Image
+                        source={{ uri: `data:image/jpeg;base64,${latestScan.image_base64}` }}
+                        style={styles.latestScanPhoto}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <>
+                        <Text style={[styles.scoreText, { color: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
+                          {latestScan.analysis.overall_score}
+                        </Text>
+                        <Text style={[styles.scoreLabel, { color: theme.textSecondary }]}>
+                          {t('overall_score') || 'Score'}
+                        </Text>
+                      </>
+                    )}
+                    {/* Score overlay badge when photo is shown */}
+                    {latestScan.image_base64 && (
+                      <View style={[styles.scoreOverlayBadge, { backgroundColor: getScoreColor(latestScan.analysis.overall_score || 75) }]}>
+                        <Text style={styles.scoreOverlayText}>{latestScan.analysis.overall_score}</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
                 <View style={styles.resultDetails}>
@@ -182,7 +199,7 @@ export default function HomeScreen() {
                     </View>
                   </View>
                   <Text style={[styles.issuesCount, { color: theme.textSecondary }]}>
-                    {latestScan.analysis.issues?.length || 0} issues detected
+                    {latestScan.analysis.issues?.length || latestScan.analysis.issue_count || 0} {t('skin_issues') || 'issues detected'}
                   </Text>
                   <TouchableOpacity
                     style={[styles.viewDetailsButton, { backgroundColor: theme.primary + '15' }]}
