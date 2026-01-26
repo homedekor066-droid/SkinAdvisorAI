@@ -204,27 +204,26 @@ export default function ProgressScreen() {
                 </View>
 
                 <View style={styles.scanContent}>
-                  {/* Scan Photo Thumbnail */}
-                  {scan.image_base64 ? (
-                    <View style={[styles.photoContainer, { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                  {/* Photo Circle with Score Overlay */}
+                  <View style={[styles.photoCircleContainer, { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                    {scan.image_base64 ? (
                       <Image
                         source={{ uri: `data:image/jpeg;base64,${scan.image_base64}` }}
                         style={styles.scanPhoto}
                         resizeMode="cover"
                       />
-                    </View>
-                  ) : (
-                    <View style={[styles.scoreSection]}>
-                      <View style={[
-                        styles.scoreCircle,
-                        { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }
-                      ]}>
-                        <Text style={[styles.scoreValue, { color: getScoreColor(scan.analysis?.overall_score || 75) }]}>
-                          {scan.analysis?.overall_score || '--'}
-                        </Text>
+                    ) : (
+                      <View style={[styles.placeholderCircle, { backgroundColor: theme.surface }]}>
+                        <Ionicons name="person-outline" size={28} color={theme.textMuted} />
                       </View>
+                    )}
+                    {/* Score overlay on photo */}
+                    <View style={[styles.scoreOverlay, { backgroundColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                      <Text style={styles.scoreOverlayText}>
+                        {scan.analysis?.overall_score || '--'}
+                      </Text>
                     </View>
-                  )}
+                  </View>
                   
                   {scan.analysis && (
                     <>
