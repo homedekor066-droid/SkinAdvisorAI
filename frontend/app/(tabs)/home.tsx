@@ -436,4 +436,24 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     lineHeight: 18,
   },
+  // Weekly Scan Reminder Banner
+  reminderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  reminderText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  reminderTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reminderSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
 });
