@@ -62,28 +62,42 @@ export default function MyRoutineScreen() {
   });
   const [refreshing, setRefreshing] = useState(false);
   const [lastScanDate, setLastScanDate] = useState<Date | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   const isPremium = user?.plan === 'premium';
   
-  // User-specific storage keys
-  const userId = user?.id || 'guest';
-  const TASKS_KEY = `routine_tasks_${userId}`;
-  const PROGRESS_KEY = `routine_progress_${userId}`;
-  const DATE_KEY = `routine_date_${userId}`;
+  // CRITICAL: Only use user-specific storage keys when user.id is available
+  // This prevents data from being saved/loaded under 'guest' key
+  const userId = user?.id;
+  const getStorageKey = (prefix: string) => userId ? `${prefix}_${userId}` : null;
 
-  // Load saved routine state
+  // Load saved routine state - only when user is authenticated
   useEffect(() => {
-    if (user?.id) {
+    if (userId && token) {
+      console.log('[MyRoutine] Loading state for user:', userId);
       loadRoutineState();
       checkLastScanDate();
+      setIsReady(true);
     }
-  }, [token, user?.id]);
+  }, [userId, token]);
 
   const loadRoutineState = async () => {
+    const tasksKey = getStorageKey('routine_tasks');
+    const progressKey = getStorageKey('routine_progress');
+    const dateKey = getStorageKey('routine_date');
+    
+    // Don't proceed if user is not loaded yet
+    if (!tasksKey || !progressKey || !dateKey) {
+      console.log('[MyRoutine] Skipping load - user not ready');
+      return;
+    }
+    
     try {
-      const savedTasks = await AsyncStorage.getItem(TASKS_KEY);
-      const savedProgress = await AsyncStorage.getItem(PROGRESS_KEY);
-      const savedDate = await AsyncStorage.getItem(DATE_KEY);
+      console.log('[MyRoutine] Loading from keys:', { tasksKey, progressKey, dateKey });
+      
+      const savedTasks = await AsyncStorage.getItem(tasksKey);
+      const savedProgress = await AsyncStorage.getItem(progressKey);
+      const savedDate = await AsyncStorage.getItem(dateKey);
       
       const today = format(new Date(), 'yyyy-MM-dd');
       
@@ -105,7 +119,7 @@ export default function MyRoutineScreen() {
         
         // Reset tasks for new day
         setTasks(DEFAULT_ROUTINE);
-        await AsyncStorage.setItem(DATE_KEY, today);
+        await AsyncStorage.setItem(dateKey, today);
       } else if (savedTasks) {
         setTasks(JSON.parse(savedTasks));
       }
@@ -131,10 +145,21 @@ export default function MyRoutineScreen() {
   };
 
   const saveRoutineState = async (newTasks: RoutineTask[], newProgress: RoutineProgress) => {
+    const tasksKey = getStorageKey('routine_tasks');
+    const progressKey = getStorageKey('routine_progress');
+    const dateKey = getStorageKey('routine_date');
+    
+    // Don't save if user is not loaded
+    if (!tasksKey || !progressKey || !dateKey) {
+      console.log('[MyRoutine] Skipping save - user not ready');
+      return;
+    }
+    
     try {
-      await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(newTasks));
-      await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(newProgress));
-      await AsyncStorage.setItem(DATE_KEY, format(new Date(), 'yyyy-MM-dd'));
+      console.log('[MyRoutine] Saving to keys:', { tasksKey, progressKey, dateKey });
+      await AsyncStorage.setItem(tasksKey, JSON.stringify(newTasks));
+      await AsyncStorage.setItem(progressKey, JSON.stringify(newProgress));
+      await AsyncStorage.setItem(dateKey, format(new Date(), 'yyyy-MM-dd'));
     } catch (error) {
       console.error('Failed to save routine state:', error);
     }
