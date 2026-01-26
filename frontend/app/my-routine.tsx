@@ -82,9 +82,24 @@ export default function MyRoutineScreen() {
       console.log('[MyRoutine] Loading state for user:', userId);
       loadRoutineState();
       checkLastScanDate();
+      fetchServerProgress();
       setIsReady(true);
     }
   }, [userId, token]);
+
+  const fetchServerProgress = async () => {
+    if (!token) return;
+    try {
+      const progress = await skinService.getRoutineProgress(token);
+      setServerProgress({
+        streak: progress.streak,
+        bonus_points: progress.bonus_points,
+        total_days_completed: progress.total_days_completed
+      });
+    } catch (error) {
+      console.error('Failed to fetch server progress:', error);
+    }
+  };
 
   const loadRoutineState = async () => {
     const tasksKey = getStorageKey('routine_tasks');
