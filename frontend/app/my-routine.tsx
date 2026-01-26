@@ -505,6 +505,56 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
   },
+  // Bonus Cards
+  bonusCard: {
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+  },
+  bonusContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bonusTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  bonusTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  bonusSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  nextBonusCard: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+  },
+  nextBonusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  nextBonusTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  nextBonusPoints: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
   section: {
     marginBottom: 24,
   },
