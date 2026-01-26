@@ -32,6 +32,16 @@ export default function ProgressScreen() {
     if (!token) return;
     try {
       const data = await skinService.getScanHistory(token);
+      console.log('[Progress] Fetched scans:', data.length);
+      if (data.length > 0) {
+        console.log('[Progress] First scan:', {
+          id: data[0].id,
+          hasImage: !!data[0].image_base64,
+          imageLength: data[0].image_base64?.length,
+          analysis: data[0].analysis,
+          overall_score: data[0].analysis?.overall_score
+        });
+      }
       setScans(data);
     } catch (error) {
       console.error('Failed to fetch scans:', error);
