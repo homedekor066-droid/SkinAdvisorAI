@@ -161,6 +161,40 @@ class SkinService {
     });
     return response.data;
   }
+
+  // Routine Progress APIs
+  async getRoutineProgress(token: string): Promise<{
+    streak: number;
+    total_days_completed: number;
+    bonus_points: number;
+    last_completed_date: string | null;
+    weekly_completion_rate: number;
+  }> {
+    const response = await axios.get(`${API_URL}/api/routine/progress`, {
+      headers: this.getAuthHeader(token)
+    });
+    return response.data;
+  }
+
+  async completeRoutineDay(token: string): Promise<{
+    streak: number;
+    total_days_completed: number;
+    bonus_earned: number;
+    total_bonus: number;
+    message: string;
+  }> {
+    const response = await axios.post(`${API_URL}/api/routine/complete-day`, {}, {
+      headers: this.getAuthHeader(token)
+    });
+    return response.data;
+  }
+
+  async resetStreak(token: string): Promise<{ success: boolean; message: string }> {
+    const response = await axios.post(`${API_URL}/api/routine/reset-streak`, {}, {
+      headers: this.getAuthHeader(token)
+    });
+    return response.data;
+  }
 }
 
 export const skinService = new SkinService();
