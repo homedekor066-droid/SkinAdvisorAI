@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Image,
+  ImageBackground,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -204,17 +204,24 @@ export default function ProgressScreen() {
                 </View>
 
                 <View style={styles.scanContent}>
-                  {/* Photo Circle - Clean photo only, no overlay */}
+                  {/* Photo Circle with Score Number Overlay */}
                   <View style={[styles.photoCircleContainer, { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
                     {scan.image_base64 ? (
-                      <Image
+                      <ImageBackground
                         source={{ uri: `data:image/jpeg;base64,${scan.image_base64}` }}
-                        style={styles.scanPhoto}
-                        resizeMode="cover"
-                      />
+                        style={styles.photoBackground}
+                        imageStyle={styles.photoBackgroundImage}
+                      >
+                        {/* Score number centered on photo */}
+                        <Text style={styles.scoreOnPhoto}>
+                          {scan.analysis?.overall_score || '--'}
+                        </Text>
+                      </ImageBackground>
                     ) : (
                       <View style={[styles.placeholderCircle, { backgroundColor: theme.surface }]}>
-                        <Ionicons name="person-outline" size={28} color={theme.textMuted} />
+                        <Text style={[styles.placeholderScoreText, { color: getScoreColor(scan.analysis?.overall_score || 75) }]}>
+                          {scan.analysis?.overall_score || '--'}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -387,22 +394,39 @@ const styles = StyleSheet.create({
   },
   // Photo styles
   photoCircleContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     borderWidth: 3,
     overflow: 'hidden',
     marginRight: 16,
   },
-  scanPhoto: {
+  photoBackground: {
     width: '100%',
     height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoBackgroundImage: {
+    borderRadius: 32,
+  },
+  scoreOnPhoto: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 4,
   },
   placeholderCircle: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  placeholderScoreText: {
+    fontSize: 24,
+    fontWeight: '700',
   },
   scoreBadge: {
     paddingHorizontal: 10,
