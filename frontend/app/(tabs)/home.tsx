@@ -234,7 +234,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={() => router.push('/(tabs)/profile')}
+              onPress={() => router.push('/products')}
             >
               <View style={[styles.actionIcon, { backgroundColor: theme.success + '20' }]}>
                 <Ionicons name="leaf-outline" size={24} color={theme.success} />
