@@ -225,7 +225,7 @@ export default function ProgressScreen() {
                         {/* Score Badge - Both "Score:" and number in same color */}
                         <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(scan.analysis.overall_score) + '20' }]}>
                           <Text style={[styles.scoreBadgeText, { color: getScoreColor(scan.analysis.overall_score) }]}>
-                            Score: {scan.analysis.overall_score}
+                            {t('score')}: {scan.analysis.overall_score}
                           </Text>
                         </View>
                         <View style={styles.skinTypeRow}>
