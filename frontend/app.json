@@ -11,13 +11,19 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.skinadvisor.ai",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "Scan your face for skin analysis",
-        "NSPhotoLibraryUsageDescription": "Upload photos for skin analysis"
+        "NSCameraUsageDescription": "Scan your face for personalized skin analysis",
+        "NSPhotoLibraryUsageDescription": "Upload photos for AI-powered skin analysis",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.skinadvisor.ai",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1A1A2E"
@@ -25,7 +31,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "com.android.vending.BILLING"
       ]
     },
     "web": {
@@ -56,8 +64,18 @@
       "typedRoutes": true
     },
     "extra": {
-      "privacyPolicyUrl": "/privacy-policy",
-      "termsOfServiceUrl": "/terms-of-service"
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      },
+      "privacyPolicyUrl": "https://skinadvisor.ai/privacy",
+      "termsOfServiceUrl": "https://skinadvisor.ai/terms"
+    },
+    "owner": "YOUR_EXPO_USERNAME",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
     }
   }
 }
