@@ -880,16 +880,11 @@ Respond ONLY with valid JSON in {lang_name}. No markdown, no explanation, just J
 {{"skin_type": "type", "skin_type_confidence": 0.9, "skin_type_description": "description", "issues": [{{"name": "issue", "severity": 5, "confidence": 0.8, "description": "observation"}}], "recommendations": ["advice1", "advice2"]}}"""
     
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"skin-analysis-deterministic",
-            system_message=system_prompt
-        ).with_model("openai", "gpt-4o").with_params(temperature=0)  # DETERMINISTIC: temp=0
+        if not openai_client:
+            logger.warning("OpenAI client not initialized, using fallback")
+            return get_fallback_analysis(language)
         
-        image_content = ImageContent(image_base64=image_base64)
-        
-        user_message = UserMessage(
-            text=f"""Analyze this facial skin image systematically:
+        user_prompt = f"""Analyze this facial skin image systematically:
 
 1. SKIN TYPE: Classify based on visible characteristics
 2. ISSUES: Detect and rate each visible issue (severity 0-10, confidence 0-1)
@@ -897,21 +892,39 @@ Respond ONLY with valid JSON in {lang_name}. No markdown, no explanation, just J
 
 Check for: acne, dark spots, wrinkles, fine lines, redness, large pores, dehydration, oiliness, uneven tone, blackheads, texture issues, sun damage, dark circles.
 
-Return ONLY JSON. Respond in {lang_name}.""",
-            file_contents=[image_content]
+Return ONLY JSON. Respond in {lang_name}."""
+
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            temperature=0,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ]
         )
         
-        response = await chat.send_message(user_message)
-        logger.info(f"AI response length: {len(response)}")
+        response_text = response.choices[0].message.content
+        logger.info(f"AI response length: {len(response_text)}")
         
-        result = parse_json_response(response)
+        result = parse_json_response(response_text)
         
         if result:
             # Validate and normalize the response
             validated = validate_ai_response(result, language)
             return validated
         else:
-            logger.warning(f"Could not parse AI response: {response[:300]}")
+            logger.warning(f"Could not parse AI response: {response_text[:300]}")
             return get_fallback_analysis(language)
             
     except Exception as e:
