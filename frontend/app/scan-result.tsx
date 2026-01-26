@@ -860,11 +860,18 @@ export default function ScanResultScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Disclaimer */}
-        <View style={[styles.disclaimer, { backgroundColor: theme.surface }]}>
-          <Ionicons name="information-circle-outline" size={16} color={theme.textMuted} />
-          <Text style={[styles.disclaimerText, { color: theme.textMuted }]}>
-            {t('disclaimer')}
+        {/* Medical Disclaimer */}
+        <View style={[styles.medicalDisclaimer, { backgroundColor: '#FFF8E1', borderColor: '#FFB300' }]}>
+          <View style={styles.disclaimerHeader}>
+            <Ionicons name="medical" size={20} color="#FF8F00" />
+            <Text style={[styles.disclaimerTitle, { color: '#FF6F00' }]}>
+              Medical Disclaimer
+            </Text>
+          </View>
+          <Text style={[styles.disclaimerText, { color: '#5D4037' }]}>
+            This analysis is for informational and cosmetic guidance purposes only. It is NOT a medical diagnosis. 
+            If you have skin concerns, allergies, or medical conditions, please consult a dermatologist or healthcare professional. 
+            Results may vary and are based on AI analysis of visible skin characteristics.
           </Text>
         </View>
       </ScrollView>
