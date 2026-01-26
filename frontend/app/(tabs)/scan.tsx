@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useI18n } from '../../src/context/I18nContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -26,11 +27,28 @@ export default function ScanScreen() {
 
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [hasConsent, setHasConsent] = useState<boolean | null>(null);
 
   // Check if user can scan (free users: 1 scan limit)
   const canScan = user?.plan === 'premium' || (user?.scan_count ?? 0) < 1;
 
+  // Check for photo consent on mount
+  useEffect(() => {
+    checkPhotoConsent();
+  }, []);
+
+  const checkPhotoConsent = async () => {
+    const consent = await AsyncStorage.getItem('photo_consent_given');
+    setHasConsent(consent === 'true');
+  };
+
   const pickImage = async (useCamera: boolean) => {
+    // Check consent first
+    if (!hasConsent) {
+      router.push('/photo-consent');
+      return;
+    }
+
     // Check scan limit before allowing image selection
     if (!canScan) {
       router.push('/paywall');
