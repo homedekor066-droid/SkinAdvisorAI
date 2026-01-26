@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Image,
-  ImageBackground,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -205,26 +204,17 @@ export default function ProgressScreen() {
                 </View>
 
                 <View style={styles.scanContent}>
-                  {/* Photo Circle with Score Overlay - Score centered on top of photo */}
+                  {/* Photo Circle - Clean photo only, no overlay */}
                   <View style={[styles.photoCircleContainer, { borderColor: getScoreColor(scan.analysis?.overall_score || 75) }]}>
                     {scan.image_base64 ? (
-                      <ImageBackground
+                      <Image
                         source={{ uri: `data:image/jpeg;base64,${scan.image_base64}` }}
-                        style={styles.scanPhotoBackground}
-                        imageStyle={styles.scanPhotoBackgroundImage}
-                      >
-                        {/* Score centered on photo with dark overlay */}
-                        <View style={styles.scorePhotoOverlay}>
-                          <Text style={styles.scoreOnPhotoText}>
-                            {scan.analysis?.overall_score || '--'}
-                          </Text>
-                        </View>
-                      </ImageBackground>
+                        style={styles.scanPhoto}
+                        resizeMode="cover"
+                      />
                     ) : (
                       <View style={[styles.placeholderCircle, { backgroundColor: theme.surface }]}>
-                        <Text style={[styles.placeholderScoreText, { color: getScoreColor(scan.analysis?.overall_score || 75) }]}>
-                          {scan.analysis?.overall_score || '--'}
-                        </Text>
+                        <Ionicons name="person-outline" size={28} color={theme.textMuted} />
                       </View>
                     )}
                   </View>
@@ -232,7 +222,7 @@ export default function ProgressScreen() {
                   {scan.analysis && (
                     <>
                       <View style={styles.scanDetails}>
-                        {/* Score Badge with matching color text */}
+                        {/* Score Badge - Both "Score:" and number in same color */}
                         <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(scan.analysis.overall_score) + '20' }]}>
                           <Text style={[styles.scoreBadgeText, { color: getScoreColor(scan.analysis.overall_score) }]}>
                             Score: {scan.analysis.overall_score}
@@ -255,7 +245,7 @@ export default function ProgressScreen() {
                           </View>
                         </View>
                         <Text style={[styles.issuesText, { color: theme.textMuted }]}>
-                          {scan.analysis.issues?.length || scan.analysis.issue_count || 0} issues detected
+                          {scan.analysis.issues?.length || scan.analysis.issue_count || 0} {t('issues_detected') || 'issues detected'}
                         </Text>
                       </View>
                       <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
@@ -404,39 +394,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginRight: 16,
   },
-  scanPhotoBackground: {
+  scanPhoto: {
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scanPhotoBackgroundImage: {
-    borderRadius: 29,
-  },
-  scorePhotoOverlay: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scoreOnPhotoText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
   placeholderCircle: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  placeholderScoreText: {
-    fontSize: 20,
-    fontWeight: '700',
   },
   scoreBadge: {
     paddingHorizontal: 10,
