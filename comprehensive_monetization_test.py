@@ -14,7 +14,7 @@ from datetime import datetime
 import uuid
 
 # Get backend URL from environment
-BACKEND_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://skin-advisor-ai-1.preview.emergentagent.com')
+BACKEND_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://skinai-advisor-2.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 def create_realistic_test_image():

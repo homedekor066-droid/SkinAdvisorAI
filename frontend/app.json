@@ -58,7 +58,9 @@
           "photosPermission": "Upload photos for skin analysis",
           "cameraPermission": "Scan your face for skin analysis"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

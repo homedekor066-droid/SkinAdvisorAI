@@ -7,7 +7,7 @@ import requests
 import json
 import uuid
 
-BACKEND_URL = "https://skin-advisor-ai-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://skinai-advisor-2.preview.emergentagent.com/api"
 TEST_PASSWORD = "TestPass123!"
 
 def test_scan_limit_debug():

@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 
 # Configuration
-BASE_URL = "https://skin-advisor-ai-1.preview.emergentagent.com/api"
+BASE_URL = "https://skinai-advisor-2.preview.emergentagent.com/api"
 
 def test_diet_recommendations():
     """Test diet recommendations functionality"""
