@@ -1055,7 +1055,7 @@ def get_fallback_analysis(language: str) -> dict:
 
 async def generate_routine_with_ai(analysis: dict, language: str = 'en') -> dict:
     """Generate skincare routine based on analysis with DETERMINISTIC settings"""
-    if not EMERGENT_LLM_KEY:
+    if not OPENAI_API_KEY:
         return get_fallback_routine(analysis.get('skin_type', 'normal'))
     
     lang_name = LANGUAGE_PROMPTS.get(language, 'English')
