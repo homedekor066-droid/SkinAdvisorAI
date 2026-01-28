@@ -32,8 +32,8 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'skincare-secret-key-change-in-product
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24 * 7  # 1 week
 
-# Emergent LLM Key (works with OpenAI)
-OPENAI_API_KEY = os.environ.get('EMERGENT_LLM_KEY', os.environ.get('OPENAI_API_KEY', ''))
+# OpenAI API Key for production
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
