@@ -842,7 +842,7 @@ async def analyze_skin_with_ai(image_base64: str, language: str = 'en') -> dict:
     Analyze skin using OpenAI GPT-4o vision with DETERMINISTIC settings.
     Temperature = 0 for consistent results.
     """
-    if not EMERGENT_LLM_KEY:
+    if not OPENAI_API_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
     lang_name = LANGUAGE_PROMPTS.get(language, 'English')
