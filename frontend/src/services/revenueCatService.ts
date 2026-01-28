@@ -6,8 +6,8 @@ import Purchases, {
   LOG_LEVEL 
 } from 'react-native-purchases';
 
-// RevenueCat API Keys
-const REVENUECAT_API_KEY = 'test_UFrvEOtYX3vxvCdKOhjqgykcgKj';
+// RevenueCat API Keys - Production key for iOS
+const REVENUECAT_API_KEY = 'appl_CKsUZMwaOQzkdnFNvVaKjmmlydg';
 
 // Entitlement ID for premium access
 const PREMIUM_ENTITLEMENT_ID = 'premium';
