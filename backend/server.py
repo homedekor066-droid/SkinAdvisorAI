@@ -119,6 +119,15 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+# Social Authentication Models
+class SocialAuthRequest(BaseModel):
+    provider: str  # "google" or "apple"
+    provider_id: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    id_token: Optional[str] = None
+    language: str = "en"
+
 # ==================== DETERMINISTIC SCORING SYSTEM ====================
 # STRICT SCORING: 85+ should be elite (top 10%), 90+ extremely rare (top 3-5%)
 
