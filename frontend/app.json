@@ -69,8 +69,8 @@
       "eas": {
         "projectId": "YOUR_EAS_PROJECT_ID"
       },
-      "privacyPolicyUrl": "https://docs.google.com/document/d/1-50iKxX85pa_3hR6q20Phk7on9ai8jCinGie8y8FBYM/edit?usp=sharing",
-      "termsOfServiceUrl": "https://docs.google.com/document/d/1-FNE90N2tRa6mlNgv12BGoyu00MUM6IgiP4_-t5kjsQ/edit?usp=sharing"
+      "privacyPolicyUrl": "https://sites.google.com/view/skincare-ia-privacy",
+      "termsOfServiceUrl": "https://sites.google.com/view/skincare-ia-terms"
     },
     "owner": "YOUR_EXPO_USERNAME",
     "runtimeVersion": {
