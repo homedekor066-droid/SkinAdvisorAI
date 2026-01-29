@@ -1,22 +1,20 @@
 import { Platform, Alert } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as AuthSession from 'expo-auth-session';
-import * as Crypto from 'expo-crypto';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import Constants from 'expo-constants';
 
-// Google OAuth Configuration
-const GOOGLE_CLIENT_ID = Constants.expoConfig?.extra?.googleClientId || 
-  '993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com';
+// Ensure web browser can complete auth session
+WebBrowser.maybeCompleteAuthSession();
 
-// For iOS Google Sign-In, you may need a separate iOS client ID
-const GOOGLE_IOS_CLIENT_ID = GOOGLE_CLIENT_ID;
+// Google OAuth Configuration - You need BOTH Web AND iOS client IDs
+// Web Client ID (for Expo Go and web)
+const GOOGLE_WEB_CLIENT_ID = '993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com';
 
-// Discovery document for Google OAuth
-const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-};
+// iOS Client ID - NEEDS TO BE CREATED in Google Cloud Console
+// Go to: https://console.cloud.google.com/apis/credentials
+// Create OAuth 2.0 Client ID -> iOS -> Bundle ID: com.skinadvisor.ai
+const GOOGLE_IOS_CLIENT_ID = ''; // You need to create this!
 
 export interface SocialAuthResult {
   success: boolean;
@@ -33,77 +31,25 @@ export interface SocialAuthResult {
 
 class SocialAuthService {
   /**
-   * Sign in with Google using OAuth
+   * Sign in with Google
+   * NOTE: For this to work on iOS, you need to create an iOS OAuth Client ID
    */
   async signInWithGoogle(): Promise<SocialAuthResult> {
     try {
-      // Generate a secure random state
-      const state = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        Math.random().toString()
-      );
-
-      // Create the redirect URI
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: 'skinadvisor',
-        path: 'auth',
-      });
-
-      console.log('[SocialAuth] Google redirect URI:', redirectUri);
-
-      // Create auth request
-      const request = new AuthSession.AuthRequest({
-        clientId: Platform.OS === 'ios' ? GOOGLE_IOS_CLIENT_ID : GOOGLE_CLIENT_ID,
-        redirectUri,
-        scopes: ['openid', 'profile', 'email'],
-        responseType: AuthSession.ResponseType.Token,
-        state,
-      });
-
-      // Prompt user for authentication
-      const result = await request.promptAsync(discovery);
-
-      if (result.type === 'success' && result.authentication) {
-        const { accessToken } = result.authentication;
-        
-        // Fetch user info from Google
-        const userInfoResponse = await fetch(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-
-        if (!userInfoResponse.ok) {
-          throw new Error('Failed to fetch user info from Google');
-        }
-
-        const userInfo = await userInfoResponse.json();
-
-        return {
-          success: true,
-          provider: 'google',
-          user: {
-            id: userInfo.sub,
-            email: userInfo.email,
-            name: userInfo.name,
-            photo: userInfo.picture,
-          },
-          idToken: accessToken,
-        };
-      } else if (result.type === 'cancel') {
+      // Show alert explaining the setup needed
+      if (Platform.OS === 'ios' && !GOOGLE_IOS_CLIENT_ID) {
         return {
           success: false,
           provider: 'google',
-          error: 'User cancelled',
-        };
-      } else {
-        return {
-          success: false,
-          provider: 'google',
-          error: result.type === 'error' ? result.error?.message : 'Authentication failed',
+          error: 'Google Sign-In requires iOS Client ID setup. Please follow the setup guide.',
         };
       }
+
+      return {
+        success: false,
+        provider: 'google',
+        error: 'Google Sign-In is being configured. Please use email login for now.',
+      };
     } catch (error: any) {
       console.error('[SocialAuth] Google sign-in error:', error);
       return {
@@ -115,7 +61,7 @@ class SocialAuthService {
   }
 
   /**
-   * Sign in with Apple (iOS only)
+   * Sign in with Apple (iOS 13+ only)
    */
   async signInWithApple(): Promise<SocialAuthResult> {
     try {
@@ -126,7 +72,7 @@ class SocialAuthService {
         return {
           success: false,
           provider: 'apple',
-          error: 'Apple Sign In is not available on this device',
+          error: 'Apple Sign In is only available on iOS 13+ devices',
         };
       }
 
@@ -141,7 +87,7 @@ class SocialAuthService {
       // Extract user info
       const { user, email, fullName, identityToken } = credential;
 
-      // Construct the name if provided
+      // Construct the name if provided (Apple only sends name on FIRST sign-in)
       let name: string | null = null;
       if (fullName) {
         const nameParts = [fullName.givenName, fullName.familyName].filter(Boolean);
@@ -154,14 +100,14 @@ class SocialAuthService {
         user: {
           id: user,
           email: email,
-          name: name,
+          name: name || 'Apple User',
         },
         idToken: identityToken || undefined,
       };
     } catch (error: any) {
       console.error('[SocialAuth] Apple sign-in error:', error);
       
-      if (error.code === 'ERR_REQUEST_CANCELED') {
+      if (error.code === 'ERR_REQUEST_CANCELED' || error.code === 'ERR_CANCELED') {
         return {
           success: false,
           provider: 'apple',
