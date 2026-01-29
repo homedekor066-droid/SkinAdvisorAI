@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useI18n } from '../../src/context/I18nContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { Button, Input } from '../../src/components';
+import { Button, Input, SocialLoginButtons } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
