@@ -10,8 +10,10 @@ interface User {
   name: string;
   profile?: {
     age?: number;
+    age_range?: string;
     gender?: string;
     skin_goals?: string[];
+    skin_type?: string;
     country?: string;
     language?: string;
   };
@@ -20,12 +22,22 @@ interface User {
   created_at: string;
 }
 
+interface SocialAuthData {
+  provider: 'google' | 'apple';
+  provider_id: string;
+  email?: string | null;
+  name?: string | null;
+  id_token?: string;
+  language?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, language?: string) => Promise<void>;
+  socialAuth: (data: SocialAuthData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profile: any) => Promise<void>;
   refreshUser: () => Promise<void>;
