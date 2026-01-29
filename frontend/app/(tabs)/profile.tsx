@@ -30,11 +30,10 @@ const TERMS_OF_SERVICE_URL = 'https://sites.google.com/view/skincare-ia-terms';
 
 export default function ProfileScreen() {
   const { theme, isDarkMode, toggleTheme } = useTheme();
-  const { t, language, languages, setLanguage } = useI18n();
+  const { t } = useI18n();
   const { user, token, logout, refreshUser } = useAuth();
   const router = useRouter();
   
-  const [showLanguages, setShowLanguages] = useState(false);
   const [deleting, setDeleting] = useState(false);
   
   // Modal states
