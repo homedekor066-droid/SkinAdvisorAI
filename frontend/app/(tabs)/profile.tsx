@@ -95,11 +95,6 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleLanguageChange = async (langCode: string) => {
-    await setLanguage(langCode);
-    setShowLanguages(false);
-  };
-
   const handleUpdateName = async () => {
     if (!newName.trim() || newName.trim().length < 2) {
       Alert.alert(t('error'), 'Name must be at least 2 characters');
