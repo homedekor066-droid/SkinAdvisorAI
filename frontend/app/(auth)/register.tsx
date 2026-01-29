@@ -36,6 +36,23 @@ export default function RegisterScreen() {
     confirmPassword?: string;
   }>({});
 
+  // Social login handlers
+  const handleGoogleSignUp = () => {
+    Alert.alert(
+      'Google Sign Up',
+      'Google Sign In requires native setup. To enable:\n\n1. Create a project in Google Cloud Console\n2. Enable Google Sign-In API\n3. Add iOS/Android OAuth clients\n4. Configure credentials in app\n\nThis will work on the built iOS/Android app after configuration.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleAppleSignUp = () => {
+    Alert.alert(
+      'Apple Sign Up',
+      'Apple Sign In requires native setup. To enable:\n\n1. Enable Sign in with Apple in Apple Developer\n2. Add capability to your app\n3. Configure in App Store Connect\n\nThis will work on the built iOS app after configuration.',
+      [{ text: 'OK' }]
+    );
+  };
+
   const validate = () => {
     const newErrors: typeof errors = {};
     if (!name) newErrors.name = 'Name is required';
