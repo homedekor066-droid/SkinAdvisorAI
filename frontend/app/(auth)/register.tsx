@@ -53,8 +53,8 @@ export default function RegisterScreen() {
           id_token: result.idToken,
           language: language,
         });
-        // Navigate to questionnaire for new social sign-ups
-        router.replace('/skin-questionnaire');
+        // Navigate to language selection for new social sign-ups
+        router.replace('/language-selection');
       } else if (result.error !== 'User cancelled') {
         Alert.alert('Google Sign Up Failed', result.error || 'Unknown error occurred');
       }
@@ -80,8 +80,8 @@ export default function RegisterScreen() {
           id_token: result.idToken,
           language: language,
         });
-        // Navigate to questionnaire for new social sign-ups
-        router.replace('/skin-questionnaire');
+        // Navigate to language selection for new social sign-ups
+        router.replace('/language-selection');
       } else if (result.error !== 'User cancelled') {
         Alert.alert('Apple Sign Up Failed', result.error || 'Unknown error occurred');
       }
