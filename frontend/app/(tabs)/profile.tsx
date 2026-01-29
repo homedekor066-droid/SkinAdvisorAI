@@ -20,8 +20,13 @@ import { useAuth } from '../../src/context/AuthContext';
 import { Card, Button, Input } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import * as WebBrowser from 'expo-web-browser';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+// Legal URLs
+const PRIVACY_POLICY_URL = 'https://docs.google.com/document/d/1-50iKxX85pa_3hR6q20Phk7on9ai8jCinGie8y8FBYM/edit?usp=sharing';
+const TERMS_OF_SERVICE_URL = 'https://docs.google.com/document/d/1-FNE90N2tRa6mlNgv12BGoyu00MUM6IgiP4_-t5kjsQ/edit?usp=sharing';
 
 export default function ProfileScreen() {
   const { theme, isDarkMode, toggleTheme } = useTheme();
