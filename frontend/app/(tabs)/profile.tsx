@@ -333,58 +333,6 @@ export default function ProfileScreen() {
         </Text>
 
         <Card style={styles.settingsCard}>
-          {/* Language */}
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => setShowLanguages(!showLanguages)}
-          >
-            <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: theme.success + '20' }]}>
-                <Ionicons name="language" size={20} color={theme.success} />
-              </View>
-              <View>
-                <Text style={[styles.settingLabel, { color: theme.text }]}>
-                  {t('language')}
-                </Text>
-                <Text style={[styles.settingValue, { color: theme.textSecondary }]}>
-                  {currentLanguage?.name || 'English'}
-                </Text>
-              </View>
-            </View>
-            <Ionicons
-              name={showLanguages ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={theme.textMuted}
-            />
-          </TouchableOpacity>
-
-          {showLanguages && (
-            <View style={[styles.languageList, { borderTopColor: theme.border }]}>
-              {languages.map((lang) => (
-                <TouchableOpacity
-                  key={lang.code}
-                  style={[
-                    styles.languageItem,
-                    language === lang.code && { backgroundColor: theme.primary + '10' }
-                  ]}
-                  onPress={() => handleLanguageChange(lang.code)}
-                >
-                  <Text style={[
-                    styles.languageText,
-                    { color: language === lang.code ? theme.primary : theme.text }
-                  ]}>
-                    {lang.name}
-                  </Text>
-                  {language === lang.code && (
-                    <Ionicons name="checkmark" size={20} color={theme.primary} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
           {/* Dark Mode */}
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
