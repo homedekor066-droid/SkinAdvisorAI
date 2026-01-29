@@ -104,6 +104,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(userData);
   };
 
+  const socialAuth = async (data: SocialAuthData) => {
+    const response = await axios.post(`${API_URL}/api/auth/social`, {
+      provider: data.provider,
+      provider_id: data.provider_id,
+      email: data.email,
+      name: data.name,
+      id_token: data.id_token,
+      language: data.language || 'en'
+    });
+    const { access_token, user: userData } = response.data;
+    await SecureStore.setItemAsync('auth_token', access_token);
+    setToken(access_token);
+    setUser(userData);
+  };
+
   const logout = async () => {
     await SecureStore.deleteItemAsync('auth_token');
     setToken(null);
