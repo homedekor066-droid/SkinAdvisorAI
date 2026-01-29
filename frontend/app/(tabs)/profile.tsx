@@ -169,8 +169,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const currentLanguage = languages.find(l => l.code === language);
-
   const renderModal = (
     visible: boolean,
     onClose: () => void,
