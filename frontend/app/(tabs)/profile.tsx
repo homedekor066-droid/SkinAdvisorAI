@@ -412,7 +412,10 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Legal</Text>
 
         <Card style={styles.settingsCard}>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+          >
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: theme.success + '20' }]}>
                 <Ionicons name="document-text-outline" size={20} color={theme.success} />
@@ -421,12 +424,15 @@ export default function ProfileScreen() {
                 Privacy Policy
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+            <Ionicons name="open-outline" size={20} color={theme.textMuted} />
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL)}
+          >
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: theme.warning + '20' }]}>
                 <Ionicons name="shield-outline" size={20} color={theme.warning} />
@@ -435,7 +441,7 @@ export default function ProfileScreen() {
                 Terms of Service
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+            <Ionicons name="open-outline" size={20} color={theme.textMuted} />
           </TouchableOpacity>
         </Card>
 
