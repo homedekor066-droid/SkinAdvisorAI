@@ -42,6 +42,23 @@ export default function LoginScreen() {
   const [resetStep, setResetStep] = useState<'email' | 'token' | 'success'>('email');
   const [resetLoading, setResetLoading] = useState(false);
 
+  // Social login handlers
+  const handleGoogleLogin = () => {
+    Alert.alert(
+      'Google Sign In',
+      'Google Sign In requires native setup. To enable:\n\n1. Create a project in Google Cloud Console\n2. Enable Google Sign-In API\n3. Add iOS/Android OAuth clients\n4. Configure credentials in app\n\nThis will work on the built iOS/Android app after configuration.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleAppleLogin = () => {
+    Alert.alert(
+      'Apple Sign In',
+      'Apple Sign In requires native setup. To enable:\n\n1. Enable Sign in with Apple in Apple Developer\n2. Add capability to your app\n3. Configure in App Store Connect\n\nThis will work on the built iOS app after configuration.',
+      [{ text: 'OK' }]
+    );
+  };
+
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
     if (!email) newErrors.email = 'Email is required';
