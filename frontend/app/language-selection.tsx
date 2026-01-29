@@ -16,11 +16,18 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function LanguageSelectionScreen() {
   const { theme } = useTheme();
-  const { language, languages, setLanguage, isLoading: i18nLoading } = useI18n();
+  const { language, languages, setLanguage } = useI18n();
   const router = useRouter();
 
   const [selectedLanguage, setSelectedLanguage] = useState(language);
   const [loading, setLoading] = useState(false);
+
+  // Update selected when language loads
+  useEffect(() => {
+    if (language) {
+      setSelectedLanguage(language);
+    }
+  }, [language]);
 
   const handleContinue = async () => {
     setLoading(true);
@@ -35,11 +42,15 @@ export default function LanguageSelectionScreen() {
     }
   };
 
-  if (i18nLoading) {
+  // Show loading if languages haven't loaded yet
+  if (!languages || languages.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+            Loading languages...
+          </Text>
         </View>
       </SafeAreaView>
     );
