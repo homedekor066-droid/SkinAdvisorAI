@@ -164,6 +164,13 @@ export default function RegisterScreen() {
               style={{ marginTop: 16 }}
             />
 
+            {/* Social Sign Up Options */}
+            <SocialLoginButtons
+              onGooglePress={handleGoogleSignUp}
+              onApplePress={handleAppleSignUp}
+              loading={loading}
+            />
+
             <View style={styles.footer}>
               <Text style={[styles.footerText, { color: theme.textSecondary }]}>
                 Already have an account?{' '}
