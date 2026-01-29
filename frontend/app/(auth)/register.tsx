@@ -208,7 +208,7 @@ export default function RegisterScreen() {
             <SocialLoginButtons
               onGooglePress={handleGoogleSignUp}
               onApplePress={handleAppleSignUp}
-              loading={loading}
+              loading={loading || socialLoading}
             />
 
             <View style={styles.footer}>
