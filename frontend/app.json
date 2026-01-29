@@ -19,7 +19,8 @@
       },
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.skinadvisor.ai",
@@ -60,7 +61,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
@@ -70,7 +72,8 @@
         "projectId": "YOUR_EAS_PROJECT_ID"
       },
       "privacyPolicyUrl": "https://sites.google.com/view/skincare-ia-privacy",
-      "termsOfServiceUrl": "https://sites.google.com/view/skincare-ia-terms"
+      "termsOfServiceUrl": "https://sites.google.com/view/skincare-ia-terms",
+      "googleClientId": "993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com"
     },
     "owner": "YOUR_EXPO_USERNAME",
     "runtimeVersion": {
