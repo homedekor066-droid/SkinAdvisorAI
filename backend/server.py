@@ -63,8 +63,10 @@ class UserLogin(BaseModel):
 
 class UserProfile(BaseModel):
     age: Optional[int] = None
+    age_range: Optional[str] = None  # New field for questionnaire
     gender: Optional[str] = None
     skin_goals: Optional[List[str]] = []
+    skin_type: Optional[str] = None  # New field for questionnaire
     country: Optional[str] = None
     language: str = "en"
 
