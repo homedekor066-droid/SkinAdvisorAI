@@ -111,8 +111,8 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(name, email, password, language);
-      // Navigate to skin questionnaire after registration
-      router.replace('/skin-questionnaire');
+      // Navigate to language selection after registration
+      router.replace('/language-selection');
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Registration failed';
       Alert.alert(t('error'), message);
