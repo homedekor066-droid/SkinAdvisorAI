@@ -18,13 +18,14 @@ import { useAuth } from '../../src/context/AuthContext';
 import { Button, Input, SocialLoginButtons } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import { socialAuthService } from '../../src/services/socialAuthService';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
   const { t } = useI18n();
-  const { login } = useAuth();
+  const { login, socialAuth } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -41,22 +42,57 @@ export default function LoginScreen() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [resetStep, setResetStep] = useState<'email' | 'token' | 'success'>('email');
   const [resetLoading, setResetLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
 
   // Social login handlers
-  const handleGoogleLogin = () => {
-    Alert.alert(
-      'Google Sign In',
-      'Google Sign In requires native setup. To enable:\n\n1. Create a project in Google Cloud Console\n2. Enable Google Sign-In API\n3. Add iOS/Android OAuth clients\n4. Configure credentials in app\n\nThis will work on the built iOS/Android app after configuration.',
-      [{ text: 'OK' }]
-    );
+  const handleGoogleLogin = async () => {
+    setSocialLoading(true);
+    try {
+      const result = await socialAuthService.signInWithGoogle();
+      
+      if (result.success && result.user) {
+        await socialAuth({
+          provider: 'google',
+          provider_id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          id_token: result.idToken,
+        });
+        router.replace('/(tabs)/home');
+      } else if (result.error !== 'User cancelled') {
+        Alert.alert('Google Sign In Failed', result.error || 'Unknown error occurred');
+      }
+    } catch (error: any) {
+      console.error('[Login] Google sign-in error:', error);
+      Alert.alert('Error', error.message || 'Failed to sign in with Google');
+    } finally {
+      setSocialLoading(false);
+    }
   };
 
-  const handleAppleLogin = () => {
-    Alert.alert(
-      'Apple Sign In',
-      'Apple Sign In requires native setup. To enable:\n\n1. Enable Sign in with Apple in Apple Developer\n2. Add capability to your app\n3. Configure in App Store Connect\n\nThis will work on the built iOS app after configuration.',
-      [{ text: 'OK' }]
-    );
+  const handleAppleLogin = async () => {
+    setSocialLoading(true);
+    try {
+      const result = await socialAuthService.signInWithApple();
+      
+      if (result.success && result.user) {
+        await socialAuth({
+          provider: 'apple',
+          provider_id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          id_token: result.idToken,
+        });
+        router.replace('/(tabs)/home');
+      } else if (result.error !== 'User cancelled') {
+        Alert.alert('Apple Sign In Failed', result.error || 'Unknown error occurred');
+      }
+    } catch (error: any) {
+      console.error('[Login] Apple sign-in error:', error);
+      Alert.alert('Error', error.message || 'Failed to sign in with Apple');
+    } finally {
+      setSocialLoading(false);
+    }
   };
 
   const validate = () => {
