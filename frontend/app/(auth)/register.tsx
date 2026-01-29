@@ -16,11 +16,12 @@ import { useI18n } from '../../src/context/I18nContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { Button, Input, SocialLoginButtons } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
+import { socialAuthService } from '../../src/services/socialAuthService';
 
 export default function RegisterScreen() {
   const { theme } = useTheme();
   const { t, language } = useI18n();
-  const { register } = useAuth();
+  const { register, socialAuth } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState('');
@@ -29,6 +30,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
@@ -37,20 +39,58 @@ export default function RegisterScreen() {
   }>({});
 
   // Social login handlers
-  const handleGoogleSignUp = () => {
-    Alert.alert(
-      'Google Sign Up',
-      'Google Sign In requires native setup. To enable:\n\n1. Create a project in Google Cloud Console\n2. Enable Google Sign-In API\n3. Add iOS/Android OAuth clients\n4. Configure credentials in app\n\nThis will work on the built iOS/Android app after configuration.',
-      [{ text: 'OK' }]
-    );
+  const handleGoogleSignUp = async () => {
+    setSocialLoading(true);
+    try {
+      const result = await socialAuthService.signInWithGoogle();
+      
+      if (result.success && result.user) {
+        await socialAuth({
+          provider: 'google',
+          provider_id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          id_token: result.idToken,
+          language: language,
+        });
+        // Navigate to questionnaire for new social sign-ups
+        router.replace('/skin-questionnaire');
+      } else if (result.error !== 'User cancelled') {
+        Alert.alert('Google Sign Up Failed', result.error || 'Unknown error occurred');
+      }
+    } catch (error: any) {
+      console.error('[Register] Google sign-up error:', error);
+      Alert.alert('Error', error.message || 'Failed to sign up with Google');
+    } finally {
+      setSocialLoading(false);
+    }
   };
 
-  const handleAppleSignUp = () => {
-    Alert.alert(
-      'Apple Sign Up',
-      'Apple Sign In requires native setup. To enable:\n\n1. Enable Sign in with Apple in Apple Developer\n2. Add capability to your app\n3. Configure in App Store Connect\n\nThis will work on the built iOS app after configuration.',
-      [{ text: 'OK' }]
-    );
+  const handleAppleSignUp = async () => {
+    setSocialLoading(true);
+    try {
+      const result = await socialAuthService.signInWithApple();
+      
+      if (result.success && result.user) {
+        await socialAuth({
+          provider: 'apple',
+          provider_id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          id_token: result.idToken,
+          language: language,
+        });
+        // Navigate to questionnaire for new social sign-ups
+        router.replace('/skin-questionnaire');
+      } else if (result.error !== 'User cancelled') {
+        Alert.alert('Apple Sign Up Failed', result.error || 'Unknown error occurred');
+      }
+    } catch (error: any) {
+      console.error('[Register] Apple sign-up error:', error);
+      Alert.alert('Error', error.message || 'Failed to sign up with Apple');
+    } finally {
+      setSocialLoading(false);
+    }
   };
 
   const validate = () => {
