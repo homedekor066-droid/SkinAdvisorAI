@@ -129,6 +129,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+  },
   header: {
     alignItems: 'center',
     paddingHorizontal: 24,
