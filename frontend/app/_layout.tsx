@@ -30,6 +30,7 @@ function RootNavigator() {
       <Stack.Screen name="index" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="skin-questionnaire" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="scan-result" />
     </Stack>
