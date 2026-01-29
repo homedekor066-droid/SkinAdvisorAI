@@ -270,7 +270,7 @@ export default function LoginScreen() {
             <SocialLoginButtons
               onGooglePress={handleGoogleLogin}
               onApplePress={handleAppleLogin}
-              loading={loading}
+              loading={loading || socialLoading}
             />
 
             <View style={styles.footer}>
