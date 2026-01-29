@@ -660,6 +660,89 @@ async def login(credentials: UserLogin):
         )
     )
 
+@api_router.post("/auth/social", response_model=TokenResponse)
+async def social_auth(request: SocialAuthRequest):
+    """
+    Handle social authentication (Google/Apple Sign-In).
+    If user exists, log them in. If not, create a new account.
+    """
+    # Check if user already exists with this social provider
+    existing_user = await db.users.find_one({
+        f'social_{request.provider}_id': request.provider_id
+    })
+    
+    if existing_user:
+        # User exists - log them in
+        token = create_token(existing_user['id'])
+        return TokenResponse(
+            access_token=token,
+            user=UserResponse(
+                id=existing_user['id'],
+                email=existing_user['email'],
+                name=existing_user['name'],
+                profile=UserProfile(**existing_user.get('profile', {})) if existing_user.get('profile') else None,
+                plan=existing_user.get('plan', 'free'),
+                scan_count=existing_user.get('scan_count', 0),
+                created_at=existing_user['created_at']
+            )
+        )
+    
+    # Check if email already exists (user might have registered with email before)
+    if request.email:
+        email_user = await db.users.find_one({'email': request.email})
+        if email_user:
+            # Link social account to existing user
+            await db.users.update_one(
+                {'id': email_user['id']},
+                {'$set': {f'social_{request.provider}_id': request.provider_id}}
+            )
+            token = create_token(email_user['id'])
+            return TokenResponse(
+                access_token=token,
+                user=UserResponse(
+                    id=email_user['id'],
+                    email=email_user['email'],
+                    name=email_user['name'],
+                    profile=UserProfile(**email_user.get('profile', {})) if email_user.get('profile') else None,
+                    plan=email_user.get('plan', 'free'),
+                    scan_count=email_user.get('scan_count', 0),
+                    created_at=email_user['created_at']
+                )
+            )
+    
+    # Create new user with social auth
+    user_id = str(uuid.uuid4())
+    email = request.email or f"{request.provider}_{request.provider_id}@social.auth"
+    name = request.name or f"{request.provider.capitalize()} User"
+    
+    new_user = {
+        'id': user_id,
+        'email': email,
+        'name': name,
+        'password': None,  # No password for social auth users
+        f'social_{request.provider}_id': request.provider_id,
+        'profile': {'language': request.language},
+        'plan': 'free',
+        'scan_count': 0,
+        'created_at': datetime.utcnow()
+    }
+    
+    await db.users.insert_one(new_user)
+    token = create_token(user_id)
+    
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse(
+            id=user_id,
+            email=email,
+            name=name,
+            profile=UserProfile(language=request.language),
+            plan='free',
+            scan_count=0,
+            created_at=new_user['created_at']
+        )
+    )
+
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(
