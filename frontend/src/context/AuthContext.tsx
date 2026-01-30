@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password
     });
     const { access_token, user: userData } = response.data;
-    await SecureStore.setItemAsync('auth_token', access_token);
+    await storage.setItem('auth_token', access_token);
     setToken(access_token);
     setUser(userData);
   };
@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       language
     });
     const { access_token, user: userData } = response.data;
-    await SecureStore.setItemAsync('auth_token', access_token);
+    await storage.setItem('auth_token', access_token);
     setToken(access_token);
     setUser(userData);
   };
@@ -139,13 +139,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       language: data.language || 'en'
     });
     const { access_token, user: userData } = response.data;
-    await SecureStore.setItemAsync('auth_token', access_token);
+    await storage.setItem('auth_token', access_token);
     setToken(access_token);
     setUser(userData);
   };
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync('auth_token');
+    await storage.removeItem('auth_token');
     setToken(null);
     setUser(null);
   };
