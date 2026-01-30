@@ -349,7 +349,7 @@ export default function ProfileScreen() {
         <Card style={styles.settingsCard}>
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+            onPress={() => router.push('/privacy-policy')}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: theme.success + '20' }]}>
@@ -359,14 +359,14 @@ export default function ProfileScreen() {
                 Privacy Policy
               </Text>
             </View>
-            <Ionicons name="open-outline" size={20} color={theme.textMuted} />
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL)}
+            onPress={() => router.push('/terms-of-service')}
           >
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: theme.warning + '20' }]}>
@@ -376,12 +376,13 @@ export default function ProfileScreen() {
                 Terms of Service
               </Text>
             </View>
-            <Ionicons name="open-outline" size={20} color={theme.textMuted} />
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
           </TouchableOpacity>
         </Card>
 
         {/* Danger Zone */}
         <Text style={[styles.sectionTitle, { color: theme.error }]}>Danger Zone</Text>
+
 
         <Card style={styles.settingsCard}>
           <TouchableOpacity
