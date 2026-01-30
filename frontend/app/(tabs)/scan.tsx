@@ -7,6 +7,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -28,18 +30,36 @@ export default function ScanScreen() {
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasConsent, setHasConsent] = useState<boolean | null>(null);
+  const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
+  const [galleryPermission, setGalleryPermission] = useState<boolean | null>(null);
 
   // Check if user can scan (free users: 1 scan limit)
   const canScan = user?.plan === 'premium' || (user?.scan_count ?? 0) < 1;
 
-  // Check for photo consent on mount
+  // Check for photo consent and request permissions on mount
   useEffect(() => {
     checkPhotoConsent();
+    requestPermissionsEarly();
   }, []);
 
   const checkPhotoConsent = async () => {
     const consent = await AsyncStorage.getItem('photo_consent_given');
     setHasConsent(consent === 'true');
+  };
+
+  // Request permissions early so they're ready when user wants to take photo
+  const requestPermissionsEarly = async () => {
+    try {
+      // Request camera permission
+      const cameraResult = await ImagePicker.requestCameraPermissionsAsync();
+      setCameraPermission(cameraResult.granted);
+
+      // Request gallery permission
+      const galleryResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      setGalleryPermission(galleryResult.granted);
+    } catch (error) {
+      console.error('Permission request error:', error);
+    }
   };
 
   const pickImage = async (useCamera: boolean) => {
@@ -56,13 +76,28 @@ export default function ScanScreen() {
     }
 
     try {
-      const permissionResult = useCamera
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      // Check if we already have permission
+      const hasPermission = useCamera ? cameraPermission : galleryPermission;
+      
+      if (!hasPermission) {
+        const permissionResult = useCamera
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please grant permission to access your photos.');
-        return;
+        if (!permissionResult.granted) {
+          Alert.alert(
+            'Permission Required', 
+            `Please grant permission to access your ${useCamera ? 'camera' : 'photos'} in Settings.`
+          );
+          return;
+        }
+        
+        // Update permission state
+        if (useCamera) {
+          setCameraPermission(true);
+        } else {
+          setGalleryPermission(true);
+        }
       }
 
       const result = useCamera
@@ -135,137 +170,143 @@ export default function ScanScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>{t('scan_skin')}</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Take or upload a photo of your face
-        </Text>
-      </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>{t('scan_skin')}</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Take or upload a photo of your face
+          </Text>
+        </View>
 
-      {/* Scan Limit Banner for Free Users */}
-      {!canScan && (
-        <TouchableOpacity 
-          style={[styles.limitBanner, { backgroundColor: theme.primary }]}
-          onPress={() => router.push('/paywall')}
-        >
-          <View style={styles.limitBannerContent}>
-            <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
-            <View style={styles.limitBannerText}>
-              <Text style={styles.limitBannerTitle}>
-                You've used your free scan
-              </Text>
-              <Text style={styles.limitBannerSubtitle}>
-                Upgrade to Premium for unlimited scans
+        {/* Scan Limit Banner for Free Users */}
+        {!canScan && (
+          <TouchableOpacity 
+            style={[styles.limitBanner, { backgroundColor: theme.primary }]}
+            onPress={() => router.push('/paywall')}
+          >
+            <View style={styles.limitBannerContent}>
+              <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+              <View style={styles.limitBannerText}>
+                <Text style={styles.limitBannerTitle}>
+                  You've used your free scan
+                </Text>
+                <Text style={styles.limitBannerSubtitle}>
+                  Upgrade to Premium for unlimited scans
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.content}>
+          {image ? (
+            <View style={styles.previewContainer}>
+              <Image
+                source={{ uri: `data:image/jpeg;base64,${image}` }}
+                style={styles.previewImage}
+              />
+              <TouchableOpacity
+                style={[styles.clearButton, { backgroundColor: theme.error }]}
+                onPress={clearImage}
+              >
+                <Ionicons name="close" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={[styles.placeholder, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Ionicons name="person-outline" size={80} color={theme.textMuted} />
+              <Text style={[styles.placeholderText, { color: theme.textMuted }]}>
+                No image selected
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
-      )}
+          )}
 
-      <View style={styles.content}>
-        {image ? (
-          <View style={styles.previewContainer}>
-            <Image
-              source={{ uri: `data:image/jpeg;base64,${image}` }}
-              style={styles.previewImage}
-            />
-            <TouchableOpacity
-              style={[styles.clearButton, { backgroundColor: theme.error }]}
-              onPress={clearImage}
-            >
-              <Ionicons name="close" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={[styles.placeholder, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Ionicons name="person-outline" size={80} color={theme.textMuted} />
-            <Text style={[styles.placeholderText, { color: theme.textMuted }]}>
-              No image selected
+          {!image && (
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+                onPress={() => pickImage(true)}
+              >
+                <View style={[styles.optionIcon, { backgroundColor: theme.primary + '20' }]}>
+                  <Ionicons name="camera" size={28} color={theme.primary} />
+                </View>
+                <Text style={[styles.optionText, { color: theme.text }]}>
+                  {t('take_photo')}
+                </Text>
+                <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
+                  Use your camera
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.optionButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+                onPress={() => pickImage(false)}
+              >
+                <View style={[styles.optionIcon, { backgroundColor: theme.info + '20' }]}>
+                  <Ionicons name="images" size={28} color={theme.info} />
+                </View>
+                <Text style={[styles.optionText, { color: theme.text }]}>
+                  {t('upload_photo')}
+                </Text>
+                <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
+                  From your gallery
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {image && (
+            <View style={styles.actionButtons}>
+              <Button
+                title={analyzing ? t('analyzing') : 'Analyze Skin'}
+                onPress={analyzeSkin}
+                loading={analyzing}
+                disabled={analyzing}
+                icon={analyzing ? undefined : 'sparkles'}
+                size="large"
+                style={{ flex: 1, marginRight: 8 }}
+              />
+              <Button
+                title="Retake"
+                onPress={clearImage}
+                variant="outline"
+                size="large"
+                style={{ width: 100 }}
+              />
+            </View>
+          )}
+
+          {/* Tips */}
+          <Card style={styles.tipsCard}>
+            <Text style={[styles.tipsTitle, { color: theme.text }]}>
+              Tips for best results
             </Text>
-          </View>
-        )}
-
-        {!image && (
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              style={[styles.optionButton, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={() => pickImage(true)}
-            >
-              <View style={[styles.optionIcon, { backgroundColor: theme.primary + '20' }]}>
-                <Ionicons name="camera" size={28} color={theme.primary} />
-              </View>
-              <Text style={[styles.optionText, { color: theme.text }]}>
-                {t('take_photo')}
+            <View style={styles.tipItem}>
+              <Ionicons name="sunny-outline" size={18} color={theme.warning} />
+              <Text style={[styles.tipText, { color: theme.textSecondary }]}>
+                Use natural lighting
               </Text>
-              <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
-                Use your camera
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="water-outline" size={18} color={theme.info} />
+              <Text style={[styles.tipText, { color: theme.textSecondary }]}>
+                Clean face, no makeup
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.optionButton, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={() => pickImage(false)}
-            >
-              <View style={[styles.optionIcon, { backgroundColor: theme.info + '20' }]}>
-                <Ionicons name="images" size={28} color={theme.info} />
-              </View>
-              <Text style={[styles.optionText, { color: theme.text }]}>
-                {t('upload_photo')}
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="eye-outline" size={18} color={theme.success} />
+              <Text style={[styles.tipText, { color: theme.textSecondary }]}>
+                Face the camera directly
               </Text>
-              <Text style={[styles.optionSubtext, { color: theme.textSecondary }]}>
-                From your gallery
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {image && (
-          <View style={styles.actionButtons}>
-            <Button
-              title={analyzing ? t('analyzing') : 'Analyze Skin'}
-              onPress={analyzeSkin}
-              loading={analyzing}
-              disabled={analyzing}
-              icon={analyzing ? undefined : 'sparkles'}
-              size="large"
-              style={{ flex: 1, marginRight: 8 }}
-            />
-            <Button
-              title="Retake"
-              onPress={clearImage}
-              variant="outline"
-              size="large"
-              style={{ width: 100 }}
-            />
-          </View>
-        )}
-
-        {/* Tips */}
-        <Card style={styles.tipsCard}>
-          <Text style={[styles.tipsTitle, { color: theme.text }]}>
-            Tips for best results
-          </Text>
-          <View style={styles.tipItem}>
-            <Ionicons name="sunny-outline" size={18} color={theme.warning} />
-            <Text style={[styles.tipText, { color: theme.textSecondary }]}>
-              Use natural lighting
-            </Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Ionicons name="water-outline" size={18} color={theme.info} />
-            <Text style={[styles.tipText, { color: theme.textSecondary }]}>
-              Clean face, no makeup
-            </Text>
-          </View>
-          <View style={styles.tipItem}>
-            <Ionicons name="eye-outline" size={18} color={theme.success} />
-            <Text style={[styles.tipText, { color: theme.textSecondary }]}>
-              Face the camera directly
-            </Text>
-          </View>
-        </Card>
-      </View>
+            </View>
+          </Card>
+        </View>
+      </ScrollView>
 
       {analyzing && (
         <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
@@ -281,6 +322,13 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100, // Extra padding for bottom nav
   },
   header: {
     paddingHorizontal: 20,
@@ -367,7 +415,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   tipsCard: {
-    marginTop: 'auto',
     marginBottom: 20,
   },
   tipsTitle: {
