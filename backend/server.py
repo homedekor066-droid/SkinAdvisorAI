@@ -35,8 +35,16 @@ JWT_EXPIRATION_HOURS = 24 * 7  # 1 week
 # OpenAI API Key for production
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+# Initialize OpenAI client with Emergent endpoint if using Emergent key
+if OPENAI_API_KEY and OPENAI_API_KEY.startswith('sk-emergent'):
+    openai_client = OpenAI(
+        api_key=OPENAI_API_KEY,
+        base_url="https://api.emergentmethods.ai/v1"
+    )
+elif OPENAI_API_KEY:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    openai_client = None
 
 app = FastAPI(title="SkinAdvisor AI API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
