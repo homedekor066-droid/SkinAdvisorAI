@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
 // Ensure web browser can complete auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -33,48 +34,57 @@ interface GoogleUserInfo {
 
 class SocialAuthService {
   /**
-   * Sign in with Google using simple OAuth flow
+   * Sign in with Google using Expo AuthSession with proxy
    */
   async signInWithGoogle(): Promise<SocialAuthResult> {
     try {
-      // Get the appropriate client ID based on platform
-      const clientId = Platform.select({
-        ios: GOOGLE_IOS_CLIENT_ID,
-        android: GOOGLE_ANDROID_CLIENT_ID,
-        default: GOOGLE_WEB_CLIENT_ID,
+      // Use Expo's proxy for proper redirect handling
+      const redirectUri = AuthSession.makeRedirectUri({
+        // Use proxy for Expo Go compatibility
+        useProxy: true,
       });
 
-      // Create redirect URI based on platform
-      const redirectUri = Platform.select({
-        ios: `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.split('-')[0]}:/oauth2redirect/google`,
-        android: `com.skinadvisor.ai:/oauth2redirect/google`,
-        default: 'https://auth.expo.io/@skinadvisor/skinadvisor-ai',
-      });
-
-      console.log('[Google Auth] Client ID:', clientId);
       console.log('[Google Auth] Redirect URI:', redirectUri);
 
-      // Build the Google OAuth URL - simple implicit flow without PKCE
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${encodeURIComponent(clientId!)}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri!)}` +
+      // Get the appropriate client ID based on platform
+      // For Expo Go, we need to use the Web Client ID
+      const clientId = GOOGLE_WEB_CLIENT_ID;
+
+      console.log('[Google Auth] Using client ID:', clientId);
+
+      // Google OAuth discovery document
+      const discovery = {
+        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenEndpoint: 'https://oauth2.googleapis.com/token',
+        revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+      };
+
+      // Create auth request without PKCE for implicit flow
+      const authUrl = 
+        `${discovery.authorizationEndpoint}?` +
+        `client_id=${encodeURIComponent(clientId)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=token` +
-        `&scope=${encodeURIComponent('openid profile email')}` +
-        `&include_granted_scopes=true`;
+        `&scope=${encodeURIComponent('openid profile email')}`;
 
-      console.log('[Google Auth] Opening auth URL...');
+      console.log('[Google Auth] Opening browser...');
 
-      // Open the browser for authentication
+      // Use Expo's auth session
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
-      console.log('[Google Auth] Result:', result.type);
+      console.log('[Google Auth] Result type:', result.type);
 
       if (result.type === 'success' && result.url) {
+        console.log('[Google Auth] Success URL:', result.url);
+        
         // Parse the access token from the URL fragment
         const urlParts = result.url.split('#');
         if (urlParts.length > 1) {
-          const params = new URLSearchParams(urlParts[1]);
+          const fragment = urlParts[1];
+          const params = new URLSearchParams(fragment);
           const accessToken = params.get('access_token');
+
+          console.log('[Google Auth] Access token received:', !!accessToken);
 
           if (accessToken) {
             // Fetch user info from Google
@@ -90,6 +100,7 @@ class SocialAuthService {
             }
 
             const userInfo: GoogleUserInfo = await userInfoResponse.json();
+            console.log('[Google Auth] User info received:', userInfo.email);
 
             return {
               success: true,
@@ -108,7 +119,7 @@ class SocialAuthService {
         return {
           success: false,
           provider: 'google',
-          error: 'No access token received',
+          error: 'No access token received from Google',
         };
       } else if (result.type === 'cancel' || result.type === 'dismiss') {
         return {
@@ -117,6 +128,7 @@ class SocialAuthService {
           error: 'User cancelled',
         };
       } else {
+        console.log('[Google Auth] Failed result:', result);
         return {
           success: false,
           provider: 'google',
