@@ -73,7 +73,9 @@
       },
       "privacyPolicyUrl": "https://sites.google.com/view/skincare-ia-privacy",
       "termsOfServiceUrl": "https://sites.google.com/view/skincare-ia-terms",
-      "googleClientId": "993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com"
+      "googleWebClientId": "993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com",
+      "googleIosClientId": "993166704619-7tu3f44t4n2a1sqs3g50uvedc4d87rls.apps.googleusercontent.com",
+      "googleAndroidClientId": "993166704619-f4afgb5e86av4k7pregoasvkcogbnjvs.apps.googleusercontent.com"
     },
     "owner": "YOUR_EXPO_USERNAME",
     "runtimeVersion": {
