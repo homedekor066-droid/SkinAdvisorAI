@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loadStoredAuth = async () => {
     try {
-      const storedToken = await SecureStore.getItemAsync('auth_token');
+      const storedToken = await storage.getItem('auth_token');
       if (storedToken) {
         setToken(storedToken);
         await fetchUser(storedToken);
