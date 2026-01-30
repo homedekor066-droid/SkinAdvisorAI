@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -22,6 +22,20 @@ export function SocialLoginButtons({
   loading = false,
 }: SocialLoginButtonsProps) {
   const { theme, isDarkMode } = useTheme();
+
+  const handleGooglePress = () => {
+    console.log('[SocialLoginButtons] Google button pressed');
+    if (!loading) {
+      onGooglePress();
+    }
+  };
+
+  const handleApplePress = () => {
+    console.log('[SocialLoginButtons] Apple button pressed');
+    if (!loading) {
+      onApplePress();
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -41,42 +55,58 @@ export function SocialLoginButtons({
             { 
               backgroundColor: theme.card,
               borderColor: theme.border,
+              opacity: loading ? 0.6 : 1,
             }
           ]}
-          onPress={onGooglePress}
+          onPress={handleGooglePress}
           disabled={loading}
+          activeOpacity={0.7}
         >
-          <View style={styles.googleIcon}>
-            <Text style={styles.googleG}>G</Text>
-          </View>
-          <Text style={[styles.buttonText, { color: theme.text }]}>
-            Google
-          </Text>
+          {loading ? (
+            <ActivityIndicator size="small" color={theme.primary} />
+          ) : (
+            <>
+              <View style={styles.googleIcon}>
+                <Text style={styles.googleG}>G</Text>
+              </View>
+              <Text style={[styles.buttonText, { color: theme.text }]}>
+                Google
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
 
-        {/* Apple Sign In - Only show on iOS or always for web preview */}
+        {/* Apple Sign In */}
         <TouchableOpacity
           style={[
             styles.socialButton,
             { 
               backgroundColor: isDarkMode ? '#FFFFFF' : '#000000',
               borderColor: isDarkMode ? '#FFFFFF' : '#000000',
+              opacity: loading ? 0.6 : 1,
             }
           ]}
-          onPress={onApplePress}
+          onPress={handleApplePress}
           disabled={loading}
+          activeOpacity={0.7}
         >
-          <Ionicons 
-            name="logo-apple" 
-            size={20} 
-            color={isDarkMode ? '#000000' : '#FFFFFF'} 
-          />
-          <Text style={[
-            styles.buttonText, 
-            { color: isDarkMode ? '#000000' : '#FFFFFF' }
-          ]}>
-            Apple
-          </Text>
+          {loading ? (
+            <ActivityIndicator size="small" color={isDarkMode ? '#000000' : '#FFFFFF'} />
+          ) : (
+            <>
+              <Ionicons 
+                name="logo-apple" 
+                size={20} 
+                color={isDarkMode ? '#000000' : '#FFFFFF'} 
+              />
+              <Text style={[
+                styles.buttonText, 
+                { color: isDarkMode ? '#000000' : '#FFFFFF' }
+              ]}>
+                Apple
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>
