@@ -45,21 +45,31 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert(
-      t('logout'),
-      'Are you sure you want to logout?',
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('confirm'),
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/login');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogout = async () => {
+    // On web, Alert doesn't work well, so we use a simpler approach
+    if (Platform.OS === 'web') {
+      // For web, directly logout without confirmation
+      await logout();
+      router.replace('/(auth)/login');
+    } else {
+      // For native, show confirmation alert
+      Alert.alert(
+        t('logout'),
+        'Are you sure you want to logout?',
+        [
+          { text: t('cancel'), style: 'cancel' },
+          {
+            text: t('confirm'),
+            onPress: async () => {
+              await logout();
+              router.replace('/(auth)/login');
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleDeleteAccount = () => {
