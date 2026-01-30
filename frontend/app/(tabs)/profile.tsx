@@ -20,13 +20,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import { Card, Button, Input } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import * as WebBrowser from 'expo-web-browser';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-
-// Legal URLs
-const PRIVACY_POLICY_URL = 'https://sites.google.com/view/skincare-ia-privacy';
-const TERMS_OF_SERVICE_URL = 'https://sites.google.com/view/skincare-ia-terms';
 
 export default function ProfileScreen() {
   const { theme, isDarkMode, toggleTheme } = useTheme();
