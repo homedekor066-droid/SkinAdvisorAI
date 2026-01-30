@@ -106,14 +106,23 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!validate()) return;
+    console.log('[Register] handleRegister called');
+    console.log('[Register] name:', name, 'email:', email, 'password:', password?.length, 'confirm:', confirmPassword?.length);
+    
+    if (!validate()) {
+      console.log('[Register] Validation failed:', errors);
+      return;
+    }
 
+    console.log('[Register] Validation passed, starting registration...');
     setLoading(true);
     try {
       await register(name, email, password, language);
+      console.log('[Register] Registration successful, navigating...');
       // Navigate to language selection after registration
       router.replace('/language-selection');
     } catch (error: any) {
+      console.log('[Register] Registration error:', error);
       const message = error.response?.data?.detail || 'Registration failed';
       Alert.alert(t('error'), message);
     } finally {
