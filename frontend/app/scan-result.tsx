@@ -407,6 +407,104 @@ export default function ScanResultScreen() {
           )}
         </Card>
 
+        {/* PRD Phase 1: Skin Strengths Section - Builds Trust */}
+        {strengths && strengths.length > 0 && (
+          <Card style={styles.strengthsCard}>
+            <View style={styles.strengthsHeader}>
+              <Ionicons name="sparkles" size={24} color="#4CAF50" />
+              <Text style={[styles.strengthsTitle, { color: theme.text }]}>
+                Your Skin Strengths
+              </Text>
+            </View>
+            {strengths.map((strength: any, index: number) => (
+              <View key={index} style={styles.strengthItem}>
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                <View style={styles.strengthContent}>
+                  <Text style={[styles.strengthName, { color: theme.text }]}>
+                    {strength.name}
+                  </Text>
+                  <Text style={[styles.strengthDescription, { color: theme.textSecondary }]}>
+                    {strength.description}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        )}
+
+        {/* PRD Phase 1: Skin Metrics Section (Premium Only) */}
+        {!isLocked && Object.keys(skinMetrics).length > 0 && (
+          <Card style={styles.metricsCard}>
+            <View style={styles.metricsHeader}>
+              <Ionicons name="analytics" size={24} color={theme.primary} />
+              <Text style={[styles.metricsTitle, { color: theme.text }]}>
+                Skin Metrics Analysis
+              </Text>
+            </View>
+            <Text style={[styles.metricsSubtitle, { color: theme.textSecondary }]}>
+              Detailed measurements from your scan
+            </Text>
+            {Object.entries(skinMetrics).map(([key, value]: [string, any], index) => (
+              <View key={index} style={styles.metricItem}>
+                <View style={styles.metricHeader}>
+                  <Ionicons name={getMetricIcon(key) as any} size={18} color={theme.primary} />
+                  <Text style={[styles.metricName, { color: theme.text }]}>
+                    {formatMetricName(key)}
+                  </Text>
+                  <Text style={[styles.metricScore, { color: getMetricColor(value?.score || 0) }]}>
+                    {value?.score || 0}/100
+                  </Text>
+                </View>
+                <View style={[styles.metricBarContainer, { backgroundColor: theme.border }]}>
+                  <View 
+                    style={[
+                      styles.metricBarFill, 
+                      { 
+                        width: `${value?.score || 0}%`, 
+                        backgroundColor: getMetricColor(value?.score || 0) 
+                      }
+                    ]} 
+                  />
+                </View>
+                {value?.why && (
+                  <Text style={[styles.metricWhy, { color: theme.textMuted }]}>
+                    {value.why}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </Card>
+        )}
+
+        {/* PRD Phase 1: Primary Concern for Free Users */}
+        {isLocked && primaryConcern && primaryConcern.name && (
+          <Card style={[styles.primaryConcernCard, { backgroundColor: '#FFF3E0' }]}>
+            <View style={styles.primaryConcernHeader}>
+              <Ionicons name="alert-circle" size={24} color="#E65100" />
+              <Text style={[styles.primaryConcernTitle, { color: '#E65100' }]}>
+                Your Primary Concern
+              </Text>
+            </View>
+            <Text style={[styles.primaryConcernName, { color: '#BF360C' }]}>
+              {primaryConcern.name}
+            </Text>
+            {primaryConcern.why_this_result && (
+              <Text style={[styles.primaryConcernWhy, { color: '#5D4037' }]}>
+                {primaryConcern.why_this_result}
+              </Text>
+            )}
+            <TouchableOpacity 
+              style={[styles.unlockPrimaryCTA, { backgroundColor: theme.primary }]}
+              onPress={goToPaywall}
+            >
+              <Text style={styles.unlockPrimaryCTAText}>
+                See full analysis & solution
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </Card>
+        )}
+
         {/* Image Preview */}
         {image_base64 && (
           <View style={styles.imageSection}>
