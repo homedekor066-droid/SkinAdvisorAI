@@ -1760,19 +1760,6 @@ def get_fallback_routine(skin_type: str, analysis: dict = None) -> dict:
             {"product_type": "sunscreen", "name": "Broad Spectrum SPF 50", "description": "Essential UV protection", "addresses_concern": "Sun protection", "key_ingredients": ["zinc oxide", "titanium dioxide"], "suitable_for": ["all skin types"], "price_range": "$$"}
         ]
     }
-            {"order": 3, "step_name": "Night Cream", "product_type": "moisturizer", "instructions": "Apply before bed", "ingredients_to_look_for": ["peptides", "ceramides"], "ingredients_to_avoid": ["heavy fragrances"]}
-        ],
-        "weekly_routine": [
-            {"order": 1, "step_name": "Exfoliation", "product_type": "treatment", "instructions": "Use 1-2 times per week", "ingredients_to_look_for": ["AHA", "BHA"], "ingredients_to_avoid": ["physical scrubs"]},
-            {"order": 2, "step_name": "Face Mask", "product_type": "treatment", "instructions": "Apply for 10-15 minutes, then rinse", "ingredients_to_look_for": ["clay", "hyaluronic acid"], "ingredients_to_avoid": ["irritating ingredients"]}
-        ],
-        "products": [
-            {"product_type": "cleanser", "name": "Gentle Foaming Cleanser", "description": "A mild cleanser suitable for daily use", "key_ingredients": ["glycerin", "ceramides"], "suitable_for": [skin_type], "price_range": "$$"},
-            {"product_type": "moisturizer", "name": "Hydrating Moisturizer", "description": "Lightweight hydration for all skin types", "key_ingredients": ["hyaluronic acid", "niacinamide"], "suitable_for": [skin_type], "price_range": "$$"},
-            {"product_type": "sunscreen", "name": "Daily SPF 50 Sunscreen", "description": "Broad spectrum protection", "key_ingredients": ["zinc oxide", "vitamin E"], "suitable_for": ["all skin types"], "price_range": "$$"},
-            {"product_type": "serum", "name": "Vitamin C Serum", "description": "Brightening and antioxidant protection", "key_ingredients": ["vitamin C", "vitamin E"], "suitable_for": [skin_type], "price_range": "$$$"}
-        ]
-    }
 
 # ==================== SCAN ROUTES ====================
 
