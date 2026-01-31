@@ -126,45 +126,56 @@ class PRDPhase1Tester:
             
             if response.status_code == 200:
                 data = response.json()
-                self.scan_id = data.get("scan_id")  # Save for later tests
+                self.scan_id = data.get("id")  # Save for later tests
+                
+                # Extract analysis data (it's nested under 'analysis')
+                analysis = data.get("analysis", {})
                 
                 # Check PRD Phase 1 structure for FREE users
                 required_fields = ["overall_score", "score_label", "strengths", "primary_concern"]
-                missing_fields = [field for field in required_fields if field not in data]
+                missing_fields = [field for field in required_fields if field not in analysis]
                 
                 if missing_fields:
                     self.log_test("Free User Scan Structure", False, 
-                                  f"Missing required fields: {missing_fields}", "", data)
+                                  f"Missing required fields in analysis: {missing_fields}", "", data)
                     return False
                 
                 # Verify FREE user limitations
                 checks = []
                 
                 # 1. Should have overall_score and score_label
-                if "overall_score" in data and "score_label" in data:
+                if "overall_score" in analysis and "score_label" in analysis:
                     checks.append("✓ Has overall_score and score_label")
                 else:
                     checks.append("✗ Missing overall_score or score_label")
                 
                 # 2. Should have strengths (1-2 for free users)
-                if "strengths" in data and isinstance(data["strengths"], list) and len(data["strengths"]) >= 1:
-                    checks.append(f"✓ Has {len(data['strengths'])} strengths")
+                if "strengths" in analysis and isinstance(analysis["strengths"], list) and len(analysis["strengths"]) >= 1:
+                    checks.append(f"✓ Has {len(analysis['strengths'])} strengths")
                 else:
                     checks.append("✗ Missing or invalid strengths")
                 
                 # 3. Should have primary_concern with required fields
-                if ("primary_concern" in data and isinstance(data["primary_concern"], dict) and 
-                    "name" in data["primary_concern"] and "severity" in data["primary_concern"]):
+                if ("primary_concern" in analysis and isinstance(analysis["primary_concern"], dict) and 
+                    "name" in analysis["primary_concern"]):
                     checks.append("✓ Has valid primary_concern")
                 else:
                     checks.append("✗ Missing or invalid primary_concern")
                 
                 # 4. Should have issues_preview (locked for free users) OR locked issues
-                if "issues_preview" in data:
-                    checks.append("✓ Has issues_preview (free user limitation)")
-                elif "issues" in data:
+                if "issues_preview" in analysis:
+                    issues_preview = analysis["issues_preview"]
+                    if isinstance(issues_preview, list) and len(issues_preview) > 0:
+                        first_issue = issues_preview[0]
+                        if "locked" in first_issue and first_issue["locked"]:
+                            checks.append("✓ Has locked issues_preview (correct for free user)")
+                        else:
+                            checks.append("✗ Issues_preview not properly locked")
+                    else:
+                        checks.append("✗ Empty issues_preview")
+                elif "issues" in analysis:
                     # Check if issues are properly locked
-                    issues = data["issues"]
+                    issues = analysis["issues"]
                     if isinstance(issues, list) and len(issues) > 0:
                         first_issue = issues[0]
                         if "locked" in first_issue or "severity_locked" in first_issue:
@@ -177,10 +188,20 @@ class PRDPhase1Tester:
                     checks.append("✗ Missing issues_preview or issues")
                 
                 # 5. Should NOT have full skin_metrics for free users
-                if "skin_metrics" not in data:
+                if "skin_metrics" not in analysis:
                     checks.append("✓ No full skin_metrics (correct for free user)")
                 else:
                     checks.append("✗ Has full skin_metrics (should be premium only)")
+                
+                # 6. Should have locked_features indicating what's locked
+                if "locked_features" in data and isinstance(data["locked_features"], list):
+                    locked_features = data["locked_features"]
+                    if "skin_metrics" in locked_features:
+                        checks.append("✓ skin_metrics properly locked for free user")
+                    else:
+                        checks.append("✗ skin_metrics not in locked_features")
+                else:
+                    checks.append("✗ Missing locked_features list")
                 
                 all_passed = all("✓" in check for check in checks)
                 details = "; ".join(checks)
