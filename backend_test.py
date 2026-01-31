@@ -497,29 +497,36 @@ class PRDPhase1Tester:
             
             if response.status_code == 200:
                 data = response.json()
+                analysis = data.get("analysis", {})
                 
                 checks = []
                 
                 # Should have same structure as analyze endpoint for premium user
-                if "skin_metrics" in data:
+                if "skin_metrics" in analysis:
                     checks.append("✓ Has skin_metrics in history")
                 else:
                     checks.append("✗ Missing skin_metrics in history")
                 
-                if "strengths" in data and isinstance(data["strengths"], list):
-                    checks.append(f"✓ Has {len(data['strengths'])} strengths in history")
+                if "strengths" in analysis and isinstance(analysis["strengths"], list):
+                    checks.append(f"✓ Has {len(analysis['strengths'])} strengths in history")
                 else:
                     checks.append("✗ Missing strengths in history")
                 
-                if "issues" in data and isinstance(data["issues"], list):
-                    checks.append(f"✓ Has {len(data['issues'])} issues in history")
+                if "issues" in analysis and isinstance(analysis["issues"], list):
+                    checks.append(f"✓ Has {len(analysis['issues'])} issues in history")
                 else:
                     checks.append("✗ Missing issues in history")
                 
-                if "primary_concern" in data:
+                if "primary_concern" in analysis:
                     checks.append("✓ Has primary_concern in history")
                 else:
                     checks.append("✗ Missing primary_concern in history")
+                
+                # Check that it's the same scan ID
+                if data.get("id") == self.scan_id:
+                    checks.append("✓ Correct scan ID returned")
+                else:
+                    checks.append(f"✗ Wrong scan ID: expected {self.scan_id}, got {data.get('id')}")
                 
                 all_passed = all("✓" in check for check in checks)
                 details = "; ".join(checks)
