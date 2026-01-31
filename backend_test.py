@@ -20,22 +20,22 @@ import time
 # Get backend URL from frontend .env
 BACKEND_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
 
-class SkinAdvisorTester:
+class PRDPhase1Tester:
     def __init__(self):
         self.backend_url = BACKEND_URL
         self.test_results = []
-        self.test_user_token = None
-        self.test_user_id = None
-        self.premium_user_token = None
-        self.premium_user_id = None
+        self.auth_token = None
+        self.user_id = None
+        self.scan_id = None
         
-    def log_test(self, test_name, success, details="", error=""):
-        """Log test result"""
+    def log_test(self, test_name, success, details="", error="", response_data=None):
+        """Log test result with optional response data"""
         result = {
             "test": test_name,
             "success": success,
             "details": details,
             "error": error,
+            "response_data": response_data,
             "timestamp": datetime.now().isoformat()
         }
         self.test_results.append(result)
