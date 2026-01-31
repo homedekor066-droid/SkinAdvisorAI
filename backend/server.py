@@ -1799,22 +1799,30 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
     
     # ==================== RETURN RESPONSE BASED ON PLAN ====================
     if user_plan == 'premium':
-        # PREMIUM USER: Return full response
+        # PREMIUM USER: Return full response with PRD Phase 1 data
         return {
             'id': scan['id'],
             'user_plan': 'premium',
+            'locked': False,
             'image_base64': scan.get('image_base64'),
             'image_hash': scan.get('image_hash'),
             'analysis': {
                 'skin_type': analysis.get('skin_type'),
                 'skin_type_confidence': analysis.get('skin_type_confidence', 0.8),
                 'skin_type_description': analysis.get('skin_type_description'),
+                # PRD Phase 1: Real measurable signals
+                'skin_metrics': analysis.get('skin_metrics', {}),
+                'strengths': analysis.get('strengths', []),
                 'issues': analysis.get('issues', []),
+                'primary_concern': analysis.get('primary_concern', {}),
                 'recommendations': analysis.get('recommendations', []),
                 'overall_score': score_data.get('score', 75),
                 'score_label': score_data.get('label', 'good'),
                 'score_description': score_data.get('description', 'Good skin condition'),
-                'score_factors': score_data.get('factors', [])
+                'score_factors': score_data.get('factors', []),
+                # PRD Phase 1: Metrics breakdown for transparency
+                'metrics_breakdown': score_data.get('metrics_breakdown', []),
+                'calculation_method': score_data.get('calculation_method', 'issue_based')
             },
             'routine': scan.get('routine'),
             'products': scan.get('products'),
@@ -1823,10 +1831,14 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
             'created_at': scan['created_at'].isoformat() if isinstance(scan['created_at'], datetime) else scan['created_at']
         }
     else:
-        # FREE USER: Return issues visible but LOCKED (details hidden)
-        # User MUST see issues exist - builds trust and conversion
+        # FREE USER (PRD Phase 3: Free Experience - Honest Curiosity)
         all_issues = analysis.get('issues', [])
         issue_count = len(all_issues)
+        all_strengths = analysis.get('strengths', [])
+        primary_concern = analysis.get('primary_concern', {})
+        
+        # PRD Phase 3: Free users get limited strengths (1-2 max)
+        free_strengths = all_strengths[:2] if all_strengths else []
         
         # Return issue names ONLY (no severity, no description - those are locked)
         issues_preview = [
@@ -1852,12 +1864,20 @@ async def get_scan_detail(scan_id: str, current_user: dict = Depends(get_current
                 'skin_type': analysis.get('skin_type'),
                 'overall_score': score_data.get('score', 75),
                 'score_label': score_data.get('label', 'good'),
-                # FREE USERS SEE: Issue names and count (but details locked)
+                # PRD Phase 3: Free users see strengths (builds trust)
+                'strengths': free_strengths,
+                # PRD Phase 3: Free users see PRIMARY concern only (drives curiosity)
+                'primary_concern': {
+                    'name': primary_concern.get('name', 'Skin concern detected'),
+                    'why_this_result': primary_concern.get('why_this_result', 'Based on your skin analysis')
+                },
+                # Issue names visible, details locked
                 'issue_count': issue_count,
                 'issues_preview': issues_preview,
             },
             'locked_features': [
                 'issue_details',
+                'skin_metrics',
                 'full_routine',
                 'diet_plan',
                 'product_recommendations',
