@@ -1570,11 +1570,15 @@ async def analyze_skin(
             products = cached['products']
             score_data = cached['score_data']
         else:
-            # Perform AI analysis
+            # Perform AI analysis (PRD Phase 1: Real Signals Extraction)
             analysis = await analyze_skin_with_ai(request.image_base64, language)
             
-            # Calculate DETERMINISTIC score from issues (NOT from LLM)
-            score_data = calculate_deterministic_score(analysis.get('issues', []))
+            # Calculate DETERMINISTIC score from REAL SIGNALS (PRD Phase 1)
+            # Now uses both skin_metrics AND issues for accurate scoring
+            score_data = calculate_deterministic_score(
+                issues=analysis.get('issues', []),
+                skin_metrics=analysis.get('skin_metrics', None)
+            )
             
             # Generate routine
             routine_data = await generate_routine_with_ai(analysis, language)
@@ -1606,7 +1610,7 @@ async def analyze_skin(
             issues=analysis.get('issues', [])
         )
         
-        # Create scan record with all data (always store full data)
+        # Create scan record with all data (always store full data) - PRD Phase 1 Enhanced
         scan = {
             'id': str(uuid.uuid4()),
             'user_id': current_user['id'],
@@ -1616,7 +1620,10 @@ async def analyze_skin(
                 'skin_type': analysis.get('skin_type'),
                 'skin_type_confidence': analysis.get('skin_type_confidence', 0.8),
                 'skin_type_description': analysis.get('skin_type_description'),
+                'skin_metrics': analysis.get('skin_metrics', {}),  # PRD Phase 1
+                'strengths': analysis.get('strengths', []),  # PRD Phase 1
                 'issues': analysis.get('issues', []),
+                'primary_concern': analysis.get('primary_concern', {}),  # PRD Phase 1
                 'recommendations': analysis.get('recommendations', [])
             },
             'score_data': score_data,
