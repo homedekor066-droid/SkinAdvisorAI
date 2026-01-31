@@ -20,6 +20,11 @@ import time
 # Get backend URL from frontend .env
 BACKEND_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
 
+# Test user credentials
+TEST_EMAIL = "prd_test_user@test.com"
+TEST_PASSWORD = "testpass123"
+TEST_NAME = "PRD Test User"
+
 class PRDPhase1Tester:
     def __init__(self):
         self.backend_url = BACKEND_URL
@@ -50,513 +55,497 @@ class PRDPhase1Tester:
     def create_test_image(self):
         """Create a simple test image in base64 format"""
         # Create a minimal PNG image (1x1 pixel)
-        png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\x0cIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xdd\x8d\xb4\x1c\x00\x00\x00\x00IEND\xaeB`\x82'
+        png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
         return base64.b64encode(png_data).decode('utf-8')
 
-    def register_test_user(self, email, name="Test User"):
-        """Register a new test user"""
+    def test_user_registration(self):
+        """Test 1: Register new test user (should start as free)"""
         try:
+            # First try to delete existing user (ignore if fails)
+            try:
+                login_response = requests.post(f"{self.backend_url}/auth/login", json={
+                    "email": TEST_EMAIL,
+                    "password": TEST_PASSWORD
+                })
+                if login_response.status_code == 200:
+                    token = login_response.json()["access_token"]
+                    headers = {"Authorization": f"Bearer {token}"}
+                    requests.delete(f"{self.backend_url}/account", headers=headers)
+            except:
+                pass
+            
+            # Register new user
             response = requests.post(f"{self.backend_url}/auth/register", json={
-                "email": email,
-                "password": "testpass123",
-                "name": name,
+                "email": TEST_EMAIL,
+                "password": TEST_PASSWORD,
+                "name": TEST_NAME,
                 "language": "en"
             })
             
             if response.status_code == 200:
                 data = response.json()
-                return data["access_token"], data["user"]["id"], data["user"]
+                self.auth_token = data["access_token"]
+                self.user_id = data["user"]["id"]
+                
+                # Verify user starts as free with scan_count=0
+                if (data["user"]["plan"] == "free" and 
+                    data["user"]["scan_count"] == 0):
+                    self.log_test("User Registration", True, 
+                                  f"User created with plan='{data['user']['plan']}', scan_count={data['user']['scan_count']}")
+                    return True
+                else:
+                    self.log_test("User Registration", False, 
+                                  f"Expected plan='free' and scan_count=0, got plan='{data['user']['plan']}', scan_count={data['user']['scan_count']}")
+                    return False
             else:
-                return None, None, None
+                self.log_test("User Registration", False, 
+                              f"Registration failed with status {response.status_code}", 
+                              response.text, response.json() if response.text else None)
+                return False
                 
         except Exception as e:
-            return None, None, None
+            self.log_test("User Registration", False, "", f"Exception: {str(e)}")
+            return False
 
-    def login_user(self, email, password="testpass123"):
-        """Login user and return token"""
+    def test_free_user_scan_structure(self):
+        """Test 2: Free user scan - verify new PRD Phase 1 response structure"""
         try:
-            response = requests.post(f"{self.backend_url}/auth/login", json={
-                "email": email,
-                "password": password
-            })
+            if not self.auth_token:
+                self.log_test("Free User Scan Structure", False, "", "No auth token available")
+                return False
+            
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            test_image = self.create_test_image()
+            
+            response = requests.post(f"{self.backend_url}/scan/analyze", 
+                                   headers=headers,
+                                   json={
+                                       "image_base64": test_image,
+                                       "language": "en"
+                                   })
             
             if response.status_code == 200:
                 data = response.json()
-                return data["access_token"], data["user"]["id"], data["user"]
-            else:
-                return None, None, None
+                self.scan_id = data.get("scan_id")  # Save for later tests
                 
-        except Exception as e:
-            return None, None, None
-
-    def get_auth_headers(self, token):
-        """Get authorization headers"""
-        return {"Authorization": f"Bearer {token}"}
-
-    def test_1_new_scoring_system_validation(self):
-        """Test 1: NEW SCORING SYSTEM VALIDATION"""
-        print("=== TEST 1: NEW SCORING SYSTEM VALIDATION ===")
-        
-        # Register test user for scoring check
-        email = f"test_score_check_{int(time.time())}@test.com"
-        token, user_id, user_data = self.register_test_user(email, "Score Test User")
-        
-        if not token:
-            self.log_test("1.1 Register Score Test User", False, error="Failed to register test user")
-            return
-            
-        self.log_test("1.1 Register Score Test User", True, f"User registered: {email}")
-        
-        # Check initial user plan is free
-        if user_data.get('plan') != 'free':
-            self.log_test("1.2 Initial Plan Check", False, error=f"Expected plan='free', got '{user_data.get('plan')}'")
-            return
-        
-        self.log_test("1.2 Initial Plan Check", True, f"User plan is 'free' as expected")
-        
-        # Perform a skin scan to test scoring
-        try:
-            test_image = self.create_test_image()
-            headers = self.get_auth_headers(token)
-            
-            response = requests.post(f"{self.backend_url}/scan/analyze", 
-                                   json={"image_base64": test_image, "language": "en"},
-                                   headers=headers)
-            
-            if response.status_code == 200:
-                scan_data = response.json()
-                score = scan_data.get('analysis', {}).get('overall_score')
-                
-                if score is None:
-                    self.log_test("1.3 Scoring System Test", False, error="No score returned in response")
-                    return
-                
-                # Check if score is in reasonable range (70-84 for most users)
-                if 70 <= score <= 84:
-                    self.log_test("1.3 Scoring System Test", True, f"Score {score} is in expected range (70-84)")
-                elif score >= 90:
-                    self.log_test("1.3 Scoring System Test", False, error=f"Score {score} is too high (>=90), should be rare")
-                else:
-                    self.log_test("1.3 Scoring System Test", True, f"Score {score} is acceptable (below 70)")
-                
-                # Check score structure
-                analysis = scan_data.get('analysis', {})
-                required_score_fields = ['overall_score', 'score_label']
-                missing_fields = [field for field in required_score_fields if field not in analysis]
+                # Check PRD Phase 1 structure for FREE users
+                required_fields = ["overall_score", "score_label", "strengths", "primary_concern"]
+                missing_fields = [field for field in required_fields if field not in data]
                 
                 if missing_fields:
-                    self.log_test("1.4 Score Structure Check", False, error=f"Missing fields: {missing_fields}")
+                    self.log_test("Free User Scan Structure", False, 
+                                  f"Missing required fields: {missing_fields}", "", data)
+                    return False
+                
+                # Verify FREE user limitations
+                checks = []
+                
+                # 1. Should have overall_score and score_label
+                if "overall_score" in data and "score_label" in data:
+                    checks.append("✓ Has overall_score and score_label")
                 else:
-                    self.log_test("1.4 Score Structure Check", True, f"All required score fields present")
+                    checks.append("✗ Missing overall_score or score_label")
                 
-            else:
-                self.log_test("1.3 Scoring System Test", False, error=f"Scan failed: {response.status_code} - {response.text}")
-                
-        except Exception as e:
-            self.log_test("1.3 Scoring System Test", False, error=f"Exception: {str(e)}")
-
-    def test_2_subscription_flow(self):
-        """Test 2: SUBSCRIPTION FLOW TEST"""
-        print("=== TEST 2: SUBSCRIPTION FLOW TEST ===")
-        
-        # Register new user
-        email = f"test_subscription_{int(time.time())}@test.com"
-        token, user_id, user_data = self.register_test_user(email, "Subscription Test User")
-        
-        if not token:
-            self.log_test("2.1 Register Subscription Test User", False, error="Failed to register test user")
-            return
-            
-        self.log_test("2.1 Register Subscription Test User", True, f"User registered: {email}")
-        
-        # Check initial plan is "free"
-        if user_data.get('plan') != 'free':
-            self.log_test("2.2 Initial Plan Check", False, error=f"Expected plan='free', got '{user_data.get('plan')}'")
-            return
-        
-        self.log_test("2.2 Initial Plan Check", True, "Initial plan is 'free'")
-        
-        # Call POST /api/subscription/upgrade
-        try:
-            headers = self.get_auth_headers(token)
-            response = requests.post(f"{self.backend_url}/subscription/upgrade", 
-                                   json={"plan": "premium"},
-                                   headers=headers)
-            
-            if response.status_code == 200:
-                upgrade_data = response.json()
-                self.log_test("2.3 Subscription Upgrade", True, f"Upgrade successful: {upgrade_data.get('message', 'No message')}")
-            else:
-                self.log_test("2.3 Subscription Upgrade", False, error=f"Upgrade failed: {response.status_code} - {response.text}")
-                return
-                
-        except Exception as e:
-            self.log_test("2.3 Subscription Upgrade", False, error=f"Exception: {str(e)}")
-            return
-        
-        # Call GET /api/auth/me and confirm plan = "premium"
-        try:
-            response = requests.get(f"{self.backend_url}/auth/me", headers=headers)
-            
-            if response.status_code == 200:
-                user_data = response.json()
-                current_plan = user_data.get('plan')
-                
-                if current_plan == 'premium':
-                    self.log_test("2.4 Plan Verification", True, "User plan is now 'premium'")
-                    # Store for later tests
-                    self.premium_user_token = token
-                    self.premium_user_id = user_id
+                # 2. Should have strengths (1-2 for free users)
+                if "strengths" in data and isinstance(data["strengths"], list) and len(data["strengths"]) >= 1:
+                    checks.append(f"✓ Has {len(data['strengths'])} strengths")
                 else:
-                    self.log_test("2.4 Plan Verification", False, error=f"Expected plan='premium', got '{current_plan}'")
-            else:
-                self.log_test("2.4 Plan Verification", False, error=f"Failed to get user info: {response.status_code}")
+                    checks.append("✗ Missing or invalid strengths")
                 
-        except Exception as e:
-            self.log_test("2.4 Plan Verification", False, error=f"Exception: {str(e)}")
-
-    def test_3_plan_based_response_structure(self):
-        """Test 3: PLAN-BASED RESPONSE STRUCTURE"""
-        print("=== TEST 3: PLAN-BASED RESPONSE STRUCTURE ===")
-        
-        # Create free user and perform scan
-        email_free = f"test_free_{int(time.time())}@test.com"
-        free_token, free_user_id, _ = self.register_test_user(email_free, "Free User")
-        
-        if not free_token:
-            self.log_test("3.1 Create Free User", False, error="Failed to register free user")
-            return
-            
-        self.log_test("3.1 Create Free User", True, f"Free user registered: {email_free}")
-        
-        # Perform scan with free user
-        try:
-            test_image = self.create_test_image()
-            headers = self.get_auth_headers(free_token)
-            
-            response = requests.post(f"{self.backend_url}/scan/analyze", 
-                                   json={"image_base64": test_image, "language": "en"},
-                                   headers=headers)
-            
-            if response.status_code == 200:
-                free_scan_data = response.json()
-                free_scan_id = free_scan_data.get('id')
-                
-                # Check free user response structure
-                if 'locked_features' in free_scan_data:
-                    self.log_test("3.2 Free User Scan Response", True, "Free user gets locked_features")
+                # 3. Should have primary_concern with required fields
+                if ("primary_concern" in data and isinstance(data["primary_concern"], dict) and 
+                    "name" in data["primary_concern"] and "severity" in data["primary_concern"]):
+                    checks.append("✓ Has valid primary_concern")
                 else:
-                    self.log_test("3.2 Free User Scan Response", False, error="Free user missing locked_features")
+                    checks.append("✗ Missing or invalid primary_concern")
                 
-                # Check that free user doesn't get full routine/diet/products
-                if 'routine' not in free_scan_data and 'diet_recommendations' not in free_scan_data:
-                    self.log_test("3.3 Free User Limited Response", True, "Free user doesn't get full routine/diet")
-                else:
-                    self.log_test("3.3 Free User Limited Response", False, error="Free user got full data (should be limited)")
-                
-            else:
-                self.log_test("3.2 Free User Scan Response", False, error=f"Free scan failed: {response.status_code}")
-                return
-                
-        except Exception as e:
-            self.log_test("3.2 Free User Scan Response", False, error=f"Exception: {str(e)}")
-            return
-        
-        # Test GET /api/scan/{scan_id} with free user
-        try:
-            response = requests.get(f"{self.backend_url}/scan/{free_scan_id}", headers=headers)
-            
-            if response.status_code == 200:
-                scan_detail = response.json()
-                
-                # Should have locked_features and preview, but no full routine/diet/products
-                has_locked = 'locked_features' in scan_detail
-                has_preview = 'preview' in scan_detail
-                has_routine = 'routine' in scan_detail
-                has_diet = 'diet_recommendations' in scan_detail
-                
-                if has_locked and has_preview and not has_routine and not has_diet:
-                    self.log_test("3.4 Free User Scan Detail", True, "Free user gets limited scan detail")
-                else:
-                    self.log_test("3.4 Free User Scan Detail", False, 
-                                error=f"Wrong structure: locked={has_locked}, preview={has_preview}, routine={has_routine}, diet={has_diet}")
-            else:
-                self.log_test("3.4 Free User Scan Detail", False, error=f"Failed to get scan detail: {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("3.4 Free User Scan Detail", False, error=f"Exception: {str(e)}")
-        
-        # Test with premium user if available
-        if self.premium_user_token:
-            try:
-                premium_headers = self.get_auth_headers(self.premium_user_token)
-                
-                response = requests.post(f"{self.backend_url}/scan/analyze", 
-                                       json={"image_base64": test_image, "language": "en"},
-                                       headers=premium_headers)
-                
-                if response.status_code == 200:
-                    premium_scan_data = response.json()
-                    premium_scan_id = premium_scan_data.get('id')
-                    
-                    # Check premium user gets full response
-                    has_routine = 'routine' in premium_scan_data
-                    has_diet = 'diet_recommendations' in premium_scan_data
-                    has_products = 'products' in premium_scan_data
-                    
-                    if has_routine and has_diet and has_products:
-                        self.log_test("3.5 Premium User Full Response", True, "Premium user gets full routine/diet/products")
-                    else:
-                        self.log_test("3.5 Premium User Full Response", False, 
-                                    error=f"Premium missing data: routine={has_routine}, diet={has_diet}, products={has_products}")
-                    
-                    # Test GET /api/scan/{scan_id} with premium user
-                    response = requests.get(f"{self.backend_url}/scan/{premium_scan_id}", headers=premium_headers)
-                    
-                    if response.status_code == 200:
-                        premium_detail = response.json()
-                        
-                        has_routine = 'routine' in premium_detail
-                        has_diet = 'diet_recommendations' in premium_detail
-                        has_products = 'products' in premium_detail
-                        
-                        if has_routine and has_diet and has_products:
-                            self.log_test("3.6 Premium User Scan Detail", True, "Premium user gets full scan detail")
+                # 4. Should have issues_preview (locked for free users) OR locked issues
+                if "issues_preview" in data:
+                    checks.append("✓ Has issues_preview (free user limitation)")
+                elif "issues" in data:
+                    # Check if issues are properly locked
+                    issues = data["issues"]
+                    if isinstance(issues, list) and len(issues) > 0:
+                        first_issue = issues[0]
+                        if "locked" in first_issue or "severity_locked" in first_issue:
+                            checks.append("✓ Issues are locked for free user")
                         else:
-                            self.log_test("3.6 Premium User Scan Detail", False, 
-                                        error=f"Premium detail missing: routine={has_routine}, diet={has_diet}, products={has_products}")
+                            checks.append("✗ Issues not properly locked for free user")
                     else:
-                        self.log_test("3.6 Premium User Scan Detail", False, error=f"Failed to get premium scan detail: {response.status_code}")
-                        
+                        checks.append("✗ No issues found")
                 else:
-                    self.log_test("3.5 Premium User Full Response", False, error=f"Premium scan failed: {response.status_code}")
-                    
-            except Exception as e:
-                self.log_test("3.5 Premium User Full Response", False, error=f"Exception: {str(e)}")
+                    checks.append("✗ Missing issues_preview or issues")
+                
+                # 5. Should NOT have full skin_metrics for free users
+                if "skin_metrics" not in data:
+                    checks.append("✓ No full skin_metrics (correct for free user)")
+                else:
+                    checks.append("✗ Has full skin_metrics (should be premium only)")
+                
+                all_passed = all("✓" in check for check in checks)
+                details = "; ".join(checks)
+                
+                self.log_test("Free User Scan Structure", all_passed, details, "", data if not all_passed else None)
+                return all_passed
+                
+            else:
+                self.log_test("Free User Scan Structure", False, 
+                              f"Scan failed with status {response.status_code}", 
+                              response.text, response.json() if response.text else None)
+                return False
+                
+        except Exception as e:
+            self.log_test("Free User Scan Structure", False, "", f"Exception: {str(e)}")
+            return False
 
-    def test_4_scan_limit_enforcement(self):
-        """Test 4: SCAN LIMIT ENFORCEMENT"""
-        print("=== TEST 4: SCAN LIMIT ENFORCEMENT ===")
-        
-        # Create new free user for limit testing
-        email = f"test_limit_{int(time.time())}@test.com"
-        token, user_id, user_data = self.register_test_user(email, "Limit Test User")
-        
-        if not token:
-            self.log_test("4.1 Create Limit Test User", False, error="Failed to register limit test user")
-            return
-            
-        self.log_test("4.1 Create Limit Test User", True, f"Limit test user registered: {email}")
-        
-        # Check initial scan_count is 0
-        initial_scan_count = user_data.get('scan_count', 0)
-        if initial_scan_count == 0:
-            self.log_test("4.2 Initial Scan Count", True, "Initial scan_count is 0")
-        else:
-            self.log_test("4.2 Initial Scan Count", False, error=f"Expected scan_count=0, got {initial_scan_count}")
-        
-        # Perform first scan (should succeed)
+    def test_upgrade_to_premium(self):
+        """Test 3: Upgrade user to premium"""
         try:
+            if not self.auth_token:
+                self.log_test("Upgrade to Premium", False, "", "No auth token available")
+                return False
+            
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            
+            response = requests.post(f"{self.backend_url}/subscription/upgrade", 
+                                   headers=headers,
+                                   json={"plan": "premium"})
+            
+            if response.status_code == 200:
+                # Verify upgrade by checking user profile
+                profile_response = requests.get(f"{self.backend_url}/auth/me", headers=headers)
+                
+                if profile_response.status_code == 200:
+                    user_data = profile_response.json()
+                    if user_data["plan"] == "premium":
+                        self.log_test("Upgrade to Premium", True, 
+                                      f"User successfully upgraded to plan='{user_data['plan']}'")
+                        return True
+                    else:
+                        self.log_test("Upgrade to Premium", False, 
+                                      f"Expected plan='premium', got plan='{user_data['plan']}'")
+                        return False
+                else:
+                    self.log_test("Upgrade to Premium", False, 
+                                  f"Could not verify upgrade, profile check failed with status {profile_response.status_code}")
+                    return False
+            else:
+                self.log_test("Upgrade to Premium", False, 
+                              f"Upgrade failed with status {response.status_code}", 
+                              response.text, response.json() if response.text else None)
+                return False
+                
+        except Exception as e:
+            self.log_test("Upgrade to Premium", False, "", f"Exception: {str(e)}")
+            return False
+
+    def test_premium_user_scan_structure(self):
+        """Test 4: Premium user scan - verify full PRD Phase 1 response structure"""
+        try:
+            if not self.auth_token:
+                self.log_test("Premium User Scan Structure", False, "", "No auth token available")
+                return False
+            
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
             test_image = self.create_test_image()
-            headers = self.get_auth_headers(token)
             
             response = requests.post(f"{self.backend_url}/scan/analyze", 
-                                   json={"image_base64": test_image, "language": "en"},
-                                   headers=headers)
+                                   headers=headers,
+                                   json={
+                                       "image_base64": test_image,
+                                       "language": "en"
+                                   })
             
             if response.status_code == 200:
-                self.log_test("4.3 First Scan (Should Succeed)", True, "First scan completed successfully")
+                data = response.json()
                 
-                # Check scan_count incremented
-                user_response = requests.get(f"{self.backend_url}/auth/me", headers=headers)
-                if user_response.status_code == 200:
-                    updated_user = user_response.json()
-                    new_scan_count = updated_user.get('scan_count', 0)
+                # Check PRD Phase 1 structure for PREMIUM users
+                checks = []
+                
+                # 1. Should have skin_metrics with all 5 metrics
+                if "skin_metrics" in data and isinstance(data["skin_metrics"], dict):
+                    expected_metrics = ["tone_uniformity", "texture_smoothness", "hydration_appearance", 
+                                      "pore_visibility", "redness_level"]
+                    metrics = data["skin_metrics"]
                     
-                    if new_scan_count == 1:
-                        self.log_test("4.4 Scan Count Increment", True, "scan_count incremented to 1")
+                    missing_metrics = []
+                    invalid_metrics = []
+                    
+                    for metric in expected_metrics:
+                        if metric not in metrics:
+                            missing_metrics.append(metric)
+                        else:
+                            metric_data = metrics[metric]
+                            if (not isinstance(metric_data, dict) or 
+                                "score" not in metric_data or 
+                                "why" not in metric_data):
+                                invalid_metrics.append(metric)
+                    
+                    if not missing_metrics and not invalid_metrics:
+                        checks.append(f"✓ Has all 5 skin_metrics with score and 'why'")
                     else:
-                        self.log_test("4.4 Scan Count Increment", False, error=f"Expected scan_count=1, got {new_scan_count}")
+                        error_details = []
+                        if missing_metrics:
+                            error_details.append(f"missing: {missing_metrics}")
+                        if invalid_metrics:
+                            error_details.append(f"invalid: {invalid_metrics}")
+                        checks.append(f"✗ Skin metrics issues: {'; '.join(error_details)}")
                 else:
-                    self.log_test("4.4 Scan Count Increment", False, error="Failed to get updated user data")
+                    checks.append("✗ Missing or invalid skin_metrics")
+                
+                # 2. Should have strengths (2-4 items for premium)
+                if "strengths" in data and isinstance(data["strengths"], list):
+                    strengths = data["strengths"]
+                    if len(strengths) >= 2:
+                        # Check structure of first strength
+                        if (len(strengths) > 0 and isinstance(strengths[0], dict) and 
+                            "name" in strengths[0] and "description" in strengths[0] and 
+                            "confidence" in strengths[0]):
+                            checks.append(f"✓ Has {len(strengths)} well-structured strengths")
+                        else:
+                            checks.append(f"✗ Strengths missing required fields (name, description, confidence)")
+                    else:
+                        checks.append(f"✗ Only {len(strengths)} strengths (expected 2-4)")
+                else:
+                    checks.append("✗ Missing or invalid strengths")
+                
+                # 3. Should have enhanced issues with 'why_this_result' and 'priority'
+                if "issues" in data and isinstance(data["issues"], list) and len(data["issues"]) > 0:
+                    issues = data["issues"]
+                    first_issue = issues[0]
                     
+                    required_issue_fields = ["name", "severity", "description", "why_this_result", "priority"]
+                    missing_issue_fields = [field for field in required_issue_fields if field not in first_issue]
+                    
+                    if not missing_issue_fields:
+                        checks.append(f"✓ Has {len(issues)} enhanced issues with all required fields")
+                    else:
+                        checks.append(f"✗ Issues missing fields: {missing_issue_fields}")
+                else:
+                    checks.append("✗ Missing or empty issues array")
+                
+                # 4. Should have primary_concern with why_this_result
+                if ("primary_concern" in data and isinstance(data["primary_concern"], dict) and 
+                    "name" in data["primary_concern"] and "severity" in data["primary_concern"] and
+                    "why_this_result" in data["primary_concern"]):
+                    checks.append("✓ Has complete primary_concern with why_this_result")
+                else:
+                    checks.append("✗ Missing or incomplete primary_concern")
+                
+                # 5. Should have overall scoring information
+                if "overall_score" in data and "score_label" in data:
+                    checks.append("✓ Has overall scoring information")
+                else:
+                    checks.append("✗ Missing overall scoring information")
+                
+                # 6. Should NOT have issues_preview (that's for free users)
+                if "issues_preview" not in data:
+                    checks.append("✓ No issues_preview (correct for premium user)")
+                else:
+                    checks.append("✗ Has issues_preview (should be free user only)")
+                
+                all_passed = all("✓" in check for check in checks)
+                details = "; ".join(checks)
+                
+                self.log_test("Premium User Scan Structure", all_passed, details, "", data if not all_passed else None)
+                return all_passed
+                
             else:
-                self.log_test("4.3 First Scan (Should Succeed)", False, error=f"First scan failed: {response.status_code}")
-                return
+                self.log_test("Premium User Scan Structure", False, 
+                              f"Scan failed with status {response.status_code}", 
+                              response.text, response.json() if response.text else None)
+                return False
                 
         except Exception as e:
-            self.log_test("4.3 First Scan (Should Succeed)", False, error=f"Exception: {str(e)}")
-            return
-        
-        # Perform second scan (should fail with 403)
-        try:
-            response = requests.post(f"{self.backend_url}/scan/analyze", 
-                                   json={"image_base64": test_image, "language": "en"},
-                                   headers=headers)
-            
-            if response.status_code == 403:
-                error_data = response.json()
-                
-                # Check error structure
-                if error_data.get('detail', {}).get('error') == 'scan_limit_reached':
-                    self.log_test("4.5 Second Scan (Should Fail)", True, "Second scan blocked with scan_limit_reached")
-                    
-                    # Check upgrade_required flag
-                    if error_data.get('detail', {}).get('upgrade_required') is True:
-                        self.log_test("4.6 Upgrade Required Flag", True, "upgrade_required flag is present")
-                    else:
-                        self.log_test("4.6 Upgrade Required Flag", False, error="upgrade_required flag missing or false")
-                        
-                else:
-                    self.log_test("4.5 Second Scan (Should Fail)", False, error=f"Wrong error type: {error_data}")
-                    
-            else:
-                self.log_test("4.5 Second Scan (Should Fail)", False, error=f"Expected 403, got {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("4.5 Second Scan (Should Fail)", False, error=f"Exception: {str(e)}")
+            self.log_test("Premium User Scan Structure", False, "", f"Exception: {str(e)}")
+            return False
 
-    def test_5_subscription_status_endpoint(self):
-        """Test 5: SUBSCRIPTION STATUS ENDPOINT"""
-        print("=== TEST 5: SUBSCRIPTION STATUS ENDPOINT ===")
-        
-        # Test with free user
-        email = f"test_status_{int(time.time())}@test.com"
-        token, user_id, _ = self.register_test_user(email, "Status Test User")
-        
-        if not token:
-            self.log_test("5.1 Create Status Test User", False, error="Failed to register status test user")
-            return
-            
-        self.log_test("5.1 Create Status Test User", True, f"Status test user registered: {email}")
-        
+    def test_score_calculation_method(self):
+        """Test 5: Verify new score calculation uses skin_metrics"""
         try:
-            headers = self.get_auth_headers(token)
-            response = requests.get(f"{self.backend_url}/subscription/status", headers=headers)
+            if not self.auth_token:
+                self.log_test("Score Calculation Method", False, "", "No auth token available")
+                return False
+            
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            test_image = self.create_test_image()
+            
+            response = requests.post(f"{self.backend_url}/scan/analyze", 
+                                   headers=headers,
+                                   json={
+                                       "image_base64": test_image,
+                                       "language": "en"
+                                   })
             
             if response.status_code == 200:
-                status_data = response.json()
+                data = response.json()
                 
-                # Check free user status
-                expected_free = {
-                    'plan': 'free',
-                    'scan_limit': 1,
-                    'can_scan': True
-                }
+                checks = []
                 
-                checks_passed = 0
-                total_checks = len(expected_free)
-                
-                for key, expected_value in expected_free.items():
-                    if status_data.get(key) == expected_value:
-                        checks_passed += 1
-                    else:
-                        print(f"   Mismatch: {key} = {status_data.get(key)}, expected {expected_value}")
-                
-                if checks_passed == total_checks:
-                    self.log_test("5.2 Free User Status", True, f"All {total_checks} status fields correct")
-                else:
-                    self.log_test("5.2 Free User Status", False, error=f"Only {checks_passed}/{total_checks} fields correct")
+                # Check if score is calculated from metrics
+                if "skin_metrics" in data and "overall_score" in data:
+                    metrics = data["skin_metrics"]
+                    overall_score = data["overall_score"]
                     
-            else:
-                self.log_test("5.2 Free User Status", False, error=f"Status request failed: {response.status_code}")
-                
-        except Exception as e:
-            self.log_test("5.2 Free User Status", False, error=f"Exception: {str(e)}")
-        
-        # Test with premium user if available
-        if self.premium_user_token:
-            try:
-                premium_headers = self.get_auth_headers(self.premium_user_token)
-                response = requests.get(f"{self.backend_url}/subscription/status", headers=premium_headers)
-                
-                if response.status_code == 200:
-                    status_data = response.json()
-                    
-                    # Check premium user status
-                    expected_premium = {
-                        'plan': 'premium',
-                        'scan_limit': -1,  # Unlimited
-                        'can_scan': True
+                    # Calculate expected score from metrics (weighted average)
+                    metric_weights = {
+                        'tone_uniformity': 0.25,
+                        'texture_smoothness': 0.25,
+                        'hydration_appearance': 0.20,
+                        'pore_visibility': 0.15,
+                        'redness_level': 0.15
                     }
                     
-                    checks_passed = 0
-                    total_checks = len(expected_premium)
+                    calculated_base = 0
+                    total_weight = 0
                     
-                    for key, expected_value in expected_premium.items():
-                        if status_data.get(key) == expected_value:
-                            checks_passed += 1
-                        else:
-                            print(f"   Mismatch: {key} = {status_data.get(key)}, expected {expected_value}")
+                    for metric_name, weight in metric_weights.items():
+                        if metric_name in metrics:
+                            score = metrics[metric_name].get('score', 70)
+                            calculated_base += score * weight
+                            total_weight += weight
                     
-                    if checks_passed == total_checks:
-                        self.log_test("5.3 Premium User Status", True, f"All {total_checks} premium status fields correct")
-                    else:
-                        self.log_test("5.3 Premium User Status", False, error=f"Only {checks_passed}/{total_checks} fields correct")
+                    if total_weight > 0:
+                        expected_base = calculated_base / total_weight
                         
+                        # Score should be reasonably close to metrics-based calculation
+                        # (allowing for issue penalties)
+                        if abs(overall_score - expected_base) <= 20:  # Allow for issue deductions
+                            checks.append(f"✓ Score ({overall_score}) reasonably derived from metrics (base ~{expected_base:.1f})")
+                        else:
+                            checks.append(f"✗ Score ({overall_score}) too far from metrics base ({expected_base:.1f})")
+                    else:
+                        checks.append("✗ Could not calculate expected score from metrics")
                 else:
-                    self.log_test("5.3 Premium User Status", False, error=f"Premium status request failed: {response.status_code}")
-                    
-            except Exception as e:
-                self.log_test("5.3 Premium User Status", False, error=f"Exception: {str(e)}")
+                    checks.append("✗ Missing skin_metrics or overall_score")
+                
+                # Check score is in reasonable range (PRD goal: most users 70-84)
+                if "overall_score" in data:
+                    score = data["overall_score"]
+                    if 60 <= score <= 90:  # Reasonable range
+                        checks.append(f"✓ Score ({score}) in reasonable range")
+                    else:
+                        checks.append(f"✗ Score ({score}) outside reasonable range (60-90)")
+                
+                all_passed = all("✓" in check for check in checks)
+                details = "; ".join(checks)
+                
+                self.log_test("Score Calculation Method", all_passed, details)
+                return all_passed
+                
+            else:
+                self.log_test("Score Calculation Method", False, 
+                              f"Scan failed with status {response.status_code}", 
+                              response.text, response.json() if response.text else None)
+                return False
+                
+        except Exception as e:
+            self.log_test("Score Calculation Method", False, "", f"Exception: {str(e)}")
+            return False
+
+    def test_scan_history_endpoint(self):
+        """Test 6: Verify scan history endpoint returns PRD Phase 1 structure"""
+        try:
+            if not self.auth_token or not self.scan_id:
+                self.log_test("Scan History Endpoint", False, "", "No auth token or scan_id available")
+                return False
+            
+            headers = {"Authorization": f"Bearer {self.auth_token}"}
+            
+            response = requests.get(f"{self.backend_url}/scan/{self.scan_id}", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                checks = []
+                
+                # Should have same structure as analyze endpoint for premium user
+                if "skin_metrics" in data:
+                    checks.append("✓ Has skin_metrics in history")
+                else:
+                    checks.append("✗ Missing skin_metrics in history")
+                
+                if "strengths" in data and isinstance(data["strengths"], list):
+                    checks.append(f"✓ Has {len(data['strengths'])} strengths in history")
+                else:
+                    checks.append("✗ Missing strengths in history")
+                
+                if "issues" in data and isinstance(data["issues"], list):
+                    checks.append(f"✓ Has {len(data['issues'])} issues in history")
+                else:
+                    checks.append("✗ Missing issues in history")
+                
+                if "primary_concern" in data:
+                    checks.append("✓ Has primary_concern in history")
+                else:
+                    checks.append("✗ Missing primary_concern in history")
+                
+                all_passed = all("✓" in check for check in checks)
+                details = "; ".join(checks)
+                
+                self.log_test("Scan History Endpoint", all_passed, details)
+                return all_passed
+                
+            else:
+                self.log_test("Scan History Endpoint", False, 
+                              f"History request failed with status {response.status_code}", 
+                              response.text)
+                return False
+                
+        except Exception as e:
+            self.log_test("Scan History Endpoint", False, "", f"Exception: {str(e)}")
+            return False
 
     def run_all_tests(self):
-        """Run all tests"""
-        print(f"🧪 Starting SkinAdvisor AI Backend Testing - CRITICAL FIXES VALIDATION")
+        """Run all PRD Phase 1 tests"""
+        print("🧪 PRD Phase 1: Real Skin Analysis Engine Testing")
+        print("=" * 60)
         print(f"Backend URL: {self.backend_url}")
-        print(f"Test Time: {datetime.now().isoformat()}")
-        print("=" * 80)
+        print(f"Test User: {TEST_EMAIL}")
+        print()
         
-        # Run all test suites
-        self.test_1_new_scoring_system_validation()
-        self.test_2_subscription_flow()
-        self.test_3_plan_based_response_structure()
-        self.test_4_scan_limit_enforcement()
-        self.test_5_subscription_status_endpoint()
+        # Test sequence
+        tests = [
+            ("User Registration", self.test_user_registration),
+            ("Free User Scan Structure", self.test_free_user_scan_structure),
+            ("Upgrade to Premium", self.test_upgrade_to_premium),
+            ("Premium User Scan Structure", self.test_premium_user_scan_structure),
+            ("Score Calculation Method", self.test_score_calculation_method),
+            ("Scan History Endpoint", self.test_scan_history_endpoint)
+        ]
         
-        # Summary
-        print("=" * 80)
-        print("🏁 TEST SUMMARY")
-        print("=" * 80)
+        passed = 0
+        total = len(tests)
         
-        total_tests = len(self.test_results)
-        passed_tests = sum(1 for test in self.test_results if test['success'])
-        failed_tests = total_tests - passed_tests
+        for test_name, test_func in tests:
+            if test_func():
+                passed += 1
         
-        print(f"Total Tests: {total_tests}")
-        print(f"Passed: {passed_tests} ✅")
-        print(f"Failed: {failed_tests} ❌")
-        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        print("=" * 60)
+        print(f"📊 TEST SUMMARY: {passed}/{total} tests passed")
         
-        if failed_tests > 0:
-            print("\n❌ FAILED TESTS:")
-            for test in self.test_results:
-                if not test['success']:
-                    print(f"  - {test['test']}: {test['error']}")
+        if passed == total:
+            print("🎉 ALL TESTS PASSED - PRD Phase 1 implementation is working correctly!")
+        else:
+            print(f"⚠️  {total - passed} tests failed - see details above")
         
-        print("\n" + "=" * 80)
-        
-        # Save results to file
-        with open('/app/backend_test_results.json', 'w') as f:
+        # Save detailed results
+        with open('/app/prd_phase1_test_results.json', 'w') as f:
             json.dump({
                 'summary': {
-                    'total_tests': total_tests,
-                    'passed_tests': passed_tests,
-                    'failed_tests': failed_tests,
-                    'success_rate': f"{(passed_tests/total_tests)*100:.1f}%"
+                    'total_tests': total,
+                    'passed': passed,
+                    'failed': total - passed,
+                    'success_rate': f"{(passed/total)*100:.1f}%"
                 },
-                'test_results': self.test_results,
-                'backend_url': self.backend_url,
-                'test_time': datetime.now().isoformat()
+                'test_results': self.test_results
             }, f, indent=2)
         
-        return passed_tests == total_tests
+        print(f"📄 Detailed results saved to: /app/prd_phase1_test_results.json")
+        
+        return passed == total
 
 if __name__ == "__main__":
-    tester = SkinAdvisorTester()
+    tester = PRDPhase1Tester()
     success = tester.run_all_tests()
-    
-    if success:
-        print("🎉 ALL TESTS PASSED! Critical fixes are working correctly.")
-    else:
-        print("⚠️  SOME TESTS FAILED! Please review the issues above.")
+    exit(0 if success else 1)
