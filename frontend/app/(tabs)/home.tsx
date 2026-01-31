@@ -271,16 +271,32 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={() => router.push('/(tabs)/profile')}
+              onPress={() => router.push('/challenges')}
             >
-              <View style={[styles.actionIcon, { backgroundColor: theme.warning + '20' }]}>
-                <Ionicons name="settings-outline" size={24} color={theme.warning} />
+              <View style={[styles.actionIcon, { backgroundColor: '#FF5722' + '20' }]}>
+                <Ionicons name="fitness-outline" size={24} color="#FF5722" />
               </View>
               <Text style={[styles.actionText, { color: theme.text }]}>
-                {t('settings')}
+                Challenges
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Settings Link */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.settingsLink, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: theme.warning + '20' }]}>
+              <Ionicons name="settings-outline" size={24} color={theme.warning} />
+            </View>
+            <Text style={[styles.actionText, { color: theme.text }]}>
+              {t('settings')}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Disclaimer */}
