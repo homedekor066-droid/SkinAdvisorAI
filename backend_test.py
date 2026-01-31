@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Backend Testing for SkinAdvisor AI - CRITICAL MONETIZATION UX FIX
-Testing Areas:
-1. FREE USER RESPONSE STRUCTURE - Issues visible but locked
-2. PREMIUM USER RESPONSE STRUCTURE - Full issue details
-3. NO "EMPTY ISSUES" BUG - Free users see issues exist
-4. SCAN ENDPOINTS - Both /analyze and /{scan_id}
+PRD Phase 1: Real Skin Analysis Engine Testing
+Testing the new analysis response structure with:
+1. skin_metrics: 5 metrics (tone_uniformity, texture_smoothness, hydration_appearance, pore_visibility, redness_level)
+2. strengths: Array of positive aspects (2-4 items with name, description, confidence)
+3. primary_concern: Object with name, severity, why_this_result
+4. Enhanced issues: Now include 'why_this_result' explanation and 'priority' (primary/secondary/minor)
+5. Free vs Premium Response Differences
+6. Score Calculation using weighted average of skin_metrics + issue penalties
 """
 
 import requests
