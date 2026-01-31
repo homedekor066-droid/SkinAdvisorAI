@@ -180,9 +180,13 @@ def get_score_label(score: int) -> dict:
             return info
     return {'label': 'unknown', 'description': 'Unknown'}
 
-def calculate_deterministic_score(issues: List[dict]) -> dict:
+def calculate_deterministic_score(issues: List[dict], skin_metrics: dict = None) -> dict:
     """
-    Calculate skin health score using STRICT DETERMINISTIC formula.
+    PRD Phase 1: Calculate skin health score using DETERMINISTIC formula based on REAL SIGNALS.
+    
+    NEW: Score is now calculated from both:
+    1. Skin metrics (tone_uniformity, texture, hydration, pores, redness) - weighted average
+    2. Issue severity penalties - deductions for detected problems
     
     GOALS:
     - 90+ = top 3-5% (extremely rare)
@@ -190,12 +194,46 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
     - 70-84 = majority of users
     - <70 = common
     
-    Score is calculated ONLY from detected issues and their severity.
-    LLM does NOT control this score.
+    Score is calculated from MEASURABLE SIGNALS, not LLM opinion.
     """
-    # LOWER base score: 75 (max 78 with bonuses)
-    base_score = 75
     
+    # ==================== CALCULATE BASE FROM METRICS (PRD Phase 1) ====================
+    if skin_metrics:
+        # Weighted average of skin metrics
+        metric_weights = {
+            'tone_uniformity': 0.25,
+            'texture_smoothness': 0.25,
+            'hydration_appearance': 0.20,
+            'pore_visibility': 0.15,
+            'redness_level': 0.15
+        }
+        
+        metrics_score = 0
+        total_weight = 0
+        metrics_breakdown = []
+        
+        for metric_name, weight in metric_weights.items():
+            if metric_name in skin_metrics:
+                metric_data = skin_metrics[metric_name]
+                score = metric_data.get('score', 70) if isinstance(metric_data, dict) else 70
+                metrics_score += score * weight
+                total_weight += weight
+                metrics_breakdown.append({
+                    'metric': metric_name.replace('_', ' ').title(),
+                    'score': score,
+                    'why': metric_data.get('why', '') if isinstance(metric_data, dict) else ''
+                })
+        
+        if total_weight > 0:
+            base_score = metrics_score / total_weight
+        else:
+            base_score = 75
+    else:
+        # Fallback to old base score if no metrics provided
+        base_score = 75
+        metrics_breakdown = []
+    
+    # ==================== APPLY ISSUE PENALTIES ====================
     score_factors = []
     total_deduction = 0
     
@@ -207,13 +245,12 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
         'redness': 0,
     }
     
-    max_severity = 0  # Track highest severity for elite score check
+    max_severity = 0
     
     for issue in issues:
         issue_name = issue.get('name', '').lower().replace(' ', '_').replace('-', '_')
-        severity = min(10, max(0, issue.get('severity', 0)))  # Clamp 0-10
+        severity = min(10, max(0, issue.get('severity', 0)))
         
-        # Track max severity
         if severity > max_severity:
             max_severity = severity
         
@@ -222,15 +259,15 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
             if critical_key in issue_name or issue_name in critical_key:
                 critical_issues[critical_key] = max(critical_issues[critical_key], severity)
         
-        # Find matching weight - use STRONGER penalties
-        weight = 3  # Default weight (increased)
+        # Find matching weight
+        weight = 3  # Default weight
         for key, w in ISSUE_WEIGHTS.items():
             if key in issue_name or issue_name in key:
                 weight = w
                 break
         
-        # Calculate deduction: severity * weight (NO normalization - direct impact)
-        deduction = severity * weight * 0.15  # Each severity point = weight * 0.15 points
+        # Calculate deduction: severity * weight * 0.12 (slightly reduced from 0.15)
+        deduction = severity * weight * 0.12
         total_deduction += deduction
         
         if severity > 0:
@@ -239,7 +276,8 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
                 'issue': issue.get('name', 'Unknown'),
                 'severity': severity,
                 'severity_label': severity_label,
-                'deduction': round(deduction, 1)
+                'deduction': round(deduction, 1),
+                'why_this_result': issue.get('why_this_result', '')
             })
     
     # Calculate preliminary score
@@ -260,9 +298,7 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
     if max_severity >= 7:
         preliminary_score = min(preliminary_score, 74)
     
-    # Rule 4: 90+ ONLY allowed if ALL conditions met:
-    # - All severities <= 1
-    # - Total deduction < 5
+    # Rule 4: 90+ ONLY allowed if ALL conditions met
     can_be_elite = (max_severity <= 1) and (total_deduction < 5)
     if not can_be_elite and preliminary_score >= 85:
         preliminary_score = min(preliminary_score, 84)
@@ -283,9 +319,11 @@ def calculate_deterministic_score(issues: List[dict]) -> dict:
         'score': final_score,
         'label': score_info['label'],
         'description': score_info['description'],
-        'factors': score_factors[:5],  # Top 5 factors
-        'base_score': base_score,
-        'total_deduction': round(total_deduction, 1)
+        'factors': score_factors[:5],
+        'metrics_breakdown': metrics_breakdown[:5] if metrics_breakdown else [],
+        'base_score': round(base_score, 1),
+        'total_deduction': round(total_deduction, 1),
+        'calculation_method': 'metrics_based' if skin_metrics else 'issue_based'
     }
 
 def compute_image_hash(image_base64: str) -> str:
