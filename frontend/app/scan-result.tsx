@@ -1979,6 +1979,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
+  // Empty routine state
+  emptyRoutineCard: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+  },
+  emptyRoutineTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyRoutineText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   stepMeta: {
     flexDirection: 'row',
     alignItems: 'center',
