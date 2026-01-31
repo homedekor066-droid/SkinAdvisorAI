@@ -721,7 +721,17 @@ export default function ScanResultScreen() {
                 onUnlock={goToPaywall}
                 theme={theme}
               />
-            ) : routine && (
+            ) : !routine || (!routine.morning_routine?.length && !routine.evening_routine?.length) ? (
+              <Card style={styles.emptyRoutineCard}>
+                <Ionicons name="calendar-outline" size={48} color={theme.textMuted} />
+                <Text style={[styles.emptyRoutineTitle, { color: theme.text }]}>
+                  Routine Not Available
+                </Text>
+                <Text style={[styles.emptyRoutineText, { color: theme.textSecondary }]}>
+                  Your personalized routine is being generated. Please try again in a moment.
+                </Text>
+              </Card>
+            ) : (
               <>
                 {/* Morning Routine */}
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
