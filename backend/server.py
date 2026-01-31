@@ -1254,7 +1254,7 @@ def validate_ai_response(result: dict, language: str) -> dict:
         # Get "why_this_result" explanation (PRD requirement)
         why_this_result = issue.get('why_this_result', '')
         if not isinstance(why_this_result, str) or len(why_this_result) < 10:
-            why_this_result = f'Detected based on visible skin characteristics in the analyzed area'
+            why_this_result = 'Detected based on visible skin characteristics in the analyzed area'
         
         # Only include issues with confidence > 0.5
         if confidence >= 0.5:
