@@ -728,24 +728,82 @@ export default function ScanResultScreen() {
                   {t('morning_routine')}
                 </Text>
                 {routine.morning_routine?.map((step: any, index: number) => (
-                  <Card key={index} style={styles.routineCard}>
+                  <Card 
+                    key={index} 
+                    style={[
+                      styles.routineCard,
+                      step.locked && styles.lockedStepCard
+                    ]}
+                  >
+                    {/* PRD Phase 2: Sequential locking indicator */}
+                    {step.locked && (
+                      <View style={[styles.lockedStepOverlay, { backgroundColor: theme.background + 'E0' }]}>
+                        <Ionicons name="lock-closed" size={24} color={theme.textMuted} />
+                        <Text style={[styles.lockedStepText, { color: theme.textMuted }]}>
+                          Complete previous step to unlock
+                        </Text>
+                      </View>
+                    )}
+                    
                     <View style={styles.stepHeader}>
-                      <View style={[styles.stepNumber, { backgroundColor: theme.primary }]}>
-                        <Text style={styles.stepNumberText}>{step.order}</Text>
+                      <View style={[
+                        styles.stepNumber, 
+                        { backgroundColor: step.completed ? theme.success : (step.locked ? theme.border : theme.primary) }
+                      ]}>
+                        {step.completed ? (
+                          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.stepNumberText}>{step.order}</Text>
+                        )}
                       </View>
                       <View style={styles.stepInfo}>
-                        <Text style={[styles.stepName, { color: theme.text }]}>
+                        <Text style={[styles.stepName, { color: step.locked ? theme.textMuted : theme.text }]}>
                           {step.step_name}
                         </Text>
-                        <Text style={[styles.productType, { color: theme.primary }]}>
-                          {step.product_type}
-                        </Text>
+                        <View style={styles.stepMeta}>
+                          <Text style={[styles.productType, { color: step.locked ? theme.textMuted : theme.primary }]}>
+                            {step.product_type}
+                          </Text>
+                          {step.time_minutes && (
+                            <Text style={[styles.stepTime, { color: theme.textMuted }]}>
+                              • {step.time_minutes} min
+                            </Text>
+                          )}
+                        </View>
                       </View>
+                      {/* PRD Phase 2: Essential badge */}
+                      {step.is_essential && (
+                        <View style={[styles.essentialBadge, { backgroundColor: '#E3F2FD' }]}>
+                          <Text style={[styles.essentialText, { color: '#1976D2' }]}>Essential</Text>
+                        </View>
+                      )}
                     </View>
-                    <Text style={[styles.instructions, { color: theme.textSecondary }]}>
+                    
+                    <Text style={[styles.instructions, { color: step.locked ? theme.textMuted : theme.textSecondary }]}>
                       {step.instructions}
                     </Text>
-                    {step.ingredients_to_look_for?.length > 0 && (
+                    
+                    {/* PRD Phase 2: "Why this step?" explanation */}
+                    {step.why_this_step && !step.locked && (
+                      <View style={[styles.whyStepContainer, { backgroundColor: theme.surface }]}>
+                        <Ionicons name="bulb-outline" size={16} color={theme.primary} />
+                        <Text style={[styles.whyStepText, { color: theme.textSecondary }]}>
+                          {step.why_this_step}
+                        </Text>
+                      </View>
+                    )}
+                    
+                    {/* PRD Phase 2: Targets issue badge */}
+                    {step.targets_issue && !step.locked && (
+                      <View style={styles.targetsIssueBadge}>
+                        <Ionicons name="fitness-outline" size={14} color={theme.primary} />
+                        <Text style={[styles.targetsIssueText, { color: theme.primary }]}>
+                          Targets: {step.targets_issue}
+                        </Text>
+                      </View>
+                    )}
+                    
+                    {step.ingredients_to_look_for?.length > 0 && !step.locked && (
                       <View style={styles.ingredientSection}>
                         <Text style={[styles.ingredientLabel, { color: theme.success }]}>
                           Look for:
