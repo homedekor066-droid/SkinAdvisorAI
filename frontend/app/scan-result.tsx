@@ -610,7 +610,7 @@ export default function ScanResultScreen() {
                 </TouchableOpacity>
               </>
             ) : (
-              // PREMIUM USER: Show full issue details
+              // PREMIUM USER: Show full issue details with PRD Phase 1 explanations
               <>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
                   {t('skin_issues')} ({analysis.issues?.length || 0})
@@ -642,9 +642,32 @@ export default function ScanResultScreen() {
                           </Text>
                         </View>
                       </View>
+                      {/* Priority badge for PRD Phase 1 */}
+                      {issue.priority && issue.priority !== 'minor' && (
+                        <View style={[
+                          styles.priorityBadge, 
+                          { backgroundColor: issue.priority === 'primary' ? '#FFE0B2' : '#E3F2FD' }
+                        ]}>
+                          <Text style={[
+                            styles.priorityText, 
+                            { color: issue.priority === 'primary' ? '#E65100' : '#1565C0' }
+                          ]}>
+                            {issue.priority === 'primary' ? '⚡ Primary Focus' : '📌 Secondary'}
+                          </Text>
+                        </View>
+                      )}
                       <Text style={[styles.issueDescription, { color: theme.textSecondary }]}>
                         {issue.description}
                       </Text>
+                      {/* PRD Phase 1: "Why this result?" explanation */}
+                      {issue.why_this_result && (
+                        <View style={[styles.whyResultContainer, { backgroundColor: theme.surface }]}>
+                          <Ionicons name="information-circle-outline" size={16} color={theme.primary} />
+                          <Text style={[styles.whyResultText, { color: theme.textSecondary }]}>
+                            {issue.why_this_result}
+                          </Text>
+                        </View>
+                      )}
                       {issue.confidence && (
                         <Text style={[styles.issueConfidence, { color: theme.textMuted }]}>
                           {t('confidence')}: {Math.round(issue.confidence * 100)}%
