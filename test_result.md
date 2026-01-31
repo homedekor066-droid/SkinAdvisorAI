@@ -176,11 +176,11 @@ backend:
 
   - task: "Skin Analysis API"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -188,6 +188,9 @@ backend:
       - working: "NA"
         agent: "testing"
         comment: "⏭️ SKIPPED: Skin analysis test skipped as requested - requires real face image for testing. API endpoint exists and is properly implemented with GPT-4o integration."
+      - working: false
+        agent: "testing"
+        comment: "🔍 PRD PHASE 1 TESTING COMPLETE - CRITICAL BUG FOUND: The /api/scan/analyze endpoint correctly implements PRD Phase 1 structure with skin_metrics (5 metrics with score/why), strengths (2-4 items), primary_concern, and enhanced issues with why_this_result/priority. FREE vs PREMIUM response differences work correctly. Score calculation uses metrics-based approach. HOWEVER, the /api/scan/{scan_id} endpoint is missing PRD Phase 1 fields (skin_metrics, strengths, primary_concern, metrics_breakdown) for premium users. This creates inconsistency between analyze and history endpoints. 5/6 tests passed - only scan history endpoint failed due to missing PRD fields."
 
   - task: "Scan History API"
     implemented: true
