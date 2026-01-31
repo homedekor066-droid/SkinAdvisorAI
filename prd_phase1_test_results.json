@@ -1,0 +1,477 @@
+{
+  "summary": {
+    "total_tests": 6,
+    "passed": 2,
+    "failed": 4,
+    "success_rate": "33.3%"
+  },
+  "test_results": [
+    {
+      "test": "User Registration",
+      "success": true,
+      "details": "User created with plan='free', scan_count=0",
+      "error": "",
+      "response_data": null,
+      "timestamp": "2026-01-31T10:34:51.156209"
+    },
+    {
+      "test": "Free User Scan Structure",
+      "success": false,
+      "details": "Missing required fields: ['overall_score', 'score_label', 'strengths', 'primary_concern']",
+      "error": "",
+      "response_data": {
+        "id": "6f8f72c2-fbd1-4c43-9de4-e5d72a1f65c3",
+        "user_plan": "free",
+        "locked": true,
+        "analysis": {
+          "skin_type": "combination",
+          "overall_score": 68,
+          "score_label": "average",
+          "strengths": [
+            {
+              "name": "Natural skin resilience",
+              "description": "Your skin shows good natural recovery ability",
+              "confidence": 0.8
+            },
+            {
+              "name": "Even facial structure",
+              "description": "Good overall facial balance",
+              "confidence": 0.75
+            }
+          ],
+          "primary_concern": {
+            "name": "Hydration optimization",
+            "why_this_result": "Improving hydration is the most impactful first step for most skin types"
+          },
+          "issue_count": 3,
+          "issues_preview": [
+            {
+              "name": "Hydration optimization",
+              "locked": true,
+              "severity_locked": true,
+              "description_locked": true
+            },
+            {
+              "name": "Pore refinement",
+              "locked": true,
+              "severity_locked": true,
+              "description_locked": true
+            },
+            {
+              "name": "Skin barrier health",
+              "locked": true,
+              "severity_locked": true,
+              "description_locked": true
+            }
+          ]
+        },
+        "locked_features": [
+          "issue_details",
+          "skin_metrics",
+          "full_routine",
+          "diet_plan",
+          "product_recommendations",
+          "progress_tracking",
+          "detailed_explanations"
+        ],
+        "preview": {
+          "issue_count": 3,
+          "routine_steps_count": 9,
+          "diet_items_count": 5,
+          "products_count": 4
+        },
+        "created_at": "2026-01-31T10:34:54.284824",
+        "image_hash": "92db287c29e481a6",
+        "upgrade_message": "You discovered what's affecting your skin. Unlock full analysis to see severity and solutions."
+      },
+      "timestamp": "2026-01-31T10:34:54.403374"
+    },
+    {
+      "test": "Upgrade to Premium",
+      "success": true,
+      "details": "User successfully upgraded to plan='premium'",
+      "error": "",
+      "response_data": null,
+      "timestamp": "2026-01-31T10:34:54.477409"
+    },
+    {
+      "test": "Premium User Scan Structure",
+      "success": false,
+      "details": "\u2717 Missing or invalid skin_metrics; \u2717 Missing or invalid strengths; \u2717 Missing or empty issues array; \u2717 Missing or incomplete primary_concern; \u2717 Missing overall scoring information; \u2713 No issues_preview (correct for premium user)",
+      "error": "",
+      "response_data": {
+        "id": "96c17eee-5a45-4860-9fe6-e73d3a4661f7",
+        "user_plan": "premium",
+        "locked": false,
+        "analysis": {
+          "skin_type": "combination",
+          "skin_type_confidence": 0.6,
+          "skin_type_description": "Analysis completed. Your skin shows typical characteristics that can be improved with proper care.",
+          "skin_metrics": {
+            "tone_uniformity": {
+              "score": 70,
+              "why": "Minor variations observed in skin tone"
+            },
+            "texture_smoothness": {
+              "score": 72,
+              "why": "Generally smooth with minor irregularities"
+            },
+            "hydration_appearance": {
+              "score": 68,
+              "why": "Skin shows adequate moisture levels"
+            },
+            "pore_visibility": {
+              "score": 65,
+              "why": "Pores visible in some areas"
+            },
+            "redness_level": {
+              "score": 75,
+              "why": "Minimal redness observed"
+            }
+          },
+          "strengths": [
+            {
+              "name": "Natural skin resilience",
+              "description": "Your skin shows good natural recovery ability",
+              "confidence": 0.8
+            },
+            {
+              "name": "Even facial structure",
+              "description": "Good overall facial balance",
+              "confidence": 0.75
+            }
+          ],
+          "issues": [
+            {
+              "name": "Hydration optimization",
+              "severity": 2,
+              "confidence": 0.9,
+              "description": "Skin hydration can always be improved for better elasticity and glow",
+              "why_this_result": "Based on general skin health optimization principles",
+              "priority": "secondary"
+            },
+            {
+              "name": "Pore refinement",
+              "severity": 2,
+              "confidence": 0.85,
+              "description": "Pore appearance can be minimized with proper care",
+              "why_this_result": "Standard recommendation for most skin types",
+              "priority": "minor"
+            },
+            {
+              "name": "Skin barrier health",
+              "severity": 1,
+              "confidence": 0.9,
+              "description": "Maintaining skin barrier integrity prevents future issues",
+              "why_this_result": "Preventive care recommendation",
+              "priority": "minor"
+            }
+          ],
+          "primary_concern": {
+            "name": "Hydration optimization",
+            "severity": 2,
+            "why_this_result": "Improving hydration is the most impactful first step for most skin types"
+          },
+          "recommendations": [
+            "Use a gentle cleanser twice daily",
+            "Apply moisturizer appropriate for your skin type",
+            "Use sunscreen daily (SPF 30+)",
+            "Stay hydrated - drink 2L water daily",
+            "Consider adding a vitamin C serum for brightness"
+          ],
+          "overall_score": 68,
+          "score_label": "average",
+          "score_description": "Average - room for improvement",
+          "score_factors": [
+            {
+              "issue": "Hydration optimization",
+              "severity": 2,
+              "severity_label": "mild",
+              "deduction": 0.7,
+              "why_this_result": "Based on general skin health optimization principles"
+            },
+            {
+              "issue": "Pore refinement",
+              "severity": 2,
+              "severity_label": "mild",
+              "deduction": 0.7,
+              "why_this_result": "Standard recommendation for most skin types"
+            },
+            {
+              "issue": "Skin barrier health",
+              "severity": 1,
+              "severity_label": "mild",
+              "deduction": 0.4,
+              "why_this_result": "Preventive care recommendation"
+            }
+          ],
+          "metrics_breakdown": [
+            {
+              "metric": "Tone Uniformity",
+              "score": 70,
+              "why": "Minor variations observed in skin tone"
+            },
+            {
+              "metric": "Texture Smoothness",
+              "score": 72,
+              "why": "Generally smooth with minor irregularities"
+            },
+            {
+              "metric": "Hydration Appearance",
+              "score": 68,
+              "why": "Skin shows adequate moisture levels"
+            },
+            {
+              "metric": "Pore Visibility",
+              "score": 65,
+              "why": "Pores visible in some areas"
+            },
+            {
+              "metric": "Redness Level",
+              "score": 75,
+              "why": "Minimal redness observed"
+            }
+          ],
+          "calculation_method": "metrics_based"
+        },
+        "routine": {
+          "morning_routine": [
+            {
+              "order": 1,
+              "step_name": "Cleanser",
+              "product_type": "cleanser",
+              "instructions": "Gently massage onto damp skin, rinse with lukewarm water",
+              "ingredients_to_look_for": [
+                "glycerin",
+                "ceramides"
+              ],
+              "ingredients_to_avoid": [
+                "alcohol",
+                "sulfates"
+              ]
+            },
+            {
+              "order": 2,
+              "step_name": "Toner",
+              "product_type": "toner",
+              "instructions": "Apply with cotton pad or pat into skin",
+              "ingredients_to_look_for": [
+                "niacinamide",
+                "hyaluronic acid"
+              ],
+              "ingredients_to_avoid": [
+                "alcohol"
+              ]
+            },
+            {
+              "order": 3,
+              "step_name": "Moisturizer",
+              "product_type": "moisturizer",
+              "instructions": "Apply evenly to face and neck",
+              "ingredients_to_look_for": [
+                "ceramides",
+                "hyaluronic acid"
+              ],
+              "ingredients_to_avoid": [
+                "fragrance"
+              ]
+            },
+            {
+              "order": 4,
+              "step_name": "Sunscreen",
+              "product_type": "sunscreen",
+              "instructions": "Apply generously 15 minutes before sun exposure",
+              "ingredients_to_look_for": [
+                "SPF 30+",
+                "zinc oxide"
+              ],
+              "ingredients_to_avoid": [
+                "oxybenzone"
+              ]
+            }
+          ],
+          "evening_routine": [
+            {
+              "order": 1,
+              "step_name": "Cleanser",
+              "product_type": "cleanser",
+              "instructions": "Double cleanse to remove makeup and sunscreen",
+              "ingredients_to_look_for": [
+                "oil-based first",
+                "water-based second"
+              ],
+              "ingredients_to_avoid": [
+                "harsh sulfates"
+              ]
+            },
+            {
+              "order": 2,
+              "step_name": "Treatment Serum",
+              "product_type": "serum",
+              "instructions": "Apply to clean, dry skin",
+              "ingredients_to_look_for": [
+                "retinol",
+                "vitamin C"
+              ],
+              "ingredients_to_avoid": [
+                "mixing actives"
+              ]
+            },
+            {
+              "order": 3,
+              "step_name": "Night Cream",
+              "product_type": "moisturizer",
+              "instructions": "Apply before bed",
+              "ingredients_to_look_for": [
+                "peptides",
+                "ceramides"
+              ],
+              "ingredients_to_avoid": [
+                "heavy fragrances"
+              ]
+            }
+          ],
+          "weekly_routine": [
+            {
+              "order": 1,
+              "step_name": "Exfoliation",
+              "product_type": "treatment",
+              "instructions": "Use 1-2 times per week",
+              "ingredients_to_look_for": [
+                "AHA",
+                "BHA"
+              ],
+              "ingredients_to_avoid": [
+                "physical scrubs"
+              ]
+            },
+            {
+              "order": 2,
+              "step_name": "Face Mask",
+              "product_type": "treatment",
+              "instructions": "Apply for 10-15 minutes, then rinse",
+              "ingredients_to_look_for": [
+                "clay",
+                "hyaluronic acid"
+              ],
+              "ingredients_to_avoid": [
+                "irritating ingredients"
+              ]
+            }
+          ]
+        },
+        "products": [
+          {
+            "product_type": "cleanser",
+            "name": "Gentle Foaming Cleanser",
+            "description": "A mild cleanser suitable for daily use",
+            "key_ingredients": [
+              "glycerin",
+              "ceramides"
+            ],
+            "suitable_for": [
+              "combination"
+            ],
+            "price_range": "$$"
+          },
+          {
+            "product_type": "moisturizer",
+            "name": "Hydrating Moisturizer",
+            "description": "Lightweight hydration for all skin types",
+            "key_ingredients": [
+              "hyaluronic acid",
+              "niacinamide"
+            ],
+            "suitable_for": [
+              "combination"
+            ],
+            "price_range": "$$"
+          },
+          {
+            "product_type": "sunscreen",
+            "name": "Daily SPF 50 Sunscreen",
+            "description": "Broad spectrum protection",
+            "key_ingredients": [
+              "zinc oxide",
+              "vitamin E"
+            ],
+            "suitable_for": [
+              "all skin types"
+            ],
+            "price_range": "$$"
+          },
+          {
+            "product_type": "serum",
+            "name": "Vitamin C Serum",
+            "description": "Brightening and antioxidant protection",
+            "key_ingredients": [
+              "vitamin C",
+              "vitamin E"
+            ],
+            "suitable_for": [
+              "combination"
+            ],
+            "price_range": "$$$"
+          }
+        ],
+        "diet_recommendations": {
+          "eat_more": [
+            {
+              "name": "Berries (blueberries, strawberries)",
+              "reason": "Packed with antioxidants that fight free radicals"
+            },
+            {
+              "name": "Dark leafy greens (spinach, kale)",
+              "reason": "Rich in vitamins A, C, E for skin renewal"
+            },
+            {
+              "name": "Cucumber",
+              "reason": "95% water content for hydration"
+            }
+          ],
+          "avoid": [
+            {
+              "name": "Fast food",
+              "reason": "High in unhealthy fats and sodium"
+            },
+            {
+              "name": "Sugary drinks (sodas, sweetened juices)",
+              "reason": "Spikes blood sugar, triggers breakouts"
+            }
+          ],
+          "hydration_tip": "Aim for 8 glasses (2 liters) of water daily. Increase intake if exercising or in hot weather.",
+          "supplements_optional": [
+            {
+              "name": "Vitamin D",
+              "reason": "Supports skin cell growth and repair"
+            },
+            {
+              "name": "Omega-3 Fish Oil",
+              "reason": "Supports skin barrier and reduces inflammation"
+            }
+          ]
+        },
+        "progress_tracking_enabled": true,
+        "created_at": "2026-01-31T10:34:54.510811",
+        "image_hash": "92db287c29e481a6"
+      },
+      "timestamp": "2026-01-31T10:34:54.514765"
+    },
+    {
+      "test": "Score Calculation Method",
+      "success": false,
+      "details": "\u2717 Missing skin_metrics or overall_score",
+      "error": "",
+      "response_data": null,
+      "timestamp": "2026-01-31T10:34:54.551741"
+    },
+    {
+      "test": "Scan History Endpoint",
+      "success": false,
+      "details": "",
+      "error": "No auth token or scan_id available",
+      "response_data": null,
+      "timestamp": "2026-01-31T10:34:54.552441"
+    }
+  ]
+}
