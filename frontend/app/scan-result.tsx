@@ -1731,4 +1731,163 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
+  // PRD Phase 1: Strengths Section Styles
+  strengthsCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  strengthsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  strengthsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  strengthItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  strengthContent: {
+    flex: 1,
+  },
+  strengthName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  strengthDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  // PRD Phase 1: Metrics Section Styles
+  metricsCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  metricsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  metricsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  metricsSubtitle: {
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  metricItem: {
+    marginBottom: 16,
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  metricName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  metricScore: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  metricBarContainer: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  metricBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  metricWhy: {
+    fontSize: 12,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  // PRD Phase 1: Primary Concern Styles
+  primaryConcernCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  primaryConcernHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  primaryConcernTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  primaryConcernName: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  primaryConcernWhy: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  unlockPrimaryCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    gap: 8,
+  },
+  unlockPrimaryCTAText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  // PRD Phase 1: Issue Priority Badge
+  priorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  priorityText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // PRD Phase 1: Why Result Container
+  whyResultContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  whyResultText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
 });
