@@ -279,15 +279,16 @@ class PRDPhase1Tester:
             
             if response.status_code == 200:
                 data = response.json()
+                analysis = data.get("analysis", {})
                 
                 # Check PRD Phase 1 structure for PREMIUM users
                 checks = []
                 
                 # 1. Should have skin_metrics with all 5 metrics
-                if "skin_metrics" in data and isinstance(data["skin_metrics"], dict):
+                if "skin_metrics" in analysis and isinstance(analysis["skin_metrics"], dict):
                     expected_metrics = ["tone_uniformity", "texture_smoothness", "hydration_appearance", 
                                       "pore_visibility", "redness_level"]
-                    metrics = data["skin_metrics"]
+                    metrics = analysis["skin_metrics"]
                     
                     missing_metrics = []
                     invalid_metrics = []
@@ -315,8 +316,8 @@ class PRDPhase1Tester:
                     checks.append("✗ Missing or invalid skin_metrics")
                 
                 # 2. Should have strengths (2-4 items for premium)
-                if "strengths" in data and isinstance(data["strengths"], list):
-                    strengths = data["strengths"]
+                if "strengths" in analysis and isinstance(analysis["strengths"], list):
+                    strengths = analysis["strengths"]
                     if len(strengths) >= 2:
                         # Check structure of first strength
                         if (len(strengths) > 0 and isinstance(strengths[0], dict) and 
@@ -331,8 +332,8 @@ class PRDPhase1Tester:
                     checks.append("✗ Missing or invalid strengths")
                 
                 # 3. Should have enhanced issues with 'why_this_result' and 'priority'
-                if "issues" in data and isinstance(data["issues"], list) and len(data["issues"]) > 0:
-                    issues = data["issues"]
+                if "issues" in analysis and isinstance(analysis["issues"], list) and len(analysis["issues"]) > 0:
+                    issues = analysis["issues"]
                     first_issue = issues[0]
                     
                     required_issue_fields = ["name", "severity", "description", "why_this_result", "priority"]
@@ -346,24 +347,36 @@ class PRDPhase1Tester:
                     checks.append("✗ Missing or empty issues array")
                 
                 # 4. Should have primary_concern with why_this_result
-                if ("primary_concern" in data and isinstance(data["primary_concern"], dict) and 
-                    "name" in data["primary_concern"] and "severity" in data["primary_concern"] and
-                    "why_this_result" in data["primary_concern"]):
+                if ("primary_concern" in analysis and isinstance(analysis["primary_concern"], dict) and 
+                    "name" in analysis["primary_concern"] and "severity" in analysis["primary_concern"] and
+                    "why_this_result" in analysis["primary_concern"]):
                     checks.append("✓ Has complete primary_concern with why_this_result")
                 else:
                     checks.append("✗ Missing or incomplete primary_concern")
                 
                 # 5. Should have overall scoring information
-                if "overall_score" in data and "score_label" in data:
+                if "overall_score" in analysis and "score_label" in analysis:
                     checks.append("✓ Has overall scoring information")
                 else:
                     checks.append("✗ Missing overall scoring information")
                 
                 # 6. Should NOT have issues_preview (that's for free users)
-                if "issues_preview" not in data:
+                if "issues_preview" not in analysis:
                     checks.append("✓ No issues_preview (correct for premium user)")
                 else:
                     checks.append("✗ Has issues_preview (should be free user only)")
+                
+                # 7. Should have metrics_breakdown
+                if "metrics_breakdown" in analysis and isinstance(analysis["metrics_breakdown"], list):
+                    checks.append("✓ Has metrics_breakdown for premium user")
+                else:
+                    checks.append("✗ Missing metrics_breakdown")
+                
+                # 8. Should NOT be locked
+                if data.get("locked") == False:
+                    checks.append("✓ Response not locked (correct for premium user)")
+                else:
+                    checks.append("✗ Response is locked (should be unlocked for premium)")
                 
                 all_passed = all("✓" in check for check in checks)
                 details = "; ".join(checks)
@@ -400,13 +413,14 @@ class PRDPhase1Tester:
             
             if response.status_code == 200:
                 data = response.json()
+                analysis = data.get("analysis", {})
                 
                 checks = []
                 
                 # Check if score is calculated from metrics
-                if "skin_metrics" in data and "overall_score" in data:
-                    metrics = data["skin_metrics"]
-                    overall_score = data["overall_score"]
+                if "skin_metrics" in analysis and "overall_score" in analysis:
+                    metrics = analysis["skin_metrics"]
+                    overall_score = analysis["overall_score"]
                     
                     # Calculate expected score from metrics (weighted average)
                     metric_weights = {
@@ -438,15 +452,21 @@ class PRDPhase1Tester:
                     else:
                         checks.append("✗ Could not calculate expected score from metrics")
                 else:
-                    checks.append("✗ Missing skin_metrics or overall_score")
+                    checks.append("✗ Missing skin_metrics or overall_score in analysis")
                 
                 # Check score is in reasonable range (PRD goal: most users 70-84)
-                if "overall_score" in data:
-                    score = data["overall_score"]
+                if "overall_score" in analysis:
+                    score = analysis["overall_score"]
                     if 60 <= score <= 90:  # Reasonable range
                         checks.append(f"✓ Score ({score}) in reasonable range")
                     else:
                         checks.append(f"✗ Score ({score}) outside reasonable range (60-90)")
+                
+                # Check calculation method is metrics_based
+                if analysis.get("calculation_method") == "metrics_based":
+                    checks.append("✓ Calculation method is metrics_based")
+                else:
+                    checks.append(f"✗ Calculation method is {analysis.get('calculation_method', 'unknown')}")
                 
                 all_passed = all("✓" in check for check in checks)
                 details = "; ".join(checks)
