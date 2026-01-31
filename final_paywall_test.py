@@ -8,7 +8,7 @@ import json
 import uuid
 from datetime import datetime
 
-BACKEND_URL = "https://skinai-advisor-3.preview.emergentagent.com/api"
+BACKEND_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
 TEST_PASSWORD = "TestPass123!"
 
 def test_complete_paywall_flow():

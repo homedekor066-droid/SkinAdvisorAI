@@ -16,7 +16,7 @@ from datetime import datetime
 import time
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://skinai-advisor-3.preview.emergentagent.com/api"
+BACKEND_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
 
 class SkinAdvisorTester:
     def __init__(self):
