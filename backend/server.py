@@ -941,60 +941,123 @@ def parse_json_response(response: str) -> dict:
 
 async def analyze_skin_with_ai(image_base64: str, language: str = 'en') -> dict:
     """
-    Analyze skin using OpenAI GPT-4o vision with DETERMINISTIC settings.
-    Temperature = 0 for consistent results.
+    PRD Phase 1: Real Skin Analysis Engine
+    
+    Analyzes skin using OpenAI GPT-4o vision with DETERMINISTIC settings.
+    Extracts REAL, MEASURABLE signals from the photo:
+    - Skin metrics (tone_uniformity, texture, hydration, pores, redness)
+    - Detected issues with severity and "why this result" explanation
+    - Skin strengths (positive aspects)
+    
+    Temperature = 0 for consistent results (same image = same score).
     """
     if not OPENAI_API_KEY:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
     lang_name = LANGUAGE_PROMPTS.get(language, 'English')
     
-    # DETERMINISTIC PROMPT - Very specific instructions for consistent output
+    # PRD Phase 1: Enhanced DETERMINISTIC PROMPT with real signals extraction
     system_prompt = f"""You are a professional dermatological AI analyzer for cosmetic skin assessment.
-Your analysis must be CONSISTENT and DETERMINISTIC - the same image must produce the same results.
+Your analysis must be CONSISTENT and DETERMINISTIC - the same image MUST produce the same results.
 
-CRITICAL RULES:
-1. Analyze ONLY what is visible in the image
-2. Use FIXED thresholds for classification
-3. Be PRECISE with severity ratings (0-10 scale)
-4. Do NOT guess or assume - only report observed conditions
+CRITICAL MEASUREMENT RULES:
+1. Analyze ONLY what is visible in the image - no assumptions
+2. Use FIXED numeric thresholds for ALL measurements
+3. Provide "why_this_result" explanation for EVERY metric and issue
+4. Identify STRENGTHS (positive aspects) not just problems
+5. Be precise - scores must be reproducible
 
-SKIN TYPE CLASSIFICATION (use ONE):
-- "oily": Visible shine, enlarged pores in T-zone
-- "dry": Flaky patches, tight appearance, fine lines from dehydration
-- "combination": Oily T-zone with dry cheeks
+=== SKIN METRICS (0-100 scale, higher = better) ===
+Measure these 5 core metrics based on VISIBLE signals:
+
+1. tone_uniformity (0-100): How even is the skin color?
+   - 90-100: Very uniform, minimal variation
+   - 70-89: Mostly uniform, minor variations
+   - 50-69: Noticeable unevenness
+   - 0-49: Significant discoloration/patches
+
+2. texture_smoothness (0-100): How smooth is the skin surface?
+   - 90-100: Very smooth, no visible texture issues
+   - 70-89: Generally smooth, minor irregularities
+   - 50-69: Visible texture concerns
+   - 0-49: Rough, bumpy texture
+
+3. hydration_appearance (0-100): How hydrated does skin look?
+   - 90-100: Plump, dewy appearance
+   - 70-89: Healthy moisture levels
+   - 50-69: Slightly dry/dull appearance
+   - 0-49: Visibly dry, flaky, or dehydrated
+
+4. pore_visibility (0-100): How refined are pores? (higher = less visible)
+   - 90-100: Pores nearly invisible
+   - 70-89: Minor pore visibility
+   - 50-69: Noticeably visible pores
+   - 0-49: Large, prominent pores
+
+5. redness_level (0-100): How calm is the skin? (higher = less redness)
+   - 90-100: No redness, calm complexion
+   - 70-89: Minimal redness
+   - 50-69: Moderate redness/inflammation
+   - 0-49: Significant redness
+
+=== SKIN TYPE CLASSIFICATION ===
+Choose ONE based on visible characteristics:
+- "oily": Visible shine, enlarged pores, especially in T-zone
+- "dry": Flaky patches, tight appearance, fine dehydration lines
+- "combination": Oily T-zone with dry/normal cheeks
 - "normal": Balanced, minimal issues, healthy appearance
 - "sensitive": Visible redness, reactive appearance
 
-ISSUE DETECTION - For each issue provide:
+=== ISSUE DETECTION ===
+For each detected issue provide:
 - name: Specific issue name
-- severity: Integer 0-10 (0=none, 1-3=mild, 4-6=moderate, 7-10=severe)
-- confidence: Float 0.0-1.0 (how certain you are)
-- description: Brief factual observation in {lang_name}
+- severity: Integer 1-10 (1-3=mild, 4-6=moderate, 7-10=severe)
+- confidence: Float 0.5-1.0 (minimum 0.5 to report)
+- description: Brief factual observation
+- why_this_result: Explain what VISIBLE signals led to this detection
+- priority: "primary", "secondary", or "minor"
 
-SEVERITY GUIDELINES:
-- 0: Not present
-- 1-3: Mild - barely noticeable, minor concern
-- 4-6: Moderate - clearly visible, should address
-- 7-10: Severe - prominent, needs attention
+=== STRENGTHS DETECTION ===
+Identify 2-4 POSITIVE aspects of the skin:
+- name: Strength name (e.g., "Good skin elasticity")
+- description: Why this is a positive
+- confidence: Float 0.5-1.0
 
-Respond ONLY with valid JSON in {lang_name}. No markdown, no explanation, just JSON:
-{{"skin_type": "type", "skin_type_confidence": 0.9, "skin_type_description": "description", "issues": [{{"name": "issue", "severity": 5, "confidence": 0.8, "description": "observation"}}], "recommendations": ["advice1", "advice2"]}}"""
+Respond ONLY with valid JSON in {lang_name}. Structure:
+{{
+  "skin_type": "type",
+  "skin_type_confidence": 0.9,
+  "skin_type_description": "description with why",
+  "skin_metrics": {{
+    "tone_uniformity": {{"score": 75, "why": "reason"}},
+    "texture_smoothness": {{"score": 70, "why": "reason"}},
+    "hydration_appearance": {{"score": 80, "why": "reason"}},
+    "pore_visibility": {{"score": 65, "why": "reason"}},
+    "redness_level": {{"score": 85, "why": "reason"}}
+  }},
+  "strengths": [{{"name": "strength", "description": "why positive", "confidence": 0.9}}],
+  "issues": [{{"name": "issue", "severity": 5, "confidence": 0.8, "description": "observation", "why_this_result": "visible signals", "priority": "primary"}}],
+  "primary_concern": {{"name": "main issue", "severity": 6, "why_this_result": "explanation"}},
+  "recommendations": ["advice1", "advice2"]
+}}"""
     
     try:
         if not openai_client:
             logger.warning("OpenAI client not initialized, using fallback")
             return get_fallback_analysis(language)
         
-        user_prompt = f"""Analyze this facial skin image systematically:
+        user_prompt = f"""Analyze this facial skin image with precision:
 
-1. SKIN TYPE: Classify based on visible characteristics
-2. ISSUES: Detect and rate each visible issue (severity 0-10, confidence 0-1)
-3. RECOMMENDATIONS: Provide 3-5 specific skincare recommendations
+1. SKIN METRICS: Measure all 5 metrics (tone_uniformity, texture_smoothness, hydration_appearance, pore_visibility, redness_level) on 0-100 scale with "why" explanations
+2. SKIN TYPE: Classify with confidence score
+3. STRENGTHS: Identify 2-4 positive aspects of this skin
+4. ISSUES: Detect concerns with severity (1-10), confidence, and "why_this_result" explanation
+5. PRIMARY CONCERN: Identify the single most important issue to address
+6. RECOMMENDATIONS: 3-5 specific skincare recommendations
 
-Check for: acne, dark spots, wrinkles, fine lines, redness, large pores, dehydration, oiliness, uneven tone, blackheads, texture issues, sun damage, dark circles.
+Check for: acne, dark spots, wrinkles, fine lines, redness, large pores, dehydration, oiliness, uneven tone, blackheads, texture issues, sun damage, dark circles, dullness.
 
-Return ONLY JSON. Respond in {lang_name}."""
+Return ONLY valid JSON. All descriptions in {lang_name}."""
 
         response = openai_client.chat.completions.create(
             model="gpt-4o",
@@ -1022,7 +1085,7 @@ Return ONLY JSON. Respond in {lang_name}."""
         result = parse_json_response(response_text)
         
         if result:
-            # Validate and normalize the response
+            # Validate and normalize the response with PRD Phase 1 structure
             validated = validate_ai_response(result, language)
             return validated
         else:
