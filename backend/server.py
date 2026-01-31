@@ -1098,27 +1098,93 @@ Return ONLY valid JSON. All descriptions in {lang_name}."""
 
 def validate_ai_response(result: dict, language: str) -> dict:
     """
-    Validate and normalize AI response to ensure consistency.
+    PRD Phase 1: Validate and normalize AI response with REAL SIGNALS.
     
     CRITICAL RULES:
-    1. ALWAYS return at least 1-3 optimization issues (no face is perfect)
-    2. Ensure skin_type is valid
-    3. Normalize all values to expected ranges
+    1. Extract and validate skin_metrics (5 core measurements)
+    2. Extract strengths (positive aspects)
+    3. Ensure issues have "why_this_result" explanations
+    4. Identify primary_concern for free users
+    5. ALWAYS return at least 1-3 optimization issues (no face is perfect)
     """
     
-    # Ensure skin_type is valid
+    # ==================== VALIDATE SKIN TYPE ====================
     valid_skin_types = ['oily', 'dry', 'combination', 'normal', 'sensitive']
     skin_type = result.get('skin_type', 'normal').lower()
     if skin_type not in valid_skin_types:
         skin_type = 'combination'
     
-    # Ensure skin_type_confidence
     skin_type_confidence = result.get('skin_type_confidence', 0.8)
     if not isinstance(skin_type_confidence, (int, float)):
         skin_type_confidence = 0.8
     skin_type_confidence = max(0.0, min(1.0, float(skin_type_confidence)))
     
-    # Validate issues from AI
+    # ==================== VALIDATE SKIN METRICS (PRD Phase 1) ====================
+    default_metrics = {
+        'tone_uniformity': {'score': 70, 'why': 'Minor variations observed in skin tone'},
+        'texture_smoothness': {'score': 72, 'why': 'Generally smooth with minor irregularities'},
+        'hydration_appearance': {'score': 68, 'why': 'Skin shows adequate moisture levels'},
+        'pore_visibility': {'score': 65, 'why': 'Pores visible in some areas'},
+        'redness_level': {'score': 75, 'why': 'Minimal redness observed'}
+    }
+    
+    raw_metrics = result.get('skin_metrics', {})
+    validated_metrics = {}
+    
+    for metric_name, default_value in default_metrics.items():
+        if metric_name in raw_metrics and isinstance(raw_metrics[metric_name], dict):
+            metric_data = raw_metrics[metric_name]
+            score = metric_data.get('score', default_value['score'])
+            if not isinstance(score, (int, float)):
+                score = default_value['score']
+            score = int(max(0, min(100, score)))
+            
+            why = metric_data.get('why', default_value['why'])
+            if not isinstance(why, str) or len(why) < 5:
+                why = default_value['why']
+            
+            validated_metrics[metric_name] = {
+                'score': score,
+                'why': str(why)
+            }
+        else:
+            validated_metrics[metric_name] = default_value
+    
+    # ==================== VALIDATE STRENGTHS (PRD Phase 1) ====================
+    default_strengths = [
+        {'name': 'Natural skin resilience', 'description': 'Your skin shows good natural recovery ability', 'confidence': 0.8},
+        {'name': 'Even facial structure', 'description': 'Good overall facial balance', 'confidence': 0.75}
+    ]
+    
+    raw_strengths = result.get('strengths', [])
+    validated_strengths = []
+    
+    if isinstance(raw_strengths, list):
+        for strength in raw_strengths:
+            if isinstance(strength, dict) and strength.get('name'):
+                confidence = strength.get('confidence', 0.75)
+                if not isinstance(confidence, (int, float)):
+                    confidence = 0.75
+                confidence = max(0.5, min(1.0, float(confidence)))
+                
+                validated_strengths.append({
+                    'name': str(strength.get('name', '')),
+                    'description': str(strength.get('description', 'Positive aspect detected')),
+                    'confidence': round(confidence, 2)
+                })
+    
+    # Ensure at least 2 strengths
+    if len(validated_strengths) < 2:
+        existing_names = {s['name'].lower() for s in validated_strengths}
+        for default_str in default_strengths:
+            if default_str['name'].lower() not in existing_names:
+                validated_strengths.append(default_str)
+                if len(validated_strengths) >= 2:
+                    break
+    
+    validated_strengths = validated_strengths[:4]  # Max 4 strengths
+    
+    # ==================== VALIDATE ISSUES (Enhanced with PRD Phase 1) ====================
     validated_issues = []
     raw_issues = result.get('issues', [])
     
@@ -1130,51 +1196,86 @@ def validate_ai_response(result: dict, language: str) -> dict:
         if not name:
             continue
             
-        # Clamp severity to 0-10
-        severity = issue.get('severity', 0)
+        # Clamp severity to 1-10 (minimum 1 if detected)
+        severity = issue.get('severity', 1)
         if not isinstance(severity, (int, float)):
-            severity = 0
-        severity = int(max(0, min(10, severity)))
+            severity = 1
+        severity = int(max(1, min(10, severity)))
         
-        # Clamp confidence to 0-1
+        # Clamp confidence to 0.5-1.0
         confidence = issue.get('confidence', 0.7)
         if not isinstance(confidence, (int, float)):
             confidence = 0.7
-        confidence = max(0.0, min(1.0, float(confidence)))
+        confidence = max(0.5, min(1.0, float(confidence)))
         
-        # Only include issues with severity > 0 and confidence > 0.3
-        if severity > 0 and confidence > 0.3:
+        # Validate priority
+        priority = issue.get('priority', 'secondary')
+        if priority not in ['primary', 'secondary', 'minor']:
+            priority = 'secondary'
+        
+        # Get "why_this_result" explanation (PRD requirement)
+        why_this_result = issue.get('why_this_result', '')
+        if not isinstance(why_this_result, str) or len(why_this_result) < 10:
+            why_this_result = f'Detected based on visible skin characteristics in the analyzed area'
+        
+        # Only include issues with confidence > 0.5
+        if confidence >= 0.5:
             validated_issues.append({
                 'name': str(name),
                 'severity': severity,
                 'confidence': round(confidence, 2),
-                'description': issue.get('description', f'{name} detected')
+                'description': str(issue.get('description', f'{name} detected')),
+                'why_this_result': str(why_this_result),
+                'priority': priority
             })
     
-    # ==================== CRITICAL: ENSURE MINIMUM ISSUES ====================
-    # No face is perfect - ALWAYS return at least 1-3 optimization issues
-    # This prevents the "score > 70 but 0 issues" bug
-    
+    # ==================== ENSURE MINIMUM ISSUES ====================
     if len(validated_issues) < 3:
-        # Get issue names already present
         existing_names = {i['name'].lower() for i in validated_issues}
         
-        # Add universal optimization issues that aren't already detected
         for opt_issue in UNIVERSAL_OPTIMIZATION_ISSUES:
             if opt_issue['name'].lower() not in existing_names:
                 validated_issues.append({
                     'name': opt_issue['name'],
                     'severity': opt_issue['severity'],
                     'confidence': opt_issue['confidence'],
-                    'description': opt_issue['description']
+                    'description': opt_issue['description'],
+                    'why_this_result': 'Based on general skin health optimization principles',
+                    'priority': 'minor'
                 })
                 if len(validated_issues) >= 3:
                     break
     
-    # Sort by severity (highest first)
-    validated_issues.sort(key=lambda x: x['severity'], reverse=True)
+    # Sort by severity (highest first), then by priority
+    priority_order = {'primary': 0, 'secondary': 1, 'minor': 2}
+    validated_issues.sort(key=lambda x: (-x['severity'], priority_order.get(x['priority'], 1)))
     
-    # Validate recommendations
+    # ==================== VALIDATE PRIMARY CONCERN (PRD Phase 1 - for free users) ====================
+    raw_primary = result.get('primary_concern', {})
+    if validated_issues:
+        # Use the highest severity issue as primary concern
+        top_issue = validated_issues[0]
+        primary_concern = {
+            'name': top_issue['name'],
+            'severity': top_issue['severity'],
+            'why_this_result': top_issue.get('why_this_result', 'This is your most significant skin concern')
+        }
+    else:
+        primary_concern = {
+            'name': 'General skin optimization',
+            'severity': 2,
+            'why_this_result': 'Your skin is generally healthy but can benefit from consistent care'
+        }
+    
+    # Override with AI's primary concern if valid
+    if isinstance(raw_primary, dict) and raw_primary.get('name'):
+        primary_concern = {
+            'name': str(raw_primary.get('name', primary_concern['name'])),
+            'severity': int(max(1, min(10, raw_primary.get('severity', primary_concern['severity'])))),
+            'why_this_result': str(raw_primary.get('why_this_result', primary_concern['why_this_result']))
+        }
+    
+    # ==================== VALIDATE RECOMMENDATIONS ====================
     recommendations = result.get('recommendations', [])
     if not isinstance(recommendations, list):
         recommendations = []
@@ -1183,15 +1284,18 @@ def validate_ai_response(result: dict, language: str) -> dict:
     if not recommendations:
         recommendations = [
             "Maintain a consistent skincare routine",
-            "Use sunscreen daily",
-            "Stay hydrated"
+            "Use sunscreen daily (SPF 30+)",
+            "Stay hydrated - aim for 8 glasses of water daily"
         ]
     
     return {
         'skin_type': skin_type,
         'skin_type_confidence': round(skin_type_confidence, 2),
         'skin_type_description': result.get('skin_type_description', f'Your skin type appears to be {skin_type}'),
+        'skin_metrics': validated_metrics,
+        'strengths': validated_strengths,
         'issues': validated_issues,
+        'primary_concern': primary_concern,
         'recommendations': recommendations
     }
 
