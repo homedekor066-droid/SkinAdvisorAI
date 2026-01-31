@@ -226,6 +226,12 @@ export default function ScanResultScreen() {
   const scoreInfo = getScoreInfo(overallScore, t);
   const scoreFactors = analysis?.score_factors || [];
   
+  // PRD Phase 1: New data fields
+  const skinMetrics = analysis?.skin_metrics || {};
+  const strengths = analysis?.strengths || [];
+  const primaryConcern = analysis?.primary_concern || {};
+  const metricsBreakdown = analysis?.metrics_breakdown || [];
+  
   // Get preview data for free users
   const preview = scan?.preview || {};
   const mainIssues = analysis?.main_issues || [];
@@ -236,6 +242,31 @@ export default function ScanResultScreen() {
       pathname: '/paywall',
       params: { scanId: scanId }
     });
+  };
+
+  // Helper function to get metric icon
+  const getMetricIcon = (metricName: string) => {
+    const icons: { [key: string]: string } = {
+      'tone_uniformity': 'color-palette-outline',
+      'texture_smoothness': 'hand-left-outline',
+      'hydration_appearance': 'water-outline',
+      'pore_visibility': 'scan-outline',
+      'redness_level': 'heart-outline',
+    };
+    return icons[metricName] || 'analytics-outline';
+  };
+
+  // Helper function to format metric name
+  const formatMetricName = (name: string) => {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Helper function to get metric color based on score
+  const getMetricColor = (score: number) => {
+    if (score >= 80) return '#4CAF50';
+    if (score >= 60) return '#FFC107';
+    if (score >= 40) return '#FF9800';
+    return '#F44336';
   };
 
   return (
