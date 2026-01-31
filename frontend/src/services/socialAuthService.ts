@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 
 // Ensure web browser can complete auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -10,6 +11,9 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_WEB_CLIENT_ID = '993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com';
 const GOOGLE_IOS_CLIENT_ID = '993166704619-7tu3f44t4n2a1sqs3g50uvedc4d87rls.apps.googleusercontent.com';
 const GOOGLE_ANDROID_CLIENT_ID = '993166704619-f4afgb5e86av4k7pregoasvkcogbnjvs.apps.googleusercontent.com';
+
+// Expo project config for auth redirect
+const EXPO_CLIENT_ID = GOOGLE_WEB_CLIENT_ID; // Use web client for Expo Go
 
 export interface SocialAuthResult {
   success: boolean;
@@ -34,55 +38,73 @@ interface GoogleUserInfo {
 
 class SocialAuthService {
   /**
-   * Sign in with Google using Expo AuthSession with proxy
+   * Sign in with Google using Expo AuthSession
+   * Fixed for error 400 - proper redirect URI handling
    */
   async signInWithGoogle(): Promise<SocialAuthResult> {
     try {
-      // Use Expo's proxy for proper redirect handling
+      // Generate redirect URI based on environment
+      // For Expo Go: https://auth.expo.io/@owner/slug
+      // For standalone: custom scheme
       const redirectUri = AuthSession.makeRedirectUri({
-        // Use proxy for Expo Go compatibility
-        useProxy: true,
+        scheme: 'skinadvisor',
+        path: 'auth',
       });
 
       console.log('[Google Auth] Redirect URI:', redirectUri);
+      console.log('[Google Auth] Platform:', Platform.OS);
 
-      // Get the appropriate client ID based on platform
-      // For Expo Go, we need to use the Web Client ID
-      const clientId = GOOGLE_WEB_CLIENT_ID;
+      // Select client ID based on platform
+      let clientId = GOOGLE_WEB_CLIENT_ID;
+      if (Platform.OS === 'ios') {
+        clientId = GOOGLE_IOS_CLIENT_ID;
+      } else if (Platform.OS === 'android') {
+        clientId = GOOGLE_ANDROID_CLIENT_ID;
+      }
 
-      console.log('[Google Auth] Using client ID:', clientId);
+      console.log('[Google Auth] Using client ID:', clientId.substring(0, 20) + '...');
 
       // Google OAuth discovery document
-      const discovery = {
-        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-        tokenEndpoint: 'https://oauth2.googleapis.com/token',
-        revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-      };
-
-      // Create auth request without PKCE for implicit flow
+      const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+      
+      // Build the authorization URL manually for more control
       const authUrl = 
-        `${discovery.authorizationEndpoint}?` +
+        `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${encodeURIComponent(clientId)}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=token` +
-        `&scope=${encodeURIComponent('openid profile email')}`;
+        `&scope=${encodeURIComponent('openid profile email')}` +
+        `&include_granted_scopes=true` +
+        `&prompt=select_account`;
 
-      console.log('[Google Auth] Opening browser...');
+      console.log('[Google Auth] Opening auth session...');
 
-      // Use Expo's auth session
+      // Open the browser for authentication
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
       console.log('[Google Auth] Result type:', result.type);
 
       if (result.type === 'success' && result.url) {
-        console.log('[Google Auth] Success URL:', result.url);
+        console.log('[Google Auth] Auth successful, parsing response...');
         
         // Parse the access token from the URL fragment
-        const urlParts = result.url.split('#');
-        if (urlParts.length > 1) {
-          const fragment = urlParts[1];
+        const url = result.url;
+        const hashIndex = url.indexOf('#');
+        
+        if (hashIndex !== -1) {
+          const fragment = url.substring(hashIndex + 1);
           const params = new URLSearchParams(fragment);
           const accessToken = params.get('access_token');
+          const error = params.get('error');
+
+          if (error) {
+            console.error('[Google Auth] OAuth error:', error);
+            return {
+              success: false,
+              provider: 'google',
+              error: `Google auth error: ${error}`,
+            };
+          }
 
           console.log('[Google Auth] Access token received:', !!accessToken);
 
@@ -96,6 +118,8 @@ class SocialAuthService {
             );
 
             if (!userInfoResponse.ok) {
+              const errorText = await userInfoResponse.text();
+              console.error('[Google Auth] User info fetch failed:', errorText);
               throw new Error('Failed to fetch user info from Google');
             }
 
@@ -128,11 +152,11 @@ class SocialAuthService {
           error: 'User cancelled',
         };
       } else {
-        console.log('[Google Auth] Failed result:', result);
+        console.log('[Google Auth] Unexpected result:', JSON.stringify(result));
         return {
           success: false,
           provider: 'google',
-          error: 'Authentication failed',
+          error: 'Authentication failed - please try again',
         };
       }
     } catch (error: any) {
@@ -143,6 +167,17 @@ class SocialAuthService {
         error: error.message || 'Google sign-in failed',
       };
     }
+  }
+
+  /**
+   * Get the redirect URI that needs to be added to Google Cloud Console
+   */
+  getGoogleRedirectUri(): string {
+    const redirectUri = AuthSession.makeRedirectUri({
+      scheme: 'skinadvisor',
+      path: 'auth',
+    });
+    return redirectUri;
   }
 
   /**
