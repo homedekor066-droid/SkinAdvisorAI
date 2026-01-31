@@ -1398,39 +1398,117 @@ def get_fallback_analysis(language: str) -> dict:
     }
 
 async def generate_routine_with_ai(analysis: dict, language: str = 'en') -> dict:
-    """Generate skincare routine based on analysis with DETERMINISTIC settings"""
+    """
+    PRD Phase 2: Personalized Routine Engine
+    
+    Generate skincare routine based on REAL analysis with:
+    1. Steps tailored to detected issues and skin metrics
+    2. Sequential locking mechanism (Step N+1 requires completing Step N)
+    3. "Why this step?" explanations linking to detected concerns
+    4. Difficulty levels and time estimates
+    """
     if not OPENAI_API_KEY:
-        return get_fallback_routine(analysis.get('skin_type', 'normal'))
+        return get_fallback_routine(analysis.get('skin_type', 'normal'), analysis)
     
     lang_name = LANGUAGE_PROMPTS.get(language, 'English')
     skin_type = analysis.get('skin_type', 'normal')
     issues = analysis.get('issues', [])
+    skin_metrics = analysis.get('skin_metrics', {})
+    primary_concern = analysis.get('primary_concern', {})
     
-    # Create deterministic prompt based on skin type and issues
-    issues_text = ', '.join([f"{i['name']} (severity {i['severity']})" for i in issues[:5]]) if issues else 'No major issues'
+    # Build context from PRD Phase 1 data
+    issues_text = ', '.join([f"{i['name']} (severity {i['severity']}, priority: {i.get('priority', 'secondary')})" for i in issues[:5]]) if issues else 'No major issues'
     
-    system_prompt = f"""You are a skincare routine expert. Create a personalized routine based on skin analysis.
+    # Extract metric insights for routine customization
+    metrics_context = []
+    if skin_metrics:
+        for metric_name, metric_data in skin_metrics.items():
+            if isinstance(metric_data, dict):
+                score = metric_data.get('score', 70)
+                if score < 70:  # Focus on areas needing improvement
+                    metrics_context.append(f"{metric_name.replace('_', ' ')}: {score}/100 (needs attention)")
+    metrics_text = ', '.join(metrics_context) if metrics_context else 'All metrics above average'
+    
+    system_prompt = f"""You are a skincare routine expert creating PERSONALIZED routines based on real skin analysis data.
 
-RULES:
-1. Tailor routine to skin type: {skin_type}
-2. Address detected issues: {issues_text}
-3. Use standard skincare steps
-4. Be specific with instructions
-5. Recommend generic product types (not brands)
+=== ANALYSIS DATA ===
+- Skin Type: {skin_type}
+- Detected Issues: {issues_text}
+- Metrics Needing Attention: {metrics_text}
+- Primary Concern: {primary_concern.get('name', 'General optimization')}
 
+=== PRD REQUIREMENTS ===
+1. Each step MUST target a specific detected issue or metric
+2. Include "why_this_step" explaining how it addresses the user's specific concerns
+3. Steps should be ordered from essential to advanced
+4. Include estimated time per step
+5. Mark which issue/metric each step addresses (targets_issue)
+
+=== ROUTINE STRUCTURE ===
 Respond ONLY with JSON in {lang_name}:
-{{"morning_routine": [{{"order": 1, "step_name": "name", "product_type": "type", "instructions": "how to use", "ingredients_to_look_for": ["ing1"], "ingredients_to_avoid": ["ing1"]}}], "evening_routine": [...], "weekly_routine": [...], "products": [{{"product_type": "type", "name": "generic name", "description": "why", "key_ingredients": ["ing"], "suitable_for": ["{skin_type}"], "price_range": "$$"}}]}}"""
+{{
+  "morning_routine": [
+    {{
+      "order": 1,
+      "step_name": "name",
+      "product_type": "type",
+      "instructions": "detailed how-to",
+      "why_this_step": "Addresses your [specific issue] by...",
+      "targets_issue": "issue name from analysis",
+      "time_minutes": 2,
+      "ingredients_to_look_for": ["ing1"],
+      "ingredients_to_avoid": ["ing1"],
+      "is_essential": true
+    }}
+  ],
+  "evening_routine": [...],
+  "weekly_routine": [
+    {{
+      "order": 1,
+      "step_name": "Weekly Treatment",
+      "product_type": "mask",
+      "instructions": "...",
+      "why_this_step": "...",
+      "targets_issue": "...",
+      "frequency": "1-2x per week",
+      "time_minutes": 15,
+      "ingredients_to_look_for": [],
+      "ingredients_to_avoid": [],
+      "is_essential": false
+    }}
+  ],
+  "products": [
+    {{
+      "product_type": "type",
+      "name": "generic name",
+      "description": "why recommended",
+      "addresses_concern": "links to detected issue",
+      "key_ingredients": ["ing"],
+      "suitable_for": ["{skin_type}"],
+      "price_range": "$$"
+    }}
+  ]
+}}"""
     
     try:
         if not openai_client:
             logger.warning("OpenAI client not initialized, using fallback")
-            return get_fallback_routine(skin_type)
+            return get_fallback_routine(skin_type, analysis)
         
-        user_prompt = f"""Create skincare routine for:
-- Skin type: {skin_type}
-- Issues: {issues_text}
+        user_prompt = f"""Create a PERSONALIZED skincare routine for this specific analysis:
 
-Provide morning (4-5 steps), evening (4-5 steps), weekly (1-2 treatments), and 5-7 product recommendations.
+SKIN TYPE: {skin_type}
+PRIMARY CONCERN: {primary_concern.get('name', 'General skin health')} - {primary_concern.get('why_this_result', '')}
+DETECTED ISSUES: {issues_text}
+METRICS TO IMPROVE: {metrics_text}
+
+Requirements:
+1. Morning routine: 4-5 steps, each targeting a specific concern
+2. Evening routine: 4-5 steps, include treatment for primary concern  
+3. Weekly routine: 1-2 treatments for intensive care
+4. Products: 5-7 recommendations, each linked to a detected issue
+
+For each step, explain WHY it's needed for THIS user's specific skin concerns.
 Return ONLY JSON in {lang_name}."""
 
         response = openai_client.chat.completions.create(
@@ -1446,16 +1524,24 @@ Return ONLY JSON in {lang_name}."""
         result = parse_json_response(response_text)
         
         if result:
-            return validate_routine_response(result, skin_type)
+            return validate_routine_response(result, skin_type, analysis)
         else:
-            return get_fallback_routine(skin_type)
+            return get_fallback_routine(skin_type, analysis)
             
     except Exception as e:
         logger.error(f"Routine generation error: {str(e)}")
-        return get_fallback_routine(skin_type)
+        return get_fallback_routine(skin_type, analysis)
 
-def validate_routine_response(result: dict, skin_type: str) -> dict:
-    """Validate routine response structure"""
+def validate_routine_response(result: dict, skin_type: str, analysis: dict = None) -> dict:
+    """
+    PRD Phase 2: Validate routine response with sequential locking structure.
+    
+    Each step includes:
+    - locked: boolean (for sequential unlock)
+    - completed: boolean (for progress tracking)
+    - why_this_step: explanation linking to user's concerns
+    - targets_issue: which issue this step addresses
+    """
     validated = {
         'morning_routine': [],
         'evening_routine': [],
@@ -1466,15 +1552,25 @@ def validate_routine_response(result: dict, skin_type: str) -> dict:
     for key in ['morning_routine', 'evening_routine', 'weekly_routine']:
         routine = result.get(key, [])
         if isinstance(routine, list):
-            for step in routine:
+            for idx, step in enumerate(routine):
                 if isinstance(step, dict) and step.get('step_name'):
                     validated[key].append({
-                        'order': step.get('order', len(validated[key]) + 1),
+                        'order': step.get('order', idx + 1),
                         'step_name': str(step.get('step_name', '')),
                         'product_type': str(step.get('product_type', 'unknown')),
                         'instructions': str(step.get('instructions', '')),
+                        # PRD Phase 2: "Why this step?" explanation
+                        'why_this_step': str(step.get('why_this_step', 'Recommended for your skin type')),
+                        'targets_issue': str(step.get('targets_issue', 'General skin health')),
+                        'time_minutes': int(step.get('time_minutes', 2)),
                         'ingredients_to_look_for': step.get('ingredients_to_look_for', []),
-                        'ingredients_to_avoid': step.get('ingredients_to_avoid', [])
+                        'ingredients_to_avoid': step.get('ingredients_to_avoid', []),
+                        'is_essential': bool(step.get('is_essential', idx < 3)),
+                        # PRD Phase 2: Sequential locking - first step unlocked, rest locked
+                        'locked': idx > 0,
+                        'completed': False,
+                        # Weekly specific
+                        'frequency': step.get('frequency', '1x per week') if key == 'weekly_routine' else None
                     })
     
     products = result.get('products', [])
@@ -1485,6 +1581,8 @@ def validate_routine_response(result: dict, skin_type: str) -> dict:
                     'product_type': str(product.get('product_type', '')),
                     'name': str(product.get('name', '')),
                     'description': str(product.get('description', '')),
+                    # PRD Phase 2: Link product to concern
+                    'addresses_concern': str(product.get('addresses_concern', 'General skin health')),
                     'key_ingredients': product.get('key_ingredients', []),
                     'suitable_for': product.get('suitable_for', [skin_type]),
                     'price_range': str(product.get('price_range', '$$'))
@@ -1492,22 +1590,176 @@ def validate_routine_response(result: dict, skin_type: str) -> dict:
     
     # If routines are empty, use fallback
     if not validated['morning_routine']:
-        return get_fallback_routine(skin_type)
+        return get_fallback_routine(skin_type, analysis)
     
     return validated
 
-def get_fallback_routine(skin_type: str) -> dict:
-    """Return a basic fallback routine"""
+def get_fallback_routine(skin_type: str, analysis: dict = None) -> dict:
+    """
+    PRD Phase 2: Return a personalized fallback routine.
+    Includes sequential locking and links to detected issues.
+    """
+    primary_concern = 'General skin health'
+    if analysis and analysis.get('primary_concern'):
+        primary_concern = analysis['primary_concern'].get('name', 'General skin health')
+    
     return {
         "morning_routine": [
-            {"order": 1, "step_name": "Cleanser", "product_type": "cleanser", "instructions": "Gently massage onto damp skin, rinse with lukewarm water", "ingredients_to_look_for": ["glycerin", "ceramides"], "ingredients_to_avoid": ["alcohol", "sulfates"]},
-            {"order": 2, "step_name": "Toner", "product_type": "toner", "instructions": "Apply with cotton pad or pat into skin", "ingredients_to_look_for": ["niacinamide", "hyaluronic acid"], "ingredients_to_avoid": ["alcohol"]},
-            {"order": 3, "step_name": "Moisturizer", "product_type": "moisturizer", "instructions": "Apply evenly to face and neck", "ingredients_to_look_for": ["ceramides", "hyaluronic acid"], "ingredients_to_avoid": ["fragrance"]},
-            {"order": 4, "step_name": "Sunscreen", "product_type": "sunscreen", "instructions": "Apply generously 15 minutes before sun exposure", "ingredients_to_look_for": ["SPF 30+", "zinc oxide"], "ingredients_to_avoid": ["oxybenzone"]}
+            {
+                "order": 1, 
+                "step_name": "Gentle Cleanser", 
+                "product_type": "cleanser", 
+                "instructions": "Gently massage onto damp skin for 30-60 seconds, rinse with lukewarm water", 
+                "why_this_step": "Removes overnight buildup and prepares skin for treatment products",
+                "targets_issue": "Skin barrier health",
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["glycerin", "ceramides"], 
+                "ingredients_to_avoid": ["alcohol", "sulfates"],
+                "is_essential": True,
+                "locked": False,
+                "completed": False
+            },
+            {
+                "order": 2, 
+                "step_name": "Hydrating Toner", 
+                "product_type": "toner", 
+                "instructions": "Apply with cotton pad or pat directly into skin while still damp", 
+                "why_this_step": "Balances pH and adds first layer of hydration",
+                "targets_issue": "Hydration optimization",
+                "time_minutes": 1,
+                "ingredients_to_look_for": ["niacinamide", "hyaluronic acid"], 
+                "ingredients_to_avoid": ["alcohol"],
+                "is_essential": True,
+                "locked": True,
+                "completed": False
+            },
+            {
+                "order": 3, 
+                "step_name": "Daily Moisturizer", 
+                "product_type": "moisturizer", 
+                "instructions": "Apply evenly to face and neck using upward motions", 
+                "why_this_step": f"Locks in hydration and addresses {primary_concern}",
+                "targets_issue": primary_concern,
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["ceramides", "hyaluronic acid"], 
+                "ingredients_to_avoid": ["fragrance"],
+                "is_essential": True,
+                "locked": True,
+                "completed": False
+            },
+            {
+                "order": 4, 
+                "step_name": "Sunscreen SPF 30+", 
+                "product_type": "sunscreen", 
+                "instructions": "Apply generously 15 minutes before sun exposure. Reapply every 2 hours", 
+                "why_this_step": "Prevents UV damage which worsens most skin concerns",
+                "targets_issue": "Sun protection",
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["SPF 30+", "zinc oxide", "titanium dioxide"], 
+                "ingredients_to_avoid": ["oxybenzone"],
+                "is_essential": True,
+                "locked": True,
+                "completed": False
+            }
         ],
         "evening_routine": [
-            {"order": 1, "step_name": "Cleanser", "product_type": "cleanser", "instructions": "Double cleanse to remove makeup and sunscreen", "ingredients_to_look_for": ["oil-based first", "water-based second"], "ingredients_to_avoid": ["harsh sulfates"]},
-            {"order": 2, "step_name": "Treatment Serum", "product_type": "serum", "instructions": "Apply to clean, dry skin", "ingredients_to_look_for": ["retinol", "vitamin C"], "ingredients_to_avoid": ["mixing actives"]},
+            {
+                "order": 1, 
+                "step_name": "Oil Cleanser", 
+                "product_type": "cleanser", 
+                "instructions": "Massage onto dry skin to dissolve makeup and sunscreen, then rinse", 
+                "why_this_step": "First step of double cleanse - removes oil-based impurities",
+                "targets_issue": "Pore refinement",
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["jojoba oil", "squalane"], 
+                "ingredients_to_avoid": ["mineral oil"],
+                "is_essential": True,
+                "locked": False,
+                "completed": False
+            },
+            {
+                "order": 2, 
+                "step_name": "Water-Based Cleanser", 
+                "product_type": "cleanser", 
+                "instructions": "Gently cleanse to remove remaining residue", 
+                "why_this_step": "Second cleanse ensures completely clean skin for treatments",
+                "targets_issue": "Skin barrier health",
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["gentle surfactants", "glycerin"], 
+                "ingredients_to_avoid": ["harsh sulfates"],
+                "is_essential": True,
+                "locked": True,
+                "completed": False
+            },
+            {
+                "order": 3, 
+                "step_name": "Treatment Serum", 
+                "product_type": "serum", 
+                "instructions": "Apply 2-3 drops to clean, dry skin. Pat gently to absorb", 
+                "why_this_step": f"Active treatment targeting your {primary_concern}",
+                "targets_issue": primary_concern,
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["retinol", "vitamin C", "niacinamide"], 
+                "ingredients_to_avoid": ["mixing actives"],
+                "is_essential": True,
+                "locked": True,
+                "completed": False
+            },
+            {
+                "order": 4, 
+                "step_name": "Night Cream", 
+                "product_type": "moisturizer", 
+                "instructions": "Apply a thicker layer to support overnight repair", 
+                "why_this_step": "Supports skin regeneration during sleep",
+                "targets_issue": "Skin barrier health",
+                "time_minutes": 2,
+                "ingredients_to_look_for": ["peptides", "ceramides", "squalane"], 
+                "ingredients_to_avoid": ["heavy fragrance"],
+                "is_essential": True,
+                "locked": True,
+                "completed": False
+            }
+        ],
+        "weekly_routine": [
+            {
+                "order": 1, 
+                "step_name": "Exfoliating Treatment", 
+                "product_type": "exfoliant", 
+                "instructions": "Apply to clean skin, leave for recommended time, rinse thoroughly", 
+                "why_this_step": "Removes dead skin cells and improves texture",
+                "targets_issue": "Texture smoothness",
+                "frequency": "1-2x per week",
+                "time_minutes": 15,
+                "ingredients_to_look_for": ["AHA", "BHA", "PHA"], 
+                "ingredients_to_avoid": ["physical scrubs with sharp particles"],
+                "is_essential": False,
+                "locked": False,
+                "completed": False
+            },
+            {
+                "order": 2, 
+                "step_name": "Hydrating Mask", 
+                "product_type": "mask", 
+                "instructions": "Apply a thick layer, relax for 15-20 minutes, rinse or remove", 
+                "why_this_step": "Intensive hydration boost for improved skin plumpness",
+                "targets_issue": "Hydration optimization",
+                "frequency": "1x per week",
+                "time_minutes": 20,
+                "ingredients_to_look_for": ["hyaluronic acid", "aloe vera", "honey"], 
+                "ingredients_to_avoid": ["alcohol"],
+                "is_essential": False,
+                "locked": True,
+                "completed": False
+            }
+        ],
+        "products": [
+            {"product_type": "cleanser", "name": "Gentle Foaming Cleanser", "description": "Mild cleansing without stripping", "addresses_concern": "Skin barrier health", "key_ingredients": ["glycerin", "ceramides"], "suitable_for": [skin_type], "price_range": "$$"},
+            {"product_type": "toner", "name": "Hydrating Essence Toner", "description": "Preps skin and adds hydration", "addresses_concern": "Hydration optimization", "key_ingredients": ["hyaluronic acid", "niacinamide"], "suitable_for": [skin_type], "price_range": "$$"},
+            {"product_type": "serum", "name": "Active Treatment Serum", "description": f"Targets {primary_concern}", "addresses_concern": primary_concern, "key_ingredients": ["vitamin C", "niacinamide"], "suitable_for": [skin_type], "price_range": "$$$"},
+            {"product_type": "moisturizer", "name": "Daily Hydrating Cream", "description": "Locks in moisture all day", "addresses_concern": "Hydration optimization", "key_ingredients": ["ceramides", "squalane"], "suitable_for": [skin_type], "price_range": "$$"},
+            {"product_type": "sunscreen", "name": "Broad Spectrum SPF 50", "description": "Essential UV protection", "addresses_concern": "Sun protection", "key_ingredients": ["zinc oxide", "titanium dioxide"], "suitable_for": ["all skin types"], "price_range": "$$"}
+        ]
+    }
             {"order": 3, "step_name": "Night Cream", "product_type": "moisturizer", "instructions": "Apply before bed", "ingredients_to_look_for": ["peptides", "ceramides"], "ingredients_to_avoid": ["heavy fragrances"]}
         ],
         "weekly_routine": [
