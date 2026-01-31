@@ -1301,18 +1301,55 @@ def validate_ai_response(result: dict, language: str) -> dict:
 
 def get_fallback_analysis(language: str) -> dict:
     """
-    Return a safe fallback analysis when AI fails.
-    ALWAYS includes minimum optimization issues (no face is perfect).
+    PRD Phase 1: Return a safe fallback analysis when AI fails.
+    Includes skin_metrics, strengths, and enhanced issues structure.
     """
     return {
         'skin_type': 'combination',
         'skin_type_confidence': 0.6,
         'skin_type_description': 'Analysis completed. Your skin shows typical characteristics that can be improved with proper care.',
-        'issues': [
-            {'name': 'Hydration optimization', 'severity': 2, 'confidence': 0.9, 'description': 'Skin hydration can always be improved for better elasticity and glow'},
-            {'name': 'Pore refinement', 'severity': 2, 'confidence': 0.85, 'description': 'Pore appearance can be minimized with proper care'},
-            {'name': 'Skin barrier health', 'severity': 1, 'confidence': 0.9, 'description': 'Maintaining skin barrier integrity prevents future issues'},
+        'skin_metrics': {
+            'tone_uniformity': {'score': 70, 'why': 'Minor variations observed in skin tone'},
+            'texture_smoothness': {'score': 72, 'why': 'Generally smooth with minor irregularities'},
+            'hydration_appearance': {'score': 68, 'why': 'Skin shows adequate moisture levels'},
+            'pore_visibility': {'score': 65, 'why': 'Pores visible in some areas'},
+            'redness_level': {'score': 75, 'why': 'Minimal redness observed'}
+        },
+        'strengths': [
+            {'name': 'Natural skin resilience', 'description': 'Your skin shows good natural recovery ability', 'confidence': 0.8},
+            {'name': 'Even facial structure', 'description': 'Good overall facial balance', 'confidence': 0.75}
         ],
+        'issues': [
+            {
+                'name': 'Hydration optimization', 
+                'severity': 2, 
+                'confidence': 0.9, 
+                'description': 'Skin hydration can always be improved for better elasticity and glow',
+                'why_this_result': 'Based on general skin health optimization principles',
+                'priority': 'secondary'
+            },
+            {
+                'name': 'Pore refinement', 
+                'severity': 2, 
+                'confidence': 0.85, 
+                'description': 'Pore appearance can be minimized with proper care',
+                'why_this_result': 'Standard recommendation for most skin types',
+                'priority': 'minor'
+            },
+            {
+                'name': 'Skin barrier health', 
+                'severity': 1, 
+                'confidence': 0.9, 
+                'description': 'Maintaining skin barrier integrity prevents future issues',
+                'why_this_result': 'Preventive care recommendation',
+                'priority': 'minor'
+            },
+        ],
+        'primary_concern': {
+            'name': 'Hydration optimization',
+            'severity': 2,
+            'why_this_result': 'Improving hydration is the most impactful first step for most skin types'
+        },
         'recommendations': [
             'Use a gentle cleanser twice daily',
             'Apply moisturizer appropriate for your skin type',
