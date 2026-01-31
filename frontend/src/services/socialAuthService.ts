@@ -63,9 +63,6 @@ class SocialAuthService {
       }
 
       console.log('[Google Auth] Using client ID:', clientId.substring(0, 20) + '...');
-
-      // Google OAuth discovery document
-      const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
       
       // Build the authorization URL manually for more control
       const authUrl = 
@@ -78,6 +75,7 @@ class SocialAuthService {
         `&prompt=select_account`;
 
       console.log('[Google Auth] Opening auth session...');
+      console.log('[Google Auth] Auth URL:', authUrl.substring(0, 100) + '...');
 
       // Open the browser for authentication
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
