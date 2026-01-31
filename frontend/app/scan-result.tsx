@@ -1948,4 +1948,66 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontStyle: 'italic',
   },
+  // PRD Phase 2: Sequential Locking Styles
+  lockedStepCard: {
+    opacity: 0.7,
+    position: 'relative',
+  },
+  lockedStepOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    zIndex: 10,
+  },
+  lockedStepText: {
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  stepMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  stepTime: {
+    fontSize: 12,
+  },
+  essentialBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  essentialText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  whyStepContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  whyStepText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  targetsIssueBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  targetsIssueText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
 });
