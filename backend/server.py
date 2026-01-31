@@ -2159,6 +2159,159 @@ async def delete_scan(scan_id: str, current_user: dict = Depends(get_current_use
     
     return {"message": "Scan deleted successfully"}
 
+# ==================== PRD PHASE 2: ROUTINE PROGRESS TRACKING ====================
+
+class RoutineStepUpdate(BaseModel):
+    scan_id: str
+    routine_type: str  # 'morning_routine', 'evening_routine', 'weekly_routine'
+    step_order: int
+    completed: bool
+
+@api_router.post("/routine/complete-step")
+async def complete_routine_step(
+    request: RoutineStepUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    PRD Phase 2: Mark a routine step as completed and unlock the next step.
+    Sequential locking: Step N+1 requires completing Step N.
+    """
+    # Only premium users can track routine progress
+    if current_user.get('plan', 'free') != 'premium':
+        raise HTTPException(
+            status_code=403,
+            detail="Routine progress tracking is a Premium feature"
+        )
+    
+    # Find the scan
+    scan = await db.scans.find_one({
+        'id': request.scan_id,
+        'user_id': current_user['id']
+    })
+    
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    routine = scan.get('routine', {})
+    routine_steps = routine.get(request.routine_type, [])
+    
+    if not routine_steps:
+        raise HTTPException(status_code=400, detail=f"No {request.routine_type} found")
+    
+    # Find the step
+    step_index = None
+    for idx, step in enumerate(routine_steps):
+        if step.get('order') == request.step_order:
+            step_index = idx
+            break
+    
+    if step_index is None:
+        raise HTTPException(status_code=404, detail="Step not found")
+    
+    # Check if step is locked (can't complete a locked step)
+    if routine_steps[step_index].get('locked', False):
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot complete a locked step. Complete previous steps first."
+        )
+    
+    # Update step completion
+    routine_steps[step_index]['completed'] = request.completed
+    
+    # If completing a step, unlock the next step
+    if request.completed and step_index + 1 < len(routine_steps):
+        routine_steps[step_index + 1]['locked'] = False
+    
+    # If un-completing a step, re-lock all subsequent steps and mark them incomplete
+    if not request.completed:
+        for subsequent_idx in range(step_index + 1, len(routine_steps)):
+            routine_steps[subsequent_idx]['locked'] = True
+            routine_steps[subsequent_idx]['completed'] = False
+    
+    # Update the routine in database
+    routine[request.routine_type] = routine_steps
+    
+    await db.scans.update_one(
+        {'id': request.scan_id, 'user_id': current_user['id']},
+        {'$set': {'routine': routine}}
+    )
+    
+    # Calculate progress statistics
+    total_steps = len(routine_steps)
+    completed_steps = sum(1 for s in routine_steps if s.get('completed', False))
+    progress_percent = round((completed_steps / total_steps) * 100) if total_steps > 0 else 0
+    
+    return {
+        'success': True,
+        'routine_type': request.routine_type,
+        'step_order': request.step_order,
+        'completed': request.completed,
+        'progress': {
+            'completed_steps': completed_steps,
+            'total_steps': total_steps,
+            'progress_percent': progress_percent
+        },
+        'next_step_unlocked': request.completed and step_index + 1 < len(routine_steps),
+        'routine': routine_steps
+    }
+
+@api_router.get("/routine/progress/{scan_id}")
+async def get_routine_progress(
+    scan_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    PRD Phase 2: Get routine progress for a scan.
+    Returns completion stats for morning, evening, and weekly routines.
+    """
+    if current_user.get('plan', 'free') != 'premium':
+        raise HTTPException(
+            status_code=403,
+            detail="Routine progress tracking is a Premium feature"
+        )
+    
+    scan = await db.scans.find_one({
+        'id': scan_id,
+        'user_id': current_user['id']
+    })
+    
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    routine = scan.get('routine', {})
+    
+    def calculate_progress(steps):
+        if not steps:
+            return {'completed': 0, 'total': 0, 'percent': 0}
+        total = len(steps)
+        completed = sum(1 for s in steps if s.get('completed', False))
+        return {
+            'completed': completed,
+            'total': total,
+            'percent': round((completed / total) * 100) if total > 0 else 0
+        }
+    
+    return {
+        'scan_id': scan_id,
+        'morning_routine': {
+            'progress': calculate_progress(routine.get('morning_routine', [])),
+            'steps': routine.get('morning_routine', [])
+        },
+        'evening_routine': {
+            'progress': calculate_progress(routine.get('evening_routine', [])),
+            'steps': routine.get('evening_routine', [])
+        },
+        'weekly_routine': {
+            'progress': calculate_progress(routine.get('weekly_routine', [])),
+            'steps': routine.get('weekly_routine', [])
+        },
+        'overall_progress': {
+            'morning': calculate_progress(routine.get('morning_routine', []))['percent'],
+            'evening': calculate_progress(routine.get('evening_routine', []))['percent'],
+            'weekly': calculate_progress(routine.get('weekly_routine', []))['percent']
+        }
+    }
+
 # ==================== PROGRESS COMPARISON ====================
 
 @api_router.get("/scan/compare/{scan_id_1}/{scan_id_2}")
