@@ -2348,6 +2348,439 @@ async def compare_scans(scan_id_1: str, scan_id_2: str, current_user: dict = Dep
         'issue_changes': issue_changes
     }
 
+# ==================== PRD PHASE 3: WEEKLY CHALLENGES ====================
+
+# Challenge templates tied to skin issues and metrics
+CHALLENGE_TEMPLATES = {
+    # Hydration challenges
+    'hydration': [
+        {
+            'id': 'water_8_glasses',
+            'title': 'Hydration Hero',
+            'description': 'Drink at least 8 glasses of water daily for 7 days',
+            'why_this_challenge': 'Your hydration score shows room for improvement. Proper hydration plumps skin from within.',
+            'duration_days': 7,
+            'target_metric': 'hydration_appearance',
+            'difficulty': 'easy',
+            'daily_goal': '8 glasses of water',
+            'tips': ['Set hourly reminders', 'Keep a water bottle with you', 'Track your intake'],
+            'expected_impact': 'Improved skin plumpness and reduced fine lines'
+        },
+        {
+            'id': 'hyaluronic_acid_week',
+            'title': 'Moisture Lock Week',
+            'description': 'Apply hyaluronic acid serum every day for 7 days',
+            'why_this_challenge': 'Hyaluronic acid attracts and holds moisture, directly addressing your hydration needs.',
+            'duration_days': 7,
+            'target_metric': 'hydration_appearance',
+            'difficulty': 'medium',
+            'daily_goal': 'Apply HA serum to damp skin',
+            'tips': ['Apply to slightly damp skin', 'Follow with moisturizer', 'Use morning and night'],
+            'expected_impact': '15-20% improvement in hydration appearance'
+        }
+    ],
+    # Texture challenges
+    'texture': [
+        {
+            'id': 'gentle_exfoliation',
+            'title': 'Smooth Skin Week',
+            'description': 'Exfoliate 2-3 times this week with a gentle AHA/BHA',
+            'why_this_challenge': 'Your texture score indicates dead skin buildup. Chemical exfoliation reveals smoother skin.',
+            'duration_days': 7,
+            'target_metric': 'texture_smoothness',
+            'difficulty': 'medium',
+            'daily_goal': 'Exfoliate on designated days (Mon, Wed, Fri)',
+            'tips': ['Start with low concentration', 'Always use sunscreen after', 'Skip if irritation occurs'],
+            'expected_impact': 'Smoother, more refined skin texture'
+        },
+        {
+            'id': 'double_cleanse_week',
+            'title': 'Deep Clean Challenge',
+            'description': 'Double cleanse every evening for 7 days',
+            'why_this_challenge': 'Proper cleansing removes debris that causes texture issues.',
+            'duration_days': 7,
+            'target_metric': 'texture_smoothness',
+            'difficulty': 'easy',
+            'daily_goal': 'Oil cleanser + water cleanser nightly',
+            'tips': ['Oil first to remove makeup/SPF', 'Gentle water-based cleanser second', 'Be gentle, no harsh scrubbing'],
+            'expected_impact': 'Clearer pores and smoother texture'
+        }
+    ],
+    # Redness/sensitivity challenges
+    'redness': [
+        {
+            'id': 'soothe_and_calm',
+            'title': 'Calm Skin Challenge',
+            'description': 'Use only calming products for 7 days - no actives',
+            'why_this_challenge': 'Your redness indicates inflammation. A break from actives lets skin recover.',
+            'duration_days': 7,
+            'target_metric': 'redness_level',
+            'difficulty': 'easy',
+            'daily_goal': 'Cleanse, soothe, moisturize only',
+            'tips': ['Look for centella, aloe, green tea', 'Avoid fragrance and alcohol', 'Skip retinol and acids'],
+            'expected_impact': 'Reduced redness and calmer complexion'
+        },
+        {
+            'id': 'ice_rolling',
+            'title': 'Cool Down Week',
+            'description': 'Use cold therapy on your face daily for 7 days',
+            'why_this_challenge': 'Cold constricts blood vessels and reduces inflammation.',
+            'duration_days': 7,
+            'target_metric': 'redness_level',
+            'difficulty': 'easy',
+            'daily_goal': '2-3 minutes of ice rolling or cold compress',
+            'tips': ['Use ice roller from freezer', 'Never apply ice directly', 'Do after cleansing, before serums'],
+            'expected_impact': 'Reduced puffiness and redness'
+        }
+    ],
+    # Pore challenges
+    'pores': [
+        {
+            'id': 'niacinamide_week',
+            'title': 'Pore Minimizing Week',
+            'description': 'Apply niacinamide serum daily for 7 days',
+            'why_this_challenge': 'Niacinamide regulates oil and visibly reduces pore appearance.',
+            'duration_days': 7,
+            'target_metric': 'pore_visibility',
+            'difficulty': 'easy',
+            'daily_goal': 'Apply 5% niacinamide serum twice daily',
+            'tips': ['Can be layered with other products', 'Start with once daily if new', 'Pairs well with hyaluronic acid'],
+            'expected_impact': 'Refined pore appearance and balanced oil'
+        },
+        {
+            'id': 'clay_mask_week',
+            'title': 'Deep Pore Cleanse',
+            'description': 'Use a clay mask 2x this week on T-zone',
+            'why_this_challenge': 'Clay draws out impurities and tightens pore appearance.',
+            'duration_days': 7,
+            'target_metric': 'pore_visibility',
+            'difficulty': 'easy',
+            'daily_goal': 'Clay mask on Tuesday and Saturday',
+            'tips': ['Focus on T-zone', 'Remove before fully dry', 'Follow with hydrating toner'],
+            'expected_impact': 'Cleaner, less visible pores'
+        }
+    ],
+    # Tone/brightness challenges
+    'tone': [
+        {
+            'id': 'vitamin_c_week',
+            'title': 'Glow Up Challenge',
+            'description': 'Use Vitamin C serum every morning for 7 days',
+            'why_this_challenge': 'Your uneven tone will benefit from Vitamin C\'s brightening and antioxidant effects.',
+            'duration_days': 7,
+            'target_metric': 'tone_uniformity',
+            'difficulty': 'medium',
+            'daily_goal': 'Vitamin C serum in AM before sunscreen',
+            'tips': ['Store in cool, dark place', 'Apply to clean, dry skin', 'Always follow with SPF'],
+            'expected_impact': 'Brighter, more even skin tone'
+        },
+        {
+            'id': 'spf_commitment',
+            'title': 'Sun Shield Week',
+            'description': 'Apply SPF 30+ every day, reapply if outdoors',
+            'why_this_challenge': 'UV exposure worsens uneven tone. Consistent SPF prevents further damage.',
+            'duration_days': 7,
+            'target_metric': 'tone_uniformity',
+            'difficulty': 'easy',
+            'daily_goal': 'SPF every morning, reapply every 2 hours if outside',
+            'tips': ['Apply as final skincare step', 'Don\'t forget ears and neck', 'Use 2 finger lengths of product'],
+            'expected_impact': 'Prevention of further dark spots and tone issues'
+        }
+    ],
+    # General/consistency challenges
+    'consistency': [
+        {
+            'id': 'routine_streak',
+            'title': '7-Day Streak',
+            'description': 'Complete your full morning AND evening routine for 7 consecutive days',
+            'why_this_challenge': 'Consistency is key to seeing results. Build the habit this week.',
+            'duration_days': 7,
+            'target_metric': 'overall',
+            'difficulty': 'medium',
+            'daily_goal': 'Complete both AM and PM routines',
+            'tips': ['Set reminders', 'Prep products the night before', 'Track your completions'],
+            'expected_impact': 'Establishes habits for long-term skin health'
+        },
+        {
+            'id': 'sleep_challenge',
+            'title': 'Beauty Sleep Week',
+            'description': 'Get 7-8 hours of sleep every night for 7 days',
+            'why_this_challenge': 'Skin repairs during sleep. Insufficient rest affects all skin metrics.',
+            'duration_days': 7,
+            'target_metric': 'overall',
+            'difficulty': 'medium',
+            'daily_goal': '7-8 hours of quality sleep',
+            'tips': ['Set a consistent bedtime', 'Avoid screens 1 hour before bed', 'Keep room cool and dark'],
+            'expected_impact': 'Better skin recovery and reduced dark circles'
+        }
+    ]
+}
+
+def generate_weekly_challenges(analysis: dict, user_id: str) -> List[dict]:
+    """
+    PRD Phase 3: Generate personalized weekly challenges based on skin analysis.
+    
+    Challenges are:
+    1. Tied to detected issues and low-scoring metrics
+    2. Realistic and achievable
+    3. Specific to user's skin type
+    """
+    challenges = []
+    skin_metrics = analysis.get('skin_metrics', {})
+    issues = analysis.get('issues', [])
+    primary_concern = analysis.get('primary_concern', {})
+    
+    # Find metrics needing improvement (score < 75)
+    low_metrics = []
+    for metric_name, metric_data in skin_metrics.items():
+        if isinstance(metric_data, dict):
+            score = metric_data.get('score', 70)
+            if score < 75:
+                low_metrics.append({
+                    'name': metric_name,
+                    'score': score,
+                    'priority': 1 if score < 60 else 2
+                })
+    
+    # Sort by priority (lowest scores first)
+    low_metrics.sort(key=lambda x: x['score'])
+    
+    # Map metrics to challenge categories
+    metric_to_category = {
+        'hydration_appearance': 'hydration',
+        'texture_smoothness': 'texture',
+        'redness_level': 'redness',
+        'pore_visibility': 'pores',
+        'tone_uniformity': 'tone'
+    }
+    
+    # Generate challenges for lowest 2 metrics
+    used_categories = set()
+    for metric in low_metrics[:2]:
+        category = metric_to_category.get(metric['name'])
+        if category and category not in used_categories:
+            category_challenges = CHALLENGE_TEMPLATES.get(category, [])
+            if category_challenges:
+                # Pick first challenge from category
+                challenge = category_challenges[0].copy()
+                challenge['assigned_for_metric'] = metric['name']
+                challenge['current_metric_score'] = metric['score']
+                challenge['start_date'] = datetime.utcnow().isoformat()
+                challenge['end_date'] = (datetime.utcnow() + timedelta(days=challenge['duration_days'])).isoformat()
+                challenge['progress'] = {
+                    'days_completed': 0,
+                    'total_days': challenge['duration_days'],
+                    'is_active': True
+                }
+                challenges.append(challenge)
+                used_categories.add(category)
+    
+    # Always add a consistency challenge if we have less than 2
+    if len(challenges) < 2:
+        consistency_challenges = CHALLENGE_TEMPLATES.get('consistency', [])
+        if consistency_challenges:
+            challenge = consistency_challenges[0].copy()
+            challenge['assigned_for_metric'] = 'overall'
+            challenge['current_metric_score'] = None
+            challenge['start_date'] = datetime.utcnow().isoformat()
+            challenge['end_date'] = (datetime.utcnow() + timedelta(days=challenge['duration_days'])).isoformat()
+            challenge['progress'] = {
+                'days_completed': 0,
+                'total_days': challenge['duration_days'],
+                'is_active': True
+            }
+            challenges.append(challenge)
+    
+    return challenges[:3]  # Max 3 challenges at a time
+
+class ChallengeProgressUpdate(BaseModel):
+    challenge_id: str
+    day_completed: bool
+
+@api_router.get("/challenges/current")
+async def get_current_challenges(current_user: dict = Depends(get_current_user)):
+    """
+    PRD Phase 3: Get user's current weekly challenges.
+    Generates new challenges based on latest scan if none exist.
+    """
+    if current_user.get('plan', 'free') != 'premium':
+        return {
+            'locked': True,
+            'message': 'Weekly challenges are a Premium feature',
+            'preview': {
+                'challenge_count': 3,
+                'sample_titles': ['Hydration Hero', 'Smooth Skin Week', '7-Day Streak']
+            }
+        }
+    
+    user_id = current_user['id']
+    
+    # Check for existing active challenges
+    active_challenges = await db.challenges.find_one({
+        'user_id': user_id,
+        'is_active': True
+    })
+    
+    if active_challenges:
+        return {
+            'locked': False,
+            'challenges': active_challenges.get('challenges', []),
+            'week_start': active_challenges.get('week_start'),
+            'week_end': active_challenges.get('week_end')
+        }
+    
+    # Generate new challenges from latest scan
+    latest_scan = await db.scans.find_one(
+        {'user_id': user_id},
+        sort=[('created_at', -1)]
+    )
+    
+    if not latest_scan:
+        return {
+            'locked': False,
+            'challenges': [],
+            'message': 'Complete a skin scan to get personalized challenges'
+        }
+    
+    # Generate challenges
+    analysis = latest_scan.get('analysis', {})
+    challenges = generate_weekly_challenges(analysis, user_id)
+    
+    # Save challenges
+    week_start = datetime.utcnow()
+    week_end = week_start + timedelta(days=7)
+    
+    await db.challenges.insert_one({
+        'user_id': user_id,
+        'challenges': challenges,
+        'is_active': True,
+        'week_start': week_start,
+        'week_end': week_end,
+        'scan_id': latest_scan.get('id'),
+        'created_at': datetime.utcnow()
+    })
+    
+    return {
+        'locked': False,
+        'challenges': challenges,
+        'week_start': week_start.isoformat(),
+        'week_end': week_end.isoformat()
+    }
+
+@api_router.post("/challenges/progress")
+async def update_challenge_progress(
+    request: ChallengeProgressUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    PRD Phase 3: Update progress on a weekly challenge.
+    """
+    if current_user.get('plan', 'free') != 'premium':
+        raise HTTPException(status_code=403, detail="Premium feature")
+    
+    user_id = current_user['id']
+    
+    # Find active challenges
+    active = await db.challenges.find_one({
+        'user_id': user_id,
+        'is_active': True
+    })
+    
+    if not active:
+        raise HTTPException(status_code=404, detail="No active challenges found")
+    
+    challenges = active.get('challenges', [])
+    challenge_found = False
+    
+    for challenge in challenges:
+        if challenge.get('id') == request.challenge_id:
+            challenge_found = True
+            progress = challenge.get('progress', {})
+            
+            if request.day_completed:
+                progress['days_completed'] = min(
+                    progress.get('days_completed', 0) + 1,
+                    progress.get('total_days', 7)
+                )
+            
+            # Check if challenge is complete
+            if progress['days_completed'] >= progress['total_days']:
+                progress['is_active'] = False
+                challenge['completed'] = True
+                challenge['completed_at'] = datetime.utcnow().isoformat()
+            
+            challenge['progress'] = progress
+            break
+    
+    if not challenge_found:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+    
+    # Update in database
+    await db.challenges.update_one(
+        {'_id': active['_id']},
+        {'$set': {'challenges': challenges}}
+    )
+    
+    return {
+        'success': True,
+        'challenge_id': request.challenge_id,
+        'challenges': challenges
+    }
+
+@api_router.post("/challenges/refresh")
+async def refresh_challenges(current_user: dict = Depends(get_current_user)):
+    """
+    PRD Phase 3: Generate new weekly challenges (e.g., at start of new week).
+    Deactivates old challenges and creates new ones.
+    """
+    if current_user.get('plan', 'free') != 'premium':
+        raise HTTPException(status_code=403, detail="Premium feature")
+    
+    user_id = current_user['id']
+    
+    # Deactivate old challenges
+    await db.challenges.update_many(
+        {'user_id': user_id, 'is_active': True},
+        {'$set': {'is_active': False}}
+    )
+    
+    # Get latest scan
+    latest_scan = await db.scans.find_one(
+        {'user_id': user_id},
+        sort=[('created_at', -1)]
+    )
+    
+    if not latest_scan:
+        return {
+            'success': True,
+            'challenges': [],
+            'message': 'No scan found. Complete a scan to get challenges.'
+        }
+    
+    # Generate new challenges
+    analysis = latest_scan.get('analysis', {})
+    challenges = generate_weekly_challenges(analysis, user_id)
+    
+    week_start = datetime.utcnow()
+    week_end = week_start + timedelta(days=7)
+    
+    await db.challenges.insert_one({
+        'user_id': user_id,
+        'challenges': challenges,
+        'is_active': True,
+        'week_start': week_start,
+        'week_end': week_end,
+        'scan_id': latest_scan.get('id'),
+        'created_at': datetime.utcnow()
+    })
+    
+    return {
+        'success': True,
+        'challenges': challenges,
+        'week_start': week_start.isoformat(),
+        'week_end': week_end.isoformat()
+    }
+
 # ==================== SUBSCRIPTION ENDPOINTS ====================
 
 @api_router.get("/subscription/status")
