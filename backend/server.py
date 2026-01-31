@@ -1645,7 +1645,7 @@ async def analyze_skin(
         
         # ==================== RETURN RESPONSE BASED ON PLAN ====================
         if user_plan == 'premium':
-            # PREMIUM USER: Return full response
+            # PREMIUM USER: Return full response with PRD Phase 1 data
             return {
                 'id': scan['id'],
                 'user_plan': 'premium',
@@ -1654,12 +1654,19 @@ async def analyze_skin(
                     'skin_type': scan['analysis']['skin_type'],
                     'skin_type_confidence': scan['analysis']['skin_type_confidence'],
                     'skin_type_description': scan['analysis']['skin_type_description'],
+                    # PRD Phase 1: Real measurable signals
+                    'skin_metrics': scan['analysis'].get('skin_metrics', {}),
+                    'strengths': scan['analysis'].get('strengths', []),
                     'issues': scan['analysis']['issues'],
+                    'primary_concern': scan['analysis'].get('primary_concern', {}),
                     'recommendations': scan['analysis']['recommendations'],
                     'overall_score': score_data['score'],
                     'score_label': score_data['label'],
                     'score_description': score_data['description'],
-                    'score_factors': score_data['factors']
+                    'score_factors': score_data['factors'],
+                    # PRD Phase 1: Metrics breakdown for transparency
+                    'metrics_breakdown': score_data.get('metrics_breakdown', []),
+                    'calculation_method': score_data.get('calculation_method', 'issue_based')
                 },
                 'routine': scan['routine'],
                 'products': scan['products'],
@@ -1669,16 +1676,21 @@ async def analyze_skin(
                 'image_hash': image_hash
             }
         else:
-            # FREE USER: Return issues visible but LOCKED (details hidden)
-            # User MUST see issues exist - builds trust and conversion
+            # FREE USER (PRD Phase 3: Free Experience - Honest Curiosity)
+            # Shows: 1 overall score, 1-2 strengths, primary concern only
             all_issues = scan['analysis']['issues']
             issue_count = len(all_issues)
+            all_strengths = scan['analysis'].get('strengths', [])
+            primary_concern = scan['analysis'].get('primary_concern', {})
+            
+            # PRD Phase 3: Free users get limited strengths (1-2 max)
+            free_strengths = all_strengths[:2] if all_strengths else []
             
             # Return issue names ONLY (no severity, no description - those are locked)
             issues_preview = [
                 {
                     'name': issue.get('name', 'Skin concern detected'),
-                    'locked': True,  # Severity and description are locked
+                    'locked': True,
                     'severity_locked': True,
                     'description_locked': True
                 }
@@ -1693,12 +1705,20 @@ async def analyze_skin(
                     'skin_type': scan['analysis']['skin_type'],
                     'overall_score': score_data['score'],
                     'score_label': score_data['label'],
-                    # FREE USERS SEE: Issue names and count (but details locked)
+                    # PRD Phase 3: Free users see strengths (builds trust)
+                    'strengths': free_strengths,
+                    # PRD Phase 3: Free users see PRIMARY concern only (drives curiosity)
+                    'primary_concern': {
+                        'name': primary_concern.get('name', 'Skin concern detected'),
+                        'why_this_result': primary_concern.get('why_this_result', 'Based on your skin analysis')
+                    },
+                    # Issue names visible, details locked
                     'issue_count': issue_count,
-                    'issues_preview': issues_preview,  # Names visible, details locked
+                    'issues_preview': issues_preview,
                 },
                 'locked_features': [
-                    'issue_details',       # Severity, description locked
+                    'issue_details',
+                    'skin_metrics',
                     'full_routine',
                     'diet_plan', 
                     'product_recommendations',
