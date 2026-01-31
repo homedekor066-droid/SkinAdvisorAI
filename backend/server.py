@@ -49,39 +49,6 @@ else:
 
 app = FastAPI(title="SkinAdvisor AI API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
-async def exchange_google_code(code: str) -> dict:
-    token_url = "https://oauth2.googleapis.com/token"
-
-    data = {
-        "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
-        "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
-        "code": code,
-        "grant_type": "authorization_code",
-        "redirect_uri": os.environ.get("GOOGLE_REDIRECT_URI"),
-    }
-
-    response = requests.post(token_url, data=data)
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Google token exchange failed")
-
-    tokens = response.json()
-    id_token = tokens.get("id_token")
-
-    if not id_token:
-        raise HTTPException(status_code=400, detail="No id_token returned by Google")
-
-    payload = jwt.decode(
-        id_token,
-        options={"verify_signature": False},
-        algorithms=["RS256"],
-    )
-
-    return {
-        "provider_id": payload.get("sub"),
-        "email": payload.get("email"),
-        "name": payload.get("name"),
-    }
-
 security = HTTPBearer()
 
 # Configure logging
