@@ -10,7 +10,7 @@ import Purchases, {
 // NOTE: You need to get your actual RevenueCat API key from:
 // https://app.revenuecat.com → Your App → API Keys
 const REVENUECAT_IOS_API_KEY = 'appl_CKsUZMwaOQzkdnFNvVaKjmmlydg';
-const REVENUECAT_ANDROID_API_KEY = 'goog_YOUR_ANDROID_KEY'; // Replace with your Android key
+const REVENUECAT_ANDROID_API_KEY = 'goog_OKETysvyJcsdTGvkuoxqERDTYEN';
 
 // Entitlement ID for premium access
 const PREMIUM_ENTITLEMENT_ID = 'premium';

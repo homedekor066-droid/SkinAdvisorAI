@@ -221,6 +221,14 @@ export default function RegisterScreen() {
               placeholder="••••••••"
             />
 
+            {/* Registration Error Message */}
+            {registerError && (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={20} color="#D32F2F" />
+                <Text style={styles.errorText}>{registerError}</Text>
+              </View>
+            )}
+
             <Button
               title={t('register')}
               onPress={handleRegister}
@@ -300,5 +308,20 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFEBEE',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    color: '#D32F2F',
+    fontSize: 14,
   },
 });
