@@ -73,9 +73,11 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
+    console.log('[Profile] Delete account button pressed');
     // On web, Alert doesn't work well, so use confirm
     if (Platform.OS === 'web') {
       const confirmed = window.confirm('Are you sure you want to delete your account? This action cannot be undone.');
+      console.log('[Profile] Web confirm result:', confirmed);
       if (confirmed) {
         performDeleteAccount();
       }
@@ -96,14 +98,24 @@ export default function ProfileScreen() {
   };
 
   const performDeleteAccount = async () => {
+    console.log('[Profile] Starting account deletion...');
+    console.log('[Profile] API_URL:', API_URL);
+    console.log('[Profile] Token present:', !!token);
+    
     setDeleting(true);
     try {
-      await axios.delete(`${API_URL}/api/account`, {
+      const response = await axios.delete(`${API_URL}/api/account`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('[Profile] Delete response:', response.data);
+      
+      // Successfully deleted - logout and redirect
       await logout();
       router.replace('/(auth)/login');
     } catch (error: any) {
+      console.error('[Profile] Delete error:', error);
+      console.error('[Profile] Delete error response:', error.response?.data);
+      
       const message = error.response?.data?.detail || 'Failed to delete account';
       if (Platform.OS === 'web') {
         window.alert(message);
