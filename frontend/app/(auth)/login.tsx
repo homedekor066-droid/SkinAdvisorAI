@@ -282,6 +282,14 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
 
+            {/* Login Error Message */}
+            {loginError && (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={20} color="#D32F2F" />
+                <Text style={styles.errorText}>{loginError}</Text>
+              </View>
+            )}
+
             <Button
               title={t('login')}
               onPress={handleLogin}
