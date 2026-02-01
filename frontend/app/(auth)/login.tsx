@@ -116,8 +116,29 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('[Login] Login error:', error);
       console.error('[Login] Error response:', error.response?.data);
-      const message = error.response?.data?.detail || error.message || 'Login failed';
-      Alert.alert(t('error') || 'Error', message);
+      
+      // Get user-friendly error message
+      let message = 'Login failed. Please try again.';
+      const detail = error.response?.data?.detail;
+      
+      if (detail) {
+        if (detail.toLowerCase().includes('invalid') || detail.toLowerCase().includes('incorrect')) {
+          message = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (detail.toLowerCase().includes('not found')) {
+          message = 'No account found with this email. Please register first.';
+        } else {
+          message = detail;
+        }
+      } else if (error.message) {
+        message = error.message;
+      }
+      
+      // Show alert based on platform
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert(t('error') || 'Error', message);
+      }
     } finally {
       setLoading(false);
     }
