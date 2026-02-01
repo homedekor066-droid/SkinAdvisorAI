@@ -7,13 +7,17 @@ import Purchases, {
 } from 'react-native-purchases';
 
 // RevenueCat API Keys - Production key for iOS
-const REVENUECAT_API_KEY = 'appl_CKsUZMwaOQzkdnFNvVaKjmmlydg';
+// NOTE: You need to get your actual RevenueCat API key from:
+// https://app.revenuecat.com → Your App → API Keys
+const REVENUECAT_IOS_API_KEY = 'appl_CKsUZMwaOQzkdnFNvVaKjmmlydg';
+const REVENUECAT_ANDROID_API_KEY = 'goog_YOUR_ANDROID_KEY'; // Replace with your Android key
 
 // Entitlement ID for premium access
 const PREMIUM_ENTITLEMENT_ID = 'premium';
 
 class RevenueCatService {
   private initialized = false;
+  private initializationFailed = false;
 
   /**
    * Initialize RevenueCat SDK
@@ -25,24 +29,40 @@ class RevenueCatService {
       return;
     }
 
+    if (this.initializationFailed) {
+      console.log('[RevenueCat] Previous initialization failed, skipping');
+      return;
+    }
+
+    // Skip initialization on web
+    if (Platform.OS === 'web') {
+      console.log('[RevenueCat] Web platform detected. Using Browser Mode.');
+      this.initialized = true;
+      return;
+    }
+
     try {
       // Set log level for debugging
       if (__DEV__) {
         Purchases.setLogLevel(LOG_LEVEL.DEBUG);
       }
 
+      // Select the appropriate API key based on platform
+      const apiKey = Platform.OS === 'ios' 
+        ? REVENUECAT_IOS_API_KEY 
+        : REVENUECAT_ANDROID_API_KEY;
+
       // Configure RevenueCat
-      // Using the same key for both platforms during development
-      // In production, use platform-specific keys
       await Purchases.configure({
-        apiKey: REVENUECAT_API_KEY,
+        apiKey: apiKey,
       });
 
       this.initialized = true;
       console.log('[RevenueCat] Initialized successfully');
-    } catch (error) {
-      console.error('[RevenueCat] Initialization failed:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[RevenueCat] Initialization failed:', error.message);
+      this.initializationFailed = true;
+      // Don't throw - let app continue without RevenueCat
     }
   }
 
