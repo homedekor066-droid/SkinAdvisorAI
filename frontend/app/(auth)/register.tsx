@@ -117,6 +117,7 @@ export default function RegisterScreen() {
 
     console.log('[Register] Validation passed, starting registration...');
     setLoading(true);
+    setRegisterError(null);
     try {
       await register(name, email, password, language);
       console.log('[Register] Registration successful, navigating...');
@@ -137,12 +138,8 @@ export default function RegisterScreen() {
         }
       }
       
-      // Show alert based on platform
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert(t('error') || 'Error', message);
-      }
+      // Set error to show inline
+      setRegisterError(message);
     } finally {
       setLoading(false);
     }
