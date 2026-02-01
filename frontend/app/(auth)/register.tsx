@@ -31,6 +31,7 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
