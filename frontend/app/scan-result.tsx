@@ -532,7 +532,13 @@ export default function ScanResultScreen() {
         )}
 
         {/* Tabs */}
-        <View style={[styles.tabs, { backgroundColor: theme.surface }]}>
+        <View 
+          style={[styles.tabs, { backgroundColor: theme.surface }]}
+          onLayout={(event) => {
+            const { y } = event.nativeEvent.layout;
+            setTabSectionY(y);
+          }}
+        >
           {(['analysis', 'routine', 'nutrition', 'products'] as const).map((tab) => (
             <TouchableOpacity
               key={tab}
