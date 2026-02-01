@@ -292,7 +292,11 @@ export default function ScanResultScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Score Section - PROMINENT */}
         <Card style={styles.scoreCard}>
           {/* Skin Type - PROMINENT */}
