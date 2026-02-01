@@ -70,14 +70,19 @@ class RevenueCatService {
    * Login user to RevenueCat
    * Links purchases to user account
    */
-  async login(userId: string): Promise<CustomerInfo> {
+  async login(userId: string): Promise<CustomerInfo | null> {
+    if (!this.initialized || this.initializationFailed || Platform.OS === 'web') {
+      console.log('[RevenueCat] Skipping login - not initialized or web platform');
+      return null;
+    }
+    
     try {
       const { customerInfo } = await Purchases.logIn(userId);
       console.log('[RevenueCat] User logged in:', userId);
       return customerInfo;
-    } catch (error) {
-      console.error('[RevenueCat] Login failed:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[RevenueCat] Login failed:', error.message);
+      return null;
     }
   }
 
@@ -85,41 +90,56 @@ class RevenueCatService {
    * Logout user from RevenueCat
    * Creates new anonymous user
    */
-  async logout(): Promise<CustomerInfo> {
+  async logout(): Promise<CustomerInfo | null> {
+    if (!this.initialized || this.initializationFailed || Platform.OS === 'web') {
+      console.log('[RevenueCat] Skipping logout - not initialized or web platform');
+      return null;
+    }
+    
     try {
       const customerInfo = await Purchases.logOut();
       console.log('[RevenueCat] User logged out');
       return customerInfo;
-    } catch (error) {
-      console.error('[RevenueCat] Logout failed:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[RevenueCat] Logout failed:', error.message);
+      return null;
     }
   }
 
   /**
    * Get available subscription offerings
    */
-  async getOfferings(): Promise<PurchasesOfferings> {
+  async getOfferings(): Promise<PurchasesOfferings | null> {
+    if (!this.initialized || this.initializationFailed || Platform.OS === 'web') {
+      console.log('[RevenueCat] Skipping getOfferings - not initialized or web platform');
+      return null;
+    }
+    
     try {
       const offerings = await Purchases.getOfferings();
       console.log('[RevenueCat] Offerings fetched:', offerings);
       return offerings;
-    } catch (error) {
-      console.error('[RevenueCat] Failed to get offerings:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[RevenueCat] Failed to get offerings:', error.message);
+      return null;
     }
   }
 
   /**
    * Get current customer info (subscription status)
    */
-  async getCustomerInfo(): Promise<CustomerInfo> {
+  async getCustomerInfo(): Promise<CustomerInfo | null> {
+    if (!this.initialized || this.initializationFailed || Platform.OS === 'web') {
+      console.log('[RevenueCat] Skipping getCustomerInfo - not initialized or web platform');
+      return null;
+    }
+    
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       return customerInfo;
-    } catch (error) {
-      console.error('[RevenueCat] Failed to get customer info:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[RevenueCat] Failed to get customer info:', error.message);
+      return null;
     }
   }
 
@@ -127,11 +147,16 @@ class RevenueCatService {
    * Check if user has active premium subscription
    */
   async isPremiumUser(): Promise<boolean> {
+    if (!this.initialized || this.initializationFailed || Platform.OS === 'web') {
+      return false;
+    }
+    
     try {
       const customerInfo = await this.getCustomerInfo();
+      if (!customerInfo) return false;
       return customerInfo.entitlements.active[PREMIUM_ENTITLEMENT_ID] !== undefined;
-    } catch (error) {
-      console.error('[RevenueCat] Failed to check premium status:', error);
+    } catch (error: any) {
+      console.error('[RevenueCat] Failed to check premium status:', error.message);
       return false;
     }
   }
