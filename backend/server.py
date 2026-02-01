@@ -18,6 +18,8 @@ import json
 import re
 import secrets
 import hashlib
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
