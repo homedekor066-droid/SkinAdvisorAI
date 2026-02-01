@@ -805,13 +805,53 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 # ==================== FORGOT PASSWORD ====================
 
+# SendGrid configuration
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
+SUPPORT_EMAIL = 'aziri.603@gmail.com'
+
+def send_password_reset_email(to_email: str, reset_token: str) -> bool:
+    """Send password reset email via SendGrid"""
+    if not SENDGRID_API_KEY:
+        logger.warning("SendGrid API key not configured")
+        return False
+    
+    try:
+        message = Mail(
+            from_email=SUPPORT_EMAIL,
+            to_emails=to_email,
+            subject='SkinAdvisor AI - Password Reset',
+            html_content=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #6C5CE7;">SkinAdvisor AI</h2>
+                <p>You requested a password reset for your SkinAdvisor AI account.</p>
+                <p>Your password reset code is:</p>
+                <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                    <span style="font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #333;">{reset_token}</span>
+                </div>
+                <p>Enter this code in the app to reset your password. This code expires in <strong>1 hour</strong>.</p>
+                <p style="color: #666; font-size: 14px;">If you didn't request this reset, please ignore this email.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px;">© 2025 SkinAdvisor AI. All rights reserved.</p>
+            </div>
+            '''
+        )
+        
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        logger.info(f"Password reset email sent to {to_email}, status: {response.status_code}")
+        return response.status_code == 202
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {str(e)}")
+        return False
+
 @api_router.post("/auth/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     user = await db.users.find_one({'email': request.email})
     if not user:
-        return {"message": "If this email exists, a reset link has been sent"}
+        # Don't reveal if email exists
+        return {"message": "If this email exists, a reset code has been sent"}
     
-    reset_token = create_reset_token()
+    reset_token = secrets.token_hex(3).upper()  # 6-character hex code (easier to type)
     expires_at = datetime.utcnow() + timedelta(hours=1)
     
     await db.password_resets.delete_many({'user_id': user['id']})
@@ -822,11 +862,22 @@ async def forgot_password(request: ForgotPasswordRequest):
         'created_at': datetime.utcnow()
     })
     
-    return {
-        "message": "Password reset token generated",
-        "reset_token": reset_token,
-        "expires_in": "1 hour"
-    }
+    # Send email with reset token
+    email_sent = send_password_reset_email(request.email, reset_token)
+    
+    if email_sent:
+        return {
+            "message": "Password reset code sent to your email",
+            "email_sent": True
+        }
+    else:
+        # Fallback: return token directly if email fails (for development/testing)
+        return {
+            "message": "Password reset code generated",
+            "reset_token": reset_token,
+            "email_sent": False,
+            "expires_in": "1 hour"
+        }
 
 @api_router.post("/auth/reset-password")
 async def reset_password(request: ResetPasswordRequest):
