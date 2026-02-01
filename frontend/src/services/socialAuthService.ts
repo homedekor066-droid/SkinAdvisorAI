@@ -43,23 +43,32 @@ class SocialAuthService {
    */
   async signInWithGoogle(): Promise<SocialAuthResult> {
     try {
-      // Generate redirect URI based on environment
-      // For Expo Go: https://auth.expo.io/@owner/slug
-      // For standalone: custom scheme
+      // For Expo Go, use the proxy redirect URI
+      // Format: https://auth.expo.io/@{owner}/{slug}
+      const useProxy = Platform.OS !== 'web';
+      
+      // Generate redirect URI
+      // In Expo Go: uses auth.expo.io proxy
+      // In standalone: uses custom scheme
       const redirectUri = AuthSession.makeRedirectUri({
         scheme: 'skinadvisor',
-        path: 'auth',
+        useProxy: useProxy,
       });
 
       console.log('[Google Auth] Redirect URI:', redirectUri);
       console.log('[Google Auth] Platform:', Platform.OS);
+      console.log('[Google Auth] Using proxy:', useProxy);
 
-      // Select client ID based on platform
+      // For Expo Go, always use Web Client ID with the proxy
       let clientId = GOOGLE_WEB_CLIENT_ID;
-      if (Platform.OS === 'ios') {
-        clientId = GOOGLE_IOS_CLIENT_ID;
-      } else if (Platform.OS === 'android') {
-        clientId = GOOGLE_ANDROID_CLIENT_ID;
+      
+      // Only use native client IDs for standalone builds
+      if (!useProxy) {
+        if (Platform.OS === 'ios') {
+          clientId = GOOGLE_IOS_CLIENT_ID;
+        } else if (Platform.OS === 'android') {
+          clientId = GOOGLE_ANDROID_CLIENT_ID;
+        }
       }
 
       console.log('[Google Auth] Using client ID:', clientId.substring(0, 20) + '...');
@@ -75,7 +84,7 @@ class SocialAuthService {
         `&prompt=select_account`;
 
       console.log('[Google Auth] Opening auth session...');
-      console.log('[Google Auth] Auth URL:', authUrl.substring(0, 100) + '...');
+      console.log('[Google Auth] Redirect URI for Google Console:', redirectUri);
 
       // Open the browser for authentication
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
