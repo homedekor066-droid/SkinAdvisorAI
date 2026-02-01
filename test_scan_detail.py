@@ -3,7 +3,7 @@ import json
 import base64
 
 # Check if we can clear scan cache
-BACKEND_URL = 'https://ai-skin-companion.preview.emergentagent.com/api'
+BACKEND_URL = 'https://skinai-bugs.preview.emergentagent.com/api'
 
 # Login
 login_response = requests.post(f'{BACKEND_URL}/auth/login', json={

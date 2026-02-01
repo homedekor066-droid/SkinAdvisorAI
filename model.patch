@@ -645,7 +645,7 @@ index a6a318f..e69de29 100644
 -----+import uuid
 -----+
 -----+# Get backend URL from environment
------+BACKEND_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://ai-skin-companion.preview.emergentagent.com')
+-----+BACKEND_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://skinai-bugs.preview.emergentagent.com')
 -----+API_BASE = f"{BACKEND_URL}/api"
 -----+
 -----+def create_realistic_test_image():
@@ -982,7 +982,7 @@ index a6a318f..e69de29 100644
 -------+import json
 -------+import uuid
 -------+
--------+BACKEND_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
+-------+BACKEND_URL = "https://skinai-bugs.preview.emergentagent.com/api"
 -------+TEST_PASSWORD = "TestPass123!"
 -------+
 -------+def test_scan_limit_debug():
@@ -1071,7 +1071,7 @@ index a6a318f..e69de29 100644
 -------+import uuid
 -------+from datetime import datetime
 -------+
--------+BACKEND_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
+-------+BACKEND_URL = "https://skinai-bugs.preview.emergentagent.com/api"
 -------+TEST_PASSWORD = "TestPass123!"
 -------+
 -------+def test_complete_paywall_flow():
@@ -1257,7 +1257,7 @@ index a6a318f..e69de29 100644
 ---------+from datetime import datetime
 ---------+
 ---------+# Configuration
----------+BASE_URL = "https://ai-skin-companion.preview.emergentagent.com/api"
+---------+BASE_URL = "https://skinai-bugs.preview.emergentagent.com/api"
 ---------+
 ---------+def test_diet_recommendations():
 ---------+    """Test diet recommendations functionality"""
@@ -1734,7 +1734,7 @@ index a6a318f..e69de29 100644
 -----+import uuid
 -----+
 -----+# Get backend URL from environment
------+BACKEND_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://ai-skin-companion.preview.emergentagent.com')
+-----+BACKEND_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://skinai-bugs.preview.emergentagent.com')
 -----+API_BASE = f"{BACKEND_URL}/api"
 -----+
 -----+print(f"🔗 Testing Backend API at: {API_BASE}")
@@ -2200,7 +2200,7 @@ index 0000000..b1df6c4
 +import base64
 +
 +# Check if we can clear scan cache
-+BACKEND_URL = 'https://ai-skin-companion.preview.emergentagent.com/api'
++BACKEND_URL = 'https://skinai-bugs.preview.emergentagent.com/api'
 +
 +# Login
 +login_response = requests.post(f'{BACKEND_URL}/auth/login', json={
