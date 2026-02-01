@@ -256,6 +256,24 @@ export default function ProfileScreen() {
           <Text style={[styles.userEmail, { color: theme.textSecondary }]}>
             {user?.email || ''}
           </Text>
+          {/* Subscription Badge */}
+          <TouchableOpacity 
+            style={[
+              styles.subscriptionBadge, 
+              { backgroundColor: user?.plan === 'premium' ? '#4CAF50' : theme.primary }
+            ]}
+            onPress={() => router.push('/subscription')}
+          >
+            <Ionicons 
+              name={user?.plan === 'premium' ? 'star' : 'star-outline'} 
+              size={16} 
+              color="#FFFFFF" 
+            />
+            <Text style={styles.subscriptionBadgeText}>
+              {user?.plan === 'premium' ? 'Premium' : 'Free Plan'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
         </Card>
 
         {/* Account Settings */}
