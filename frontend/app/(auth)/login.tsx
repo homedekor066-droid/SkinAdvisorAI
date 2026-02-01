@@ -109,11 +109,15 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      console.log('[Login] Attempting login for:', email);
       await login(email, password);
+      console.log('[Login] Login successful, navigating to home');
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Login failed';
-      Alert.alert(t('error'), message);
+      console.error('[Login] Login error:', error);
+      console.error('[Login] Error response:', error.response?.data);
+      const message = error.response?.data?.detail || error.message || 'Login failed';
+      Alert.alert(t('error') || 'Error', message);
     } finally {
       setLoading(false);
     }
