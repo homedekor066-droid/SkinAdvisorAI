@@ -147,6 +147,9 @@ export default function ScanResultScreen() {
   const { token, user } = useAuth();
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const tabSectionRef = useRef<View>(null);
+  const [tabSectionY, setTabSectionY] = useState(0);
 
   const [scan, setScan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -155,6 +158,15 @@ export default function ScanResultScreen() {
   // Check if user has premium
   const isPremium = scan?.user_plan === 'premium' || user?.plan === 'premium';
   const isLocked = !isPremium;
+
+  // Function to scroll to routine section
+  const scrollToRoutine = () => {
+    setActiveTab('routine');
+    // Scroll to the tab section after a short delay to allow tab change
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: tabSectionY, animated: true });
+    }, 100);
+  };
 
   useEffect(() => {
     fetchScanResult();
