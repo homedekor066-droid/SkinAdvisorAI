@@ -37,7 +37,6 @@ export default function SubscriptionScreen() {
 
   const [loading, setLoading] = useState(true);
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
-  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     fetchSubscriptionInfo();
@@ -70,7 +69,7 @@ export default function SubscriptionScreen() {
     router.push('/paywall');
   };
 
-  const handleManageSubscription = async () => {
+  const handleManageSubscription = () => {
     // Open platform-specific subscription management
     if (Platform.OS === 'ios') {
       // iOS: Open App Store subscriptions
@@ -80,64 +79,20 @@ export default function SubscriptionScreen() {
       Linking.openURL('https://play.google.com/store/account/subscriptions');
     } else {
       // Web: Show instructions
-      const message = 'To manage your subscription, please:\n\n' +
-        '• iOS: Go to Settings → Apple ID → Subscriptions\n' +
-        '• Android: Go to Play Store → Menu → Subscriptions';
-      
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Manage Subscription', message);
-      }
+      const message = 'To manage your subscription:\n\n• iOS: Go to Settings → Apple ID → Subscriptions\n• Android: Go to Play Store → Menu → Subscriptions';
+      window.alert(message);
     }
   };
 
-  const handleCancelSubscription = async () => {
-    const confirmMessage = 'Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.';
-    
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm(confirmMessage);
-      if (confirmed) {
-        handleManageSubscription();
-      }
+  const handleCancelSubscription = () => {
+    // Directly open subscription management where user can cancel
+    if (Platform.OS === 'ios') {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    } else if (Platform.OS === 'android') {
+      Linking.openURL('https://play.google.com/store/account/subscriptions');
     } else {
-      Alert.alert(
-        'Cancel Subscription',
-        confirmMessage,
-        [
-          { text: 'Keep Subscription', style: 'cancel' },
-          { 
-            text: 'Cancel Subscription', 
-            style: 'destructive',
-            onPress: handleManageSubscription
-          },
-        ]
-      );
-    }
-  };
-
-  const handleRestorePurchases = async () => {
-    setLoading(true);
-    try {
-      // In a real app, this would call RevenueCat to restore purchases
-      // For now, just refresh user data
-      await refreshUser();
-      
-      const message = 'Purchases restored successfully!';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Success', message);
-      }
-    } catch (error) {
-      const message = 'Failed to restore purchases. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Error', message);
-      }
-    } finally {
-      setLoading(false);
+      const message = 'To cancel your subscription:\n\n• iOS: Go to Settings → Apple ID → Subscriptions → SkinAdvisor AI → Cancel\n• Android: Go to Play Store → Menu → Subscriptions → SkinAdvisor AI → Cancel';
+      window.alert(message);
     }
   };
 
@@ -208,8 +163,8 @@ export default function SubscriptionScreen() {
           {[
             { icon: 'scan-outline', text: 'Unlimited skin scans', premium: true },
             { icon: 'analytics-outline', text: 'Detailed skin metrics', premium: true },
-            { icon: 'fitness-outline', text: 'Weekly challenges', premium: true },
-            { icon: 'calendar-outline', text: 'Personalized routines', premium: true },
+            { icon: 'fitness-outline', text: '30-day skincare program', premium: true },
+            { icon: 'calendar-outline', text: 'Personalized daily routines', premium: true },
             { icon: 'nutrition-outline', text: 'Diet recommendations', premium: true },
             { icon: 'trending-up-outline', text: 'Progress tracking', premium: true },
           ].map((feature, index) => (
@@ -267,16 +222,6 @@ export default function SubscriptionScreen() {
               </TouchableOpacity>
             </>
           )}
-
-          <TouchableOpacity
-            style={[styles.restoreButton, { borderColor: theme.border }]}
-            onPress={handleRestorePurchases}
-          >
-            <Ionicons name="refresh-outline" size={20} color={theme.primary} />
-            <Text style={[styles.restoreButtonText, { color: theme.primary }]}>
-              Restore Purchases
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Help Section */}
@@ -289,7 +234,7 @@ export default function SubscriptionScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.supportButton, { borderColor: theme.primary }]}
-            onPress={() => Linking.openURL('mailto:support@skinadvisor.ai')}
+            onPress={() => Linking.openURL('mailto:aziri.603@gmail.com?subject=SkinAdvisor%20AI%20Support')}
           >
             <Ionicons name="mail-outline" size={18} color={theme.primary} />
             <Text style={[styles.supportButtonText, { color: theme.primary }]}>
