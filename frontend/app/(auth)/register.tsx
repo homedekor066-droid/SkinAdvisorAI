@@ -123,8 +123,25 @@ export default function RegisterScreen() {
       router.replace('/language-selection');
     } catch (error: any) {
       console.log('[Register] Registration error:', error);
-      const message = error.response?.data?.detail || 'Registration failed';
-      Alert.alert(t('error'), message);
+      
+      // Get user-friendly error message
+      let message = 'Registration failed. Please try again.';
+      const detail = error.response?.data?.detail;
+      
+      if (detail) {
+        if (detail.toLowerCase().includes('already') || detail.toLowerCase().includes('exists')) {
+          message = 'An account with this email already exists. Please login instead.';
+        } else {
+          message = detail;
+        }
+      }
+      
+      // Show alert based on platform
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert(t('error') || 'Error', message);
+      }
     } finally {
       setLoading(false);
     }
