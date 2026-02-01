@@ -69,30 +69,50 @@ export default function SubscriptionScreen() {
     router.push('/paywall');
   };
 
-  const handleManageSubscription = () => {
+  const handleManageSubscription = async () => {
+    console.log('[Subscription] Manage subscription pressed, Platform:', Platform.OS);
     // Open platform-specific subscription management
-    if (Platform.OS === 'ios') {
-      // iOS: Open App Store subscriptions
-      Linking.openURL('https://apps.apple.com/account/subscriptions');
-    } else if (Platform.OS === 'android') {
-      // Android: Open Play Store subscriptions
-      Linking.openURL('https://play.google.com/store/account/subscriptions');
-    } else {
-      // Web: Show instructions
-      const message = 'To manage your subscription:\n\n• iOS: Go to Settings → Apple ID → Subscriptions\n• Android: Go to Play Store → Menu → Subscriptions';
-      window.alert(message);
+    try {
+      if (Platform.OS === 'ios') {
+        // iOS: Open App Store subscriptions
+        const url = 'https://apps.apple.com/account/subscriptions';
+        console.log('[Subscription] Opening iOS URL:', url);
+        await Linking.openURL(url);
+      } else if (Platform.OS === 'android') {
+        // Android: Open Play Store subscriptions
+        const url = 'https://play.google.com/store/account/subscriptions';
+        console.log('[Subscription] Opening Android URL:', url);
+        await Linking.openURL(url);
+      } else {
+        // Web: Show instructions
+        const message = 'To manage your subscription:\n\n• iOS: Go to Settings → Apple ID → Subscriptions\n• Android: Go to Play Store → Menu → Subscriptions';
+        window.alert(message);
+      }
+    } catch (error) {
+      console.error('[Subscription] Error opening URL:', error);
+      Alert.alert('Error', 'Could not open subscription management. Please go to your device settings manually.');
     }
   };
 
-  const handleCancelSubscription = () => {
+  const handleCancelSubscription = async () => {
+    console.log('[Subscription] Cancel subscription pressed, Platform:', Platform.OS);
     // Directly open subscription management where user can cancel
-    if (Platform.OS === 'ios') {
-      Linking.openURL('https://apps.apple.com/account/subscriptions');
-    } else if (Platform.OS === 'android') {
-      Linking.openURL('https://play.google.com/store/account/subscriptions');
-    } else {
-      const message = 'To cancel your subscription:\n\n• iOS: Go to Settings → Apple ID → Subscriptions → SkinAdvisor AI → Cancel\n• Android: Go to Play Store → Menu → Subscriptions → SkinAdvisor AI → Cancel';
-      window.alert(message);
+    try {
+      if (Platform.OS === 'ios') {
+        const url = 'https://apps.apple.com/account/subscriptions';
+        console.log('[Subscription] Opening iOS cancel URL:', url);
+        await Linking.openURL(url);
+      } else if (Platform.OS === 'android') {
+        const url = 'https://play.google.com/store/account/subscriptions';
+        console.log('[Subscription] Opening Android cancel URL:', url);
+        await Linking.openURL(url);
+      } else {
+        const message = 'To cancel your subscription:\n\n• iOS: Go to Settings → Apple ID → Subscriptions → SkinAdvisor AI → Cancel\n• Android: Go to Play Store → Menu → Subscriptions → SkinAdvisor AI → Cancel';
+        window.alert(message);
+      }
+    } catch (error) {
+      console.error('[Subscription] Error opening URL:', error);
+      Alert.alert('Error', 'Could not open subscription management. Please go to your device settings manually.');
     }
   };
 
