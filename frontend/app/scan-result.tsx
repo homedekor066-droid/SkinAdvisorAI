@@ -388,7 +388,7 @@ export default function ScanResultScreen() {
           ) : (
             <TouchableOpacity 
               style={[styles.perfectSkinButton, { backgroundColor: theme.success }]}
-              onPress={() => setActiveTab('routine')}
+              onPress={scrollToRoutine}
             >
               <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
               <Text style={styles.perfectSkinButtonText}>
