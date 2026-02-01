@@ -73,31 +73,46 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      t('delete_account'),
-      t('confirm_delete'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('confirm'),
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await axios.delete(`${API_URL}/api/account`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              await logout();
-              router.replace('/(auth)/login');
-            } catch (error) {
-              Alert.alert(t('error'), 'Failed to delete account');
-            } finally {
-              setDeleting(false);
-            }
+    // On web, Alert doesn't work well, so use confirm
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to delete your account? This action cannot be undone.');
+      if (confirmed) {
+        performDeleteAccount();
+      }
+    } else {
+      Alert.alert(
+        t('delete_account'),
+        t('confirm_delete'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          {
+            text: t('confirm'),
+            style: 'destructive',
+            onPress: performDeleteAccount,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
+  };
+
+  const performDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await axios.delete(`${API_URL}/api/account`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await logout();
+      router.replace('/(auth)/login');
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to delete account';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert(t('error'), message);
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleUpdateName = async () => {
