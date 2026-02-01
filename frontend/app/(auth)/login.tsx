@@ -109,6 +109,7 @@ export default function LoginScreen() {
     if (!validate()) return;
 
     setLoading(true);
+    setLoginError(null);
     try {
       console.log('[Login] Attempting login for:', email);
       await login(email, password);
@@ -124,7 +125,7 @@ export default function LoginScreen() {
       
       if (detail) {
         if (detail.toLowerCase().includes('invalid') || detail.toLowerCase().includes('incorrect')) {
-          message = 'Invalid email or password. Please check your credentials and try again.';
+          message = 'Invalid email or password. Please check your credentials.';
         } else if (detail.toLowerCase().includes('not found')) {
           message = 'No account found with this email. Please register first.';
         } else {
@@ -134,12 +135,8 @@ export default function LoginScreen() {
         message = error.message;
       }
       
-      // Show alert based on platform
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert(t('error') || 'Error', message);
-      }
+      // Set error to show inline
+      setLoginError(message);
     } finally {
       setLoading(false);
     }
