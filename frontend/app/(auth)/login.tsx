@@ -154,17 +154,25 @@ export default function LoginScreen() {
         email: resetEmail.trim()
       });
       
-      // In production, token would be sent via email
-      // For demo, we show the token directly
-      if (response.data.reset_token) {
+      // Check if email was sent successfully
+      if (response.data.email_sent) {
+        // Email sent - just show message and move to token entry step
+        Alert.alert(
+          t('success') || 'Success',
+          'A reset code has been sent to your email. Please check your inbox.'
+        );
+        setResetStep('token');
+      } else if (response.data.reset_token) {
+        // Email not configured - show token directly (fallback for development)
         setResetToken(response.data.reset_token);
         setResetStep('token');
         Alert.alert(
-          'Reset Token Generated',
-          'In production, this would be sent to your email. For this demo, the token has been pre-filled.'
+          'Reset Code Generated',
+          'Email service unavailable. Your code has been pre-filled.'
         );
       } else {
-        Alert.alert(t('success'), response.data.message);
+        // Generic success message
+        Alert.alert(t('success') || 'Success', response.data.message);
         setResetStep('token');
       }
     } catch (error: any) {
