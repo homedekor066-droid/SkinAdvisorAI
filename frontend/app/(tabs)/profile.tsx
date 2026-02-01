@@ -579,6 +579,20 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
   },
+  subscriptionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginTop: 12,
+    gap: 6,
+  },
+  subscriptionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
