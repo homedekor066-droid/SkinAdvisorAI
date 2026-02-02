@@ -876,6 +876,34 @@ export default function ScanResultScreen() {
                         </Text>
                       </View>
                     )}
+
+                    {/* MARK COMPLETE BUTTON */}
+                    {!step.locked && !step.completed && (
+                      <TouchableOpacity
+                        style={[styles.markCompleteButton, { backgroundColor: theme.success }]}
+                        onPress={() => markStepComplete(step.step_id || `morning_${index}`, 'morning')}
+                        disabled={completingStep === (step.step_id || `morning_${index}`)}
+                      >
+                        {completingStep === (step.step_id || `morning_${index}`) ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                            <Text style={styles.markCompleteText}>Mark Complete</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
+
+                    {/* COMPLETED INDICATOR */}
+                    {step.completed && (
+                      <View style={[styles.completedBadge, { backgroundColor: theme.success + '20' }]}>
+                        <Ionicons name="checkmark-circle" size={18} color={theme.success} />
+                        <Text style={[styles.completedText, { color: theme.success }]}>
+                          Completed
+                        </Text>
+                      </View>
+                    )}
                   </Card>
                 ))}
 
