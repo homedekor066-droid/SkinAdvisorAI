@@ -159,6 +159,37 @@ export default function ScanResultScreen() {
   const isPremium = scan?.user_plan === 'premium' || user?.plan === 'premium';
   const isLocked = !isPremium;
 
+  // State for routine completion
+  const [completingStep, setCompletingStep] = useState<string | null>(null);
+
+  // Function to mark a routine step as complete
+  const markStepComplete = async (stepId: string, routineType: 'morning' | 'evening') => {
+    if (!scanId || !token) return;
+    
+    setCompletingStep(stepId);
+    try {
+      const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_URL}/api/routine/step/${scanId}/${stepId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Refresh scan data to get updated routine state
+        await fetchScanResult();
+      } else {
+        console.error('Failed to complete step');
+      }
+    } catch (error) {
+      console.error('Error completing step:', error);
+    } finally {
+      setCompletingStep(null);
+    }
+  };
+
   // Function to scroll to routine section
   const scrollToRoutine = () => {
     setActiveTab('routine');
