@@ -12,6 +12,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://skinadvisorai-production.up.railway.app"
       }
     },
     "preview": {
@@ -22,6 +25,9 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://skinadvisorai-production.up.railway.app"
       }
     },
     "production": {
@@ -31,7 +37,10 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://skinadvisorai-production.up.railway.app"
+      }
     }
   },
   "submit": {
