@@ -2,7 +2,7 @@
   "expo": {
     "name": "SkinAdvisor AI",
     "slug": "skinadvisor-ai",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "skinadvisor",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.skinadvisor.ai",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Scan your face for personalized skin analysis",
         "NSPhotoLibraryUsageDescription": "Upload photos for AI-powered skin analysis",
@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.skinadvisor.ai",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1A1A2E"
@@ -74,6 +74,6 @@
       "googleIosClientId": "993166704619-7tu3f44t4n2a1sqs3g50uvedc4d87rls.apps.googleusercontent.com",
       "googleAndroidClientId": "993166704619-f4afgb5e86av4k7pregoasvkcogbnjvs.apps.googleusercontent.com"
     },
-    "owner": "fund1"
+    "owner": "fund2"
   }
 }
