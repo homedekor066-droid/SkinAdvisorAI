@@ -47,8 +47,8 @@
     "production": {
       "ios": {
         "appleId": "payoneer.arsim@gmail.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "ascAppId": "6758307325",
+        "appleTeamId": "28K8Z9XJN9"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
