@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.skinadvisor.ai",
-      "buildNumber": "2",
+      "buildNumber": "600",
       "infoPlist": {
         "NSCameraUsageDescription": "Scan your face for personalized skin analysis",
         "NSPhotoLibraryUsageDescription": "Upload photos for AI-powered skin analysis",
@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.skinadvisor.ai",
-      "versionCode": 2,
+      "versionCode": 600,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1A1A2E"
