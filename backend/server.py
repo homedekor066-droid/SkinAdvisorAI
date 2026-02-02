@@ -2295,6 +2295,88 @@ async def complete_routine_step(
         'routine': routine_steps
     }
 
+@api_router.put("/routine/step/{scan_id}/{step_id}")
+async def mark_routine_step_complete(
+    scan_id: str,
+    step_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Simple endpoint to mark a routine step as complete.
+    step_id format: morning_0, morning_1, evening_0, etc.
+    """
+    # Only premium users can track routine progress
+    if current_user.get('plan', 'free') != 'premium':
+        raise HTTPException(
+            status_code=403,
+            detail="Routine progress tracking is a Premium feature"
+        )
+    
+    # Find the scan
+    scan = await db.scans.find_one({
+        'id': scan_id,
+        'user_id': current_user['id']
+    })
+    
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    routine = scan.get('routine', {})
+    
+    # Parse step_id (format: morning_0, evening_1, etc.)
+    try:
+        parts = step_id.rsplit('_', 1)
+        routine_type = parts[0] + '_routine'  # morning -> morning_routine
+        step_index = int(parts[1])
+    except:
+        # Fallback: try to find step by step_id field
+        for rt in ['morning_routine', 'evening_routine', 'weekly_routine']:
+            steps = routine.get(rt, [])
+            for idx, step in enumerate(steps):
+                if step.get('step_id') == step_id:
+                    routine_type = rt
+                    step_index = idx
+                    break
+            else:
+                continue
+            break
+        else:
+            raise HTTPException(status_code=404, detail="Step not found")
+    
+    routine_steps = routine.get(routine_type, [])
+    
+    if not routine_steps or step_index >= len(routine_steps):
+        raise HTTPException(status_code=404, detail="Step not found")
+    
+    # Check if step is locked
+    if routine_steps[step_index].get('locked', False):
+        raise HTTPException(
+            status_code=400,
+            detail="Complete previous steps first"
+        )
+    
+    # Mark step as completed
+    routine_steps[step_index]['completed'] = True
+    
+    # Unlock the next step
+    if step_index + 1 < len(routine_steps):
+        routine_steps[step_index + 1]['locked'] = False
+    
+    # Update database
+    routine[routine_type] = routine_steps
+    
+    await db.scans.update_one(
+        {'id': scan_id, 'user_id': current_user['id']},
+        {'$set': {'routine': routine}}
+    )
+    
+    return {
+        'success': True,
+        'step_id': step_id,
+        'completed': True,
+        'next_unlocked': step_index + 1 < len(routine_steps)
+    }
+
 @api_router.get("/routine/progress/{scan_id}")
 async def get_routine_progress(
     scan_id: str,
