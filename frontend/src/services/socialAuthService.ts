@@ -2,7 +2,6 @@ import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
 
 // Ensure web browser can complete auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -11,9 +10,6 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_WEB_CLIENT_ID = '993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com';
 const GOOGLE_IOS_CLIENT_ID = '993166704619-7tu3f44t4n2a1sqs3g50uvedc4d87rls.apps.googleusercontent.com';
 const GOOGLE_ANDROID_CLIENT_ID = '993166704619-f4afgb5e86av4k7pregoasvkcogbnjvs.apps.googleusercontent.com';
-
-// Expo project config for auth redirect
-const EXPO_CLIENT_ID = GOOGLE_WEB_CLIENT_ID; // Use web client for Expo Go
 
 export interface SocialAuthResult {
   success: boolean;
@@ -39,112 +35,91 @@ interface GoogleUserInfo {
 class SocialAuthService {
   /**
    * Sign in with Google using Expo AuthSession
-   * Fixed for error 400 - proper redirect URI handling
+   * Updated: Removed deprecated useProxy option
    */
   async signInWithGoogle(): Promise<SocialAuthResult> {
     try {
-      // For Expo Go, use the proxy redirect URI
-      // Format: https://auth.expo.io/@{owner}/{slug}
-      const useProxy = Platform.OS !== 'web';
-      
-      // Generate redirect URI
-      // In Expo Go: uses auth.expo.io proxy
-      // In standalone: uses custom scheme
+      // Generate redirect URI based on platform
+      // For Expo Go: exp://192.168.x.x:8081/--/
+      // For standalone: skinadvisor://
       const redirectUri = AuthSession.makeRedirectUri({
         scheme: 'skinadvisor',
-        useProxy: useProxy,
+        path: 'oauth',
       });
 
       console.log('[Google Auth] Redirect URI:', redirectUri);
       console.log('[Google Auth] Platform:', Platform.OS);
-      console.log('[Google Auth] Using proxy:', useProxy);
 
-      // For Expo Go, always use Web Client ID with the proxy
-      let clientId = GOOGLE_WEB_CLIENT_ID;
-      
-      // Only use native client IDs for standalone builds
-      if (!useProxy) {
-        if (Platform.OS === 'ios') {
-          clientId = GOOGLE_IOS_CLIENT_ID;
-        } else if (Platform.OS === 'android') {
-          clientId = GOOGLE_ANDROID_CLIENT_ID;
-        }
+      // Select the appropriate client ID based on platform
+      let clientId: string;
+      if (Platform.OS === 'ios') {
+        clientId = GOOGLE_IOS_CLIENT_ID;
+      } else if (Platform.OS === 'android') {
+        clientId = GOOGLE_ANDROID_CLIENT_ID;
+      } else {
+        clientId = GOOGLE_WEB_CLIENT_ID;
       }
 
-      console.log('[Google Auth] Using client ID:', clientId.substring(0, 20) + '...');
-      
-      // Build the authorization URL manually for more control
-      const authUrl = 
-        `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${encodeURIComponent(clientId)}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&response_type=token` +
-        `&scope=${encodeURIComponent('openid profile email')}` +
-        `&include_granted_scopes=true` +
-        `&prompt=select_account`;
+      console.log('[Google Auth] Using client ID for platform:', Platform.OS);
 
-      console.log('[Google Auth] Opening auth session...');
-      console.log('[Google Auth] Redirect URI for Google Console:', redirectUri);
+      // Create discovery document for Google
+      const discovery = {
+        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenEndpoint: 'https://oauth2.googleapis.com/token',
+        revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+      };
 
-      // Open the browser for authentication
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+      // Build authorization request
+      const authRequest = new AuthSession.AuthRequest({
+        clientId,
+        redirectUri,
+        scopes: ['openid', 'profile', 'email'],
+        responseType: AuthSession.ResponseType.Token,
+        usePKCE: false,
+      });
+
+      console.log('[Google Auth] Starting auth request...');
+
+      // Prompt the user to authenticate
+      const result = await authRequest.promptAsync(discovery);
 
       console.log('[Google Auth] Result type:', result.type);
 
-      if (result.type === 'success' && result.url) {
-        console.log('[Google Auth] Auth successful, parsing response...');
-        
-        // Parse the access token from the URL fragment
-        const url = result.url;
-        const hashIndex = url.indexOf('#');
-        
-        if (hashIndex !== -1) {
-          const fragment = url.substring(hashIndex + 1);
-          const params = new URLSearchParams(fragment);
-          const accessToken = params.get('access_token');
-          const error = params.get('error');
+      if (result.type === 'success') {
+        const { access_token, id_token } = result.params;
+        const token = access_token || id_token;
 
-          if (error) {
-            console.error('[Google Auth] OAuth error:', error);
-            return {
-              success: false,
-              provider: 'google',
-              error: `Google auth error: ${error}`,
-            };
-          }
+        console.log('[Google Auth] Token received:', !!token);
 
-          console.log('[Google Auth] Access token received:', !!accessToken);
-
-          if (accessToken) {
-            // Fetch user info from Google
-            const userInfoResponse = await fetch(
-              'https://www.googleapis.com/oauth2/v3/userinfo',
-              {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              }
-            );
-
-            if (!userInfoResponse.ok) {
-              const errorText = await userInfoResponse.text();
-              console.error('[Google Auth] User info fetch failed:', errorText);
-              throw new Error('Failed to fetch user info from Google');
+        if (token) {
+          // Fetch user info from Google
+          const userInfoResponse = await fetch(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            {
+              headers: { Authorization: `Bearer ${token}` },
             }
+          );
 
-            const userInfo: GoogleUserInfo = await userInfoResponse.json();
-            console.log('[Google Auth] User info received:', userInfo.email);
-
-            return {
-              success: true,
-              provider: 'google',
-              user: {
-                id: userInfo.sub,
-                email: userInfo.email,
-                name: userInfo.name,
-                photo: userInfo.picture,
-              },
-              idToken: accessToken,
-            };
+          if (!userInfoResponse.ok) {
+            const errorText = await userInfoResponse.text();
+            console.error('[Google Auth] User info fetch failed:', errorText);
+            throw new Error('Failed to fetch user info from Google');
           }
+
+          const userInfo: GoogleUserInfo = await userInfoResponse.json();
+          console.log('[Google Auth] User info received:', userInfo.email);
+
+          return {
+            success: true,
+            provider: 'google',
+            user: {
+              id: userInfo.sub,
+              email: userInfo.email,
+              name: userInfo.name,
+              photo: userInfo.picture,
+            },
+            idToken: token,
+          };
         }
 
         return {
@@ -157,6 +132,13 @@ class SocialAuthService {
           success: false,
           provider: 'google',
           error: 'User cancelled',
+        };
+      } else if (result.type === 'error') {
+        console.error('[Google Auth] Error:', result.error);
+        return {
+          success: false,
+          provider: 'google',
+          error: result.error?.message || 'Google authentication failed',
         };
       } else {
         console.log('[Google Auth] Unexpected result:', JSON.stringify(result));
@@ -182,7 +164,7 @@ class SocialAuthService {
   getGoogleRedirectUri(): string {
     const redirectUri = AuthSession.makeRedirectUri({
       scheme: 'skinadvisor',
-      path: 'auth',
+      path: 'oauth',
     });
     return redirectUri;
   }
