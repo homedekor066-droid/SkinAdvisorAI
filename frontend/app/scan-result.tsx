@@ -2119,4 +2119,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
+  // Mark Complete Button Styles
+  markCompleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 16,
+    gap: 8,
+  },
+  markCompleteText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginTop: 12,
+    gap: 6,
+  },
+  completedText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });
