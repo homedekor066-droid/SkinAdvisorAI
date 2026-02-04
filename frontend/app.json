@@ -2,7 +2,7 @@
   "expo": {
     "name": "SkinAdvisor AI",
     "slug": "skinadvisor-ai",
-    "version": "1.0.1",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "skinadvisor",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.skinadvisor.ai",
-      "buildNumber": "600",
+      "buildNumber": "705",
       "infoPlist": {
         "NSCameraUsageDescription": "Scan your face for personalized skin analysis",
         "NSPhotoLibraryUsageDescription": "Upload photos for AI-powered skin analysis",
@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.skinadvisor.ai",
-      "versionCode": 600,
+      "versionCode": 705,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1A1A2E"
@@ -68,8 +68,8 @@
       "typedRoutes": true
     },
     "extra": {
-      "privacyPolicyUrl": "https://sites.google.com/view/skincare-ia-privacy",
-      "termsOfServiceUrl": "https://sites.google.com/view/skincare-ia-terms",
+      "privacyPolicyUrl": "https://skinadvisor-ai-p6c4vkkubwolqku2.builder-preview.com/privacy-policy",
+      "termsOfServiceUrl": "https://skinadvisor-ai-p6c4vkkubwolqku2.builder-preview.com/terms-of-service",
       "googleWebClientId": "993166704619-53mfiq1gbd8s0u1h6p5n14om3t3hd13t.apps.googleusercontent.com",
       "googleIosClientId": "993166704619-7tu3f44t4n2a1sqs3g50uvedc4d87rls.apps.googleusercontent.com",
       "googleAndroidClientId": "993166704619-f4afgb5e86av4k7pregoasvkcogbnjvs.apps.googleusercontent.com"
