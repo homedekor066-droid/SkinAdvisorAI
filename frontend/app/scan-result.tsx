@@ -497,10 +497,112 @@ export default function ScanResultScreen() {
             Our AI provides general skincare recommendations based on visual analysis. For medical skin conditions, 
             allergies, or specific concerns, please consult a board-certified dermatologist.
           </Text>
-          <Text style={[styles.disclaimerCitation, { color: '#8D6E63' }]}>
-            Sources: American Academy of Dermatology guidelines and peer-reviewed skincare research.
-          </Text>
+          
+          {/* Scientific References Button - Required for Apple Review */}
+          <TouchableOpacity 
+            style={styles.sourcesButton}
+            onPress={() => setShowSourcesModal(true)}
+          >
+            <Ionicons name="library-outline" size={18} color="#1565C0" />
+            <Text style={styles.sourcesButtonText}>
+              Scientific References & Guidelines
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#1565C0" />
+          </TouchableOpacity>
         </Card>
+
+        {/* Scientific Sources Modal */}
+        <Modal
+          visible={showSourcesModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowSourcesModal(false)}
+        >
+          <View style={styles.sourcesModalOverlay}>
+            <View style={[styles.sourcesModalContent, { backgroundColor: theme.card }]}>
+              <View style={styles.sourcesModalHeader}>
+                <Text style={[styles.sourcesModalTitle, { color: theme.text }]}>
+                  Scientific References
+                </Text>
+                <TouchableOpacity onPress={() => setShowSourcesModal(false)}>
+                  <Ionicons name="close" size={24} color={theme.text} />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.sourcesModalBody} showsVerticalScrollIndicator={false}>
+                <Text style={[styles.sourcesIntro, { color: theme.textSecondary }]}>
+                  The skin analysis and recommendations provided by this app are generated using Artificial Intelligence based on general dermatological guidelines and skin care best practices found in:
+                </Text>
+                
+                {/* Source 1: AAD */}
+                <View style={styles.sourceItem}>
+                  <Text style={[styles.sourceNumber, { color: theme.primary }]}>1.</Text>
+                  <View style={styles.sourceContent}>
+                    <Text style={[styles.sourceName, { color: theme.text }]}>
+                      American Academy of Dermatology (AAD)
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => Linking.openURL('https://www.aad.org/public/everyday-care')}
+                    >
+                      <Text style={styles.sourceLink}>
+                        https://www.aad.org/public/everyday-care
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                {/* Source 2: Mayo Clinic */}
+                <View style={styles.sourceItem}>
+                  <Text style={[styles.sourceNumber, { color: theme.primary }]}>2.</Text>
+                  <View style={styles.sourceContent}>
+                    <Text style={[styles.sourceName, { color: theme.text }]}>
+                      Mayo Clinic - Skin Care
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => Linking.openURL('https://www.mayoclinic.org')}
+                    >
+                      <Text style={styles.sourceLink}>
+                        https://www.mayoclinic.org
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                {/* Source 3: WHO */}
+                <View style={styles.sourceItem}>
+                  <Text style={[styles.sourceNumber, { color: theme.primary }]}>3.</Text>
+                  <View style={styles.sourceContent}>
+                    <Text style={[styles.sourceName, { color: theme.text }]}>
+                      World Health Organization (WHO)
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => Linking.openURL('https://www.who.int')}
+                    >
+                      <Text style={styles.sourceLink}>
+                        https://www.who.int
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                {/* Disclaimer */}
+                <View style={[styles.sourcesDisclaimer, { backgroundColor: '#FFF3E0' }]}>
+                  <Ionicons name="warning-outline" size={20} color="#E65100" />
+                  <Text style={styles.sourcesDisclaimerText}>
+                    Disclaimer: This app is for informational purposes only and does not provide medical diagnosis. Always consult a doctor for skin conditions.
+                  </Text>
+                </View>
+              </ScrollView>
+              
+              <TouchableOpacity 
+                style={[styles.sourcesCloseButton, { backgroundColor: theme.primary }]}
+                onPress={() => setShowSourcesModal(false)}
+              >
+                <Text style={styles.sourcesCloseButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* PRD Phase 1: Skin Metrics Section (Premium Only) */}
         {!isLocked && Object.keys(skinMetrics).length > 0 && (
