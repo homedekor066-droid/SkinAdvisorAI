@@ -52,14 +52,22 @@ export default function LoginScreen() {
       const result = await socialAuthService.signInWithGoogle();
       
       if (result.success && result.user) {
-        await socialAuth({
+        const authResult = await socialAuth({
           provider: 'google',
           provider_id: result.user.id,
           email: result.user.email,
           name: result.user.name,
           id_token: result.idToken,
         });
-        router.replace('/(tabs)/home');
+        
+        // Navigate based on whether this is a new user or existing user
+        if (authResult.isNewUser) {
+          // New user - send to onboarding flow
+          router.replace('/language-selection');
+        } else {
+          // Existing user - go directly to home
+          router.replace('/(tabs)/home');
+        }
       } else if (result.error !== 'User cancelled') {
         Alert.alert('Google Sign In Failed', result.error || 'Unknown error occurred');
       }
@@ -77,14 +85,22 @@ export default function LoginScreen() {
       const result = await socialAuthService.signInWithApple();
       
       if (result.success && result.user) {
-        await socialAuth({
+        const authResult = await socialAuth({
           provider: 'apple',
           provider_id: result.user.id,
           email: result.user.email,
           name: result.user.name,
           id_token: result.idToken,
         });
-        router.replace('/(tabs)/home');
+        
+        // Navigate based on whether this is a new user or existing user
+        if (authResult.isNewUser) {
+          // New user - send to onboarding flow
+          router.replace('/language-selection');
+        } else {
+          // Existing user - go directly to home
+          router.replace('/(tabs)/home');
+        }
       } else if (result.error !== 'User cancelled') {
         Alert.alert('Apple Sign In Failed', result.error || 'Unknown error occurred');
       }
