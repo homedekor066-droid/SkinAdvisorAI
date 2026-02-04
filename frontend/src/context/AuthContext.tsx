@@ -133,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(userData);
   };
 
-  const socialAuth = async (data: SocialAuthData) => {
+  const socialAuth = async (data: SocialAuthData): Promise<SocialAuthResult> => {
     const response = await axios.post(`${API_URL}/api/auth/social`, {
       provider: data.provider,
       provider_id: data.provider_id,
@@ -142,10 +142,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       id_token: data.id_token,
       language: data.language || 'en'
     });
-    const { access_token, user: userData } = response.data;
+    const { access_token, user: userData, is_new_user } = response.data;
     await storage.setItem('auth_token', access_token);
     setToken(access_token);
     setUser(userData);
+    return { isNewUser: is_new_user || false };
   };
 
   const logout = async () => {
