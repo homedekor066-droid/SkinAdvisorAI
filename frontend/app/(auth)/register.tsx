@@ -46,7 +46,7 @@ export default function RegisterScreen() {
       const result = await socialAuthService.signInWithGoogle();
       
       if (result.success && result.user) {
-        await socialAuth({
+        const authResult = await socialAuth({
           provider: 'google',
           provider_id: result.user.id,
           email: result.user.email,
@@ -54,7 +54,8 @@ export default function RegisterScreen() {
           id_token: result.idToken,
           language: language,
         });
-        // Navigate to language selection for new social sign-ups
+        // For sign-up page, always go to onboarding flow regardless of is_new_user
+        // (user clicked "Sign Up", so they expect onboarding experience)
         router.replace('/language-selection');
       } else if (result.error !== 'User cancelled') {
         Alert.alert('Google Sign Up Failed', result.error || 'Unknown error occurred');
@@ -73,7 +74,7 @@ export default function RegisterScreen() {
       const result = await socialAuthService.signInWithApple();
       
       if (result.success && result.user) {
-        await socialAuth({
+        const authResult = await socialAuth({
           provider: 'apple',
           provider_id: result.user.id,
           email: result.user.email,
@@ -81,7 +82,8 @@ export default function RegisterScreen() {
           id_token: result.idToken,
           language: language,
         });
-        // Navigate to language selection for new social sign-ups
+        // For sign-up page, always go to onboarding flow regardless of is_new_user
+        // (user clicked "Sign Up", so they expect onboarding experience)
         router.replace('/language-selection');
       } else if (result.error !== 'User cancelled') {
         Alert.alert('Apple Sign Up Failed', result.error || 'Unknown error occurred');
