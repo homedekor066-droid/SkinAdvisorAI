@@ -56,13 +56,17 @@ interface SocialAuthData {
   language?: string;
 }
 
+interface SocialAuthResult {
+  isNewUser: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, language?: string) => Promise<void>;
-  socialAuth: (data: SocialAuthData) => Promise<void>;
+  socialAuth: (data: SocialAuthData) => Promise<SocialAuthResult>;
   logout: () => Promise<void>;
   updateProfile: (profile: any) => Promise<void>;
   refreshUser: () => Promise<void>;
