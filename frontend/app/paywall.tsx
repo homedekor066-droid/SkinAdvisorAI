@@ -33,8 +33,13 @@ const { width } = Dimensions.get('window');
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-// RevenueCat API Key
-const REVENUECAT_API_KEY = 'test_UFrvEOtYX3vxvCdKOhjqgykcgKj';
+// RevenueCat API Keys - Use PRODUCTION keys
+const REVENUECAT_IOS_API_KEY = 'appl_CKsUZMwaOQzkdnFNvVaKjmmlydg';
+const REVENUECAT_ANDROID_API_KEY = 'goog_OKETysvyJcsdTGvkuoxqERDTYEN';
+
+// Legal URLs - Production URLs
+const TERMS_OF_SERVICE_URL = 'https://skinadvisor-ai-p6c4vkkubwolqku2.builder-preview.com/terms-of-service';
+const PRIVACY_POLICY_URL = 'https://skinadvisor-ai-p6c4vkkubwolqku2.builder-preview.com/privacy-policy';
 
 interface PricingOption {
   id: string;
@@ -99,10 +104,22 @@ export default function PaywallScreen() {
       return;
     }
 
+    // Skip on web platform
+    if (Platform.OS === 'web') {
+      console.log('[Paywall] Web platform - using default pricing');
+      setLoadingOfferings(false);
+      return;
+    }
+
     try {
+      // Select API key based on platform
+      const apiKey = Platform.OS === 'ios' 
+        ? REVENUECAT_IOS_API_KEY 
+        : REVENUECAT_ANDROID_API_KEY;
+
       // Configure RevenueCat
       await Purchases.configure({
-        apiKey: REVENUECAT_API_KEY,
+        apiKey: apiKey,
       });
 
       // Login user if authenticated
@@ -148,6 +165,7 @@ export default function PaywallScreen() {
       }
     } catch (e) {
       console.error('[Paywall] RevenueCat init error:', e);
+      // Continue with default pricing - don't show error to user
     } finally {
       setLoadingOfferings(false);
     }
@@ -190,7 +208,7 @@ export default function PaywallScreen() {
         setLoading(false);
       }
     } else {
-      // Fallback to mock upgrade (for Expo Go testing)
+      // Backend upgrade (for testing without RevenueCat)
       try {
         await axios.post(
           `${API_URL}/api/subscription/upgrade`,
@@ -213,7 +231,7 @@ export default function PaywallScreen() {
   };
 
   const handleRestorePurchases = async () => {
-    if (!Purchases) {
+    if (!Purchases || Platform.OS === 'web') {
       Alert.alert('Not Available', 'Restore purchases is only available in the production app.');
       return;
     }
@@ -368,16 +386,6 @@ export default function PaywallScreen() {
           ))}
         </View>
 
-        {/* Test Mode Banner */}
-        {!revenueCatAvailable && (
-          <View style={[styles.testBanner, { backgroundColor: '#FFF3E0' }]}>
-            <Ionicons name="information-circle" size={20} color="#E65100" />
-            <Text style={[styles.testBannerText, { color: '#E65100' }]}>
-              Test Mode: Running in Expo Go. Real payments require a production build.
-            </Text>
-          </View>
-        )}
-
         {/* Error Message */}
         {error ? (
           <View style={[styles.errorContainer, { backgroundColor: '#FFEBEE' }]}>
@@ -399,9 +407,7 @@ export default function PaywallScreen() {
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.ctaText}>
-              {revenueCatAvailable ? 'Subscribe Now' : 'Start Premium (Test)'}
-            </Text>
+            <Text style={styles.ctaText}>Subscribe Now</Text>
           )}
         </TouchableOpacity>
 
@@ -442,7 +448,7 @@ export default function PaywallScreen() {
         {/* Terms Links - Required by Apple */}
         <View style={styles.termsLinks}>
           <TouchableOpacity 
-            onPress={() => Linking.openURL('https://sites.google.com/view/skincare-ia-terms')}
+            onPress={() => Linking.openURL(TERMS_OF_SERVICE_URL)}
             style={styles.termLink}
           >
             <Text style={[styles.termLinkText, { color: theme.primary }]}>
@@ -451,7 +457,7 @@ export default function PaywallScreen() {
           </TouchableOpacity>
           <Text style={[styles.termDivider, { color: theme.textMuted }]}>|</Text>
           <TouchableOpacity 
-            onPress={() => Linking.openURL('https://sites.google.com/view/skincare-ia-privacy')}
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
             style={styles.termLink}
           >
             <Text style={[styles.termLinkText, { color: theme.primary }]}>
@@ -548,7 +554,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pricingSection: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   pricingCard: {
     borderRadius: 16,
@@ -620,18 +626,6 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 12,
     fontWeight: '700',
-  },
-  testBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  testBannerText: {
-    fontSize: 12,
-    marginLeft: 8,
-    flex: 1,
   },
   errorContainer: {
     flexDirection: 'row',
