@@ -7,7 +7,7 @@ import requests
 import json
 import uuid
 
-BACKEND_URL = "https://skinai-bugs.preview.emergentagent.com/api"
+BACKEND_URL = "https://skinaifix.preview.emergentagent.com/api"
 TEST_PASSWORD = "TestPass123!"
 
 def test_scan_limit_debug():

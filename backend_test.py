@@ -18,7 +18,7 @@ from datetime import datetime
 import time
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://skinai-bugs.preview.emergentagent.com/api"
+BACKEND_URL = "https://skinaifix.preview.emergentagent.com/api"
 
 # Test user credentials
 TEST_EMAIL = "prd_test_user@test.com"

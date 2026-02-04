@@ -1,130 +1,156 @@
 <analysis>
-
 <original_problem_statement>
-The user wants to build a production-ready AI Skin Advisor mobile application named SkinAdvisor AI. The initial goal was to provide personalized skin analysis, routine generation, and product recommendations monetized via a freemium model.
+The user wants to build a production-ready AI Skin Advisor mobile application named SkinAdvisor AI. The initial goal was to complete features from a PRD, but the focus has shifted entirely to fixing a long list of user-reported bugs and handling deployment issues.
 
-During this session, the user provided a comprehensive **Product Requirements Document (PRD)** that outlines a much more sophisticated vision for the app. All future development must align with this new PRD.
+The highest priority issues are those causing App Store rejection and blocking core functionality like login, payments, and Android deployment.
 
-**PRODUCT REQUIREMENTS (New PRD):**
-- **Part 1: Real Skin Analysis:** Analysis must be based on real, measurable signals from the user's photo (e.g., skin tone uniformity, redness, texture). Scores must be deterministic (same image = same result).
-- **Part 2: Personalized Interpretation:** Even for similar issues, the app must personalize severity, confidence, and priority, including a Why this result? explanation.
-- **Part 3: Free Experience (Honest Curiosity):** Free users get one overall score, 1-2 strengths, and only the single primary concern to drive curiosity.
-- **Part 4: Personalized Routine Engine:** Routines must be dynamically generated based on scan results, not static templates.
-- **Part 5: Sequential Program Logic:** Routine steps must be sequentially locked (Step N+1 requires completing Step N).
-- **Part 6: Weekly Challenges:** Realistic, skin-type-specific challenges tied to the user's detected issues.
-- **Part 7: Progress & Feedback:** Tracking should emphasize consistency and link behavior to outcomes.
-- **Part 8: Ethical Monetization:** Paid users unlock a full metric breakdown, deeper explanations, and advanced optimization. Monetization must be driven by understanding and confidence, not fear.
-
-**Previously Requested Features (Now Implemented but may need verification):**
-- Social Login (Google & Apple).
-- Onboarding Questionnaire.
-- Forced Language Selection post-registration.
-- Clickable Legal Links.
+**Key User-Reported Issues During This Session:**
+1.  **Login/Register Errors:** Forms were not showing inline error messages.
+2.  **Forgot Password:** A functional Forgot Password flow was needed.
+3.  **Delete Account:** Button was not working.
+4.  **Subscription Management:** Manage Subscription and Cancel Subscription buttons were not working correctly.
+5.  **Google Social Login:** Broken due to configuration errors (, error 400).
+6.  **RevenueCat Payments:** Failing with an Invalid IAM token error during purchase.
+7.  **Railway Deployment:** The backend was continuously failing to build and deploy on Railway.
+8.  **App Branding:** The app icon and splash screen needed to be updated to the user's logo.
+9.  **Routine Progression:** Users could not mark routine steps as complete to advance.
+10. **Apple App Store Rejection:** The app was rejected for multiple reasons, including missing legal/subscription text on the paywall and lack of medical disclaimers.
+11. **Android Build Submission:** Failing due to a signing key mismatch in the Google Play Console.
+12. **Social Login Onboarding:** After logging in with Google/Apple, the app skips the user's onboarding/questionnaire flow. (New issue)
+13. **Medical Sources:** Apple review requires links to reputable sources for the AI's medical-style advice. (New issue)
 </original_problem_statement>
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack Expo (React Native) and FastAPI application. The backend is deployed on Railway, and the database is on MongoDB Atlas.
+A full-stack Expo (React Native) and FastAPI application. The agent has addressed numerous bugs and deployment challenges in this session.
+- **Frontend:** Login/register forms now have error handling. A Forgot Password flow has been implemented. The app's icon and splash screen have been updated. A Mark Complete button was added to routine steps. The paywall and scan result screens were updated to address Apple's review feedback. The Google Social Login was rewritten to use a modern, non-deprecated method.
+- **Backend:** The Forgot Password endpoint was created and integrated with SendGrid. A new endpoint to mark routine steps as complete was added.
+- **Deployment:** After significant debugging, the Railway deployment for the backend is now configured correctly and is operational. The  configuration has been updated multiple times to reflect changes in the user's Expo account and to include Apple Team/App IDs.
 
-**Key changes from this session:**
-- **Onboarding Flow:** A multi-step, skippable questionnaire and a dedicated language selection screen have been added and now appear after registration.
-- **Authentication:** Social Login buttons (Google/Apple) were added to the UI. The backend was updated with a  endpoint. The frontend logic was implemented using  and .
-- **Critical Web Fix:** A major bug preventing login/registration on the web preview was fixed by implementing a platform-specific storage helper in  that uses  for web and  for native, resolving the  web incompatibility.
-- **Scan Functionality Fix:** The skin scan feature, which was failing with a 500 error, was fixed. The backend now uses the provided Emergent LLM Key and points the OpenAI client to the correct Emergent API base URL ().
-- **UI/UX Fixes:**
-    - The  screen was updated with a  and now requests permissions on load.
-    - The logout button was fixed for web preview.
-    - Broken external legal links were replaced with new in-app  and  pages.
+Despite this progress, several critical issues, including new ones, remain.
 
 **Last working item**:
-    - Last item agent was working: The agent had just begun implementing the user's new, detailed PRD. It started **Phase 1: Real Skin Analysis Engine** by exploring the existing  and  functions in  to plan for a major refactor.
-    - Status: IN PROGRESS
+    - Last item agent was working: The agent was about to begin fixing a new issue reported by the user: **Social logins (Google/Apple) cause the app to skip the initial onboarding/questionnaire flow**. The agent acknowledged the issue but had not yet started investigating or implementing a fix.
+    - Status: NOT STARTED
     - Agent Testing Done: N
-    - Which testing method agent to use? backend testing agent
+    - Which testing method agent to use? Frontend testing agent
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  Issue 1:  CRITICAL - RevenueCat API key caching issue in builds. (P0)
-  Issue 2:  Social Login is not fully verified by the user. (P1)
-  Issue 3:  Android submission requires initial manual upload. (P2)
-  
+  Issue 1: Social login skips the onboarding flow (P0)
+  Issue 2: Android build submission is blocked by a signing key mismatch (P0)
+  Issue 3: Add links to medical sources for AI-generated advice to pass Apple Review (P0)
+  Issue 4: RevenueCat payments fail with an Invalid IAM token error (P1)
+  Issue 5: Delete Account button functionality is still unverified by the user (P2)
+  Issue 6: The original RevenueCat API key caching issue in EAS builds remains unverified (P2)
+
   Issues Detail:
-  - Issue 1: **CRITICAL - RevenueCat API key caching issue in builds.**
-     - **Description**: The #1 issue from the previous fork was that EAS builds were caching an old *test* RevenueCat API key, blocking production release. **The previous agent completely failed to address or verify this issue**, getting sidetracked by new features. While the user's force-push to  might have incidentally included the correct key, this was never confirmed with a new build and test. This remains the highest-risk blocker for the app.
-     - **Attempted fixes**: None in this session. The issue was ignored.
+  - Issue 1: **Social login skips the onboarding flow**
+     - **Description**: The user reported with screenshots that when registering via Google or Apple, the app directs them straight to the home screen, bypassing the multi-step onboarding questionnaire that manual registration goes through.
+     - **Attempted fixes**: None. This is a newly reported issue.
      - **Next debug checklist**:
-        1.  Guide the user to perform a new iOS build: An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username.
-        2.  Instruct the user to install the new build via TestFlight.
-        3.  Ask the user to check if the You are in sandbox mode warning still appears.
-        4.  If it does, the caching issue persists. The next step is to hardcode the production key directly into the  call in  to rule out environment variable issues in the build process, and then build again.
-     - **Why fix this issue and what will be achieved with the fix?**: The app cannot be sold or released to the public with a test API key. This is a complete blocker for monetization.
+        1. Review the  and  functions in .
+        2. Examine the  function in .
+        3. Check the backend response for social login from . Does it indicate if a user is new?
+        4. After a successful social login for a *new* user, the app should navigate to the first onboarding screen (e.g., ) instead of . A flag like  from the backend would be ideal.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a critical bug that breaks the user experience for a large segment of new users and prevents the app from collecting necessary user data.
      - **Status**:  NOT STARTED
-     - **Is recurring issue?**: Y
+     - **Is recurring issue?**: N
      - **Should Test frontend/backend/both after fix?**: Frontend
-     - **Blocked on other issue**: No. This is the primary blocker.
-
-  - Issue 2: **Social Login is not fully verified by the user.**
-     - **Description**: The agent implemented Google and Apple login. However, Google Sign-in requires the user to add a specific redirect URI () to their Google Cloud Console. Apple Sign-In will only work on a real device, not the web preview. The user has not confirmed that they have completed the Google setup and successfully tested either method on a native build.
-     - **Attempted fixes**: The agent provided the correct redirect URI and instructions.
-     - **Next debug checklist**:
-        1.  Ask the user to confirm they added the redirect URI to their Google Cloud Console for the **Web Client ID**.
-        2.  After a new build is on TestFlight, ask the user to test both Google and Apple sign-in buttons.
-        3.  Be prepared to debug any errors that arise from the native environment.
-     - **Why fix this issue and what will be achieved with the fix?**: Fulfills a key user feature request and provides an alternative authentication method.
-     - **Status**:  USER VERIFICATION PENDING
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: Frontend (on native device)
-     - **Blocked on other issue**: Blocked on a new successful build.
-
-  - Issue 3: **Android submission requires initial manual upload.**
-     - **Description**: The user was informed that before An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username can work, they must first build an AAB file, and manually upload it to the Google Play Console to a track (e.g., Internal Testing).
-     - **Attempted fixes**: Agent provided instructions.
-     - **Next debug checklist**:
-        1. Guide the user to run An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username.
-        2. Guide the user to download the resulting  file.
-        3. Guide the user through the Create new release process in the Play Console to upload the AAB.
-     - **Why fix this issue and what will be achieved with the fix?**: This is a necessary one-time step to enable automated submissions for Android and set up in-app products.
-     - **Status**:  NOT STARTED
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: N/A
      - **Blocked on other issue**: No.
 
+  - Issue 2: **Android build submission is blocked by a signing key mismatch**
+     - **Description**: When the user tries to submit the Android build () to the Google Play Store, it is rejected with the error: The Android App Bundle was signed with the wrong key. This is because the user has changed Expo accounts (, , ), and the current build is signed with a key from a new account (), while Google Play expects the key from the original account that first uploaded the app.
+     - **Attempted fixes**: Agent correctly diagnosed the issue and advised the user on three possible solutions: 1) Revert to the original Expo account, 2) Request an upload key reset in the Play Console, 3) Publish a new app with a different package name. The user wants to proceed with Option 2.
+     - **Next debug checklist**:
+        1. Guide the user through the **Request upload key reset** process in their Google Play Console ( -> ).
+        2. Instruct them to provide the SHA1 fingerprint of the *new* key: .
+        3. Inform the user that this process takes 24-48 hours for Google to approve.
+        4. Once approved, the user can re-submit the *same existing build file* without needing to rebuild.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a hard blocker for releasing or updating the Android version of the app.
+     - **Status**:  BLOCKED (on Google's review process)
+     - **Is recurring issue?**: Y (due to account hopping)
+     - **Should Test frontend/backend/both after fix?**: N/A (Deployment issue)
+     - **Blocked on other issue**: No.
+
+  - Issue 3: **Add links to medical sources for AI-generated advice to pass Apple Review**
+     - **Description**: As part of their rejection feedback, Apple (Guideline 1.4.1 - Physical Harm) requested that the app provide citations or links to reputable sources for the skincare advice it generates. A general disclaimer was added, but explicit links are now needed.
+     - **Attempted fixes**: A medical disclaimer was added to . This was not sufficient.
+     - **Next debug checklist**:
+        1. Discuss with the user what reputable sources they want to link to (e.g., World Health Organization, American Academy of Dermatology, etc.).
+        2. Add a new section, possibly in the  (Settings) or below the scan results in , titled Our Sources or Learn More.
+        3. Use  to create tappable links to the agreed-upon sources.
+        4. Ensure the UI is clear that these are the general sources that inform the AI's knowledge base.
+     - **Why fix this issue and what will be achieved with the fix?**: This is required to pass Apple App Store review and get the app published on iOS.
+     - **Status**:  NOT STARTED
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: Frontend
+     - **Blocked on other issue**: No.
+
+  - Issue 4: **RevenueCat payments fail with an Invalid IAM token error**
+     - **Description**: Despite updating the RevenueCat API keys provided by the user, test purchases still result in a console error: . This indicates the keys are still incorrect or there's a configuration problem in the user's RevenueCat dashboard (e.g., the app is not set up correctly for the given bundle ID).
+     - **Attempted fixes**: The agent updated the keys in .
+     - **Next debug checklist**:
+        1. Ask the user to TRIPLE-CHECK the Public API keys for both iOS and Android in their RevenueCat dashboard.
+        2. Ask the user to verify in RevenueCat that the App Bundle ID for their app matches .
+        3. Add more detailed  statements in the  block of the RevenueCat initialization in  to capture the full error object.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a P1 blocker for the app's monetization. The app cannot generate revenue until this is fixed.
+     - **Status**:  IN PROGRESS
+     - **Is recurring issue?**: Y
+     - **Should Test frontend/backend/both after fix?**: Frontend
+     - **Blocked on other issue**: No.
+
+  - Issue 5: **Delete Account button functionality is still unverified by the user**
+     - **Description**: The user has repeatedly stated the delete account button does not work. The agent has made several attempts to fix it, but user verification is pending on the latest fix.
+     - **Attempted fixes**: Agent added better error handling and logging to the  function in .
+     - **Next debug checklist**:
+        1. Ask the user to test the Delete Account button on the latest build.
+        2. If it still fails, check the device logs for the  messages added by the agent to see if the function is being called and if it's hitting an error.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a required feature for App Store compliance and user privacy.
+     - **Status**:  USER VERIFICATION PENDING
+     - **Is recurring issue?**: Y
+     - **Should Test frontend/backend/both after fix?**: Frontend
+     - **Blocked on other issue**: No.
+
+  - Issue 6: **CRITICAL - Original RevenueCat API key caching issue in EAS builds remains unverified**
+     - **Description**: An issue from two forks ago, where EAS builds were caching an old TEST key, has never been definitively solved or verified. This is separate from the Invalid IAM token error and could resurface.
+     - **Attempted fixes**: None. This issue has been ignored for multiple sessions.
+     - **Next debug checklist**:
+        1. Once the Invalid IAM token error is resolved, and a new build is made, this must be tested on a real device using TestFlight/Google Play Internal Testing.
+        2. If purchases still behave like they are in a sandbox, the fix is to hardcode the key directly in  (if not already done) and rebuild.
+     - **Why fix this issue and what will be achieved with the fix?**: The app cannot be released if it is stuck in sandbox mode. This is a release blocker.
+     - **Status**:  NOT STARTED
+     - **Is recurring issue?**: Y
+     - **Should Test frontend/backend/both after fix?**: Frontend (on native device)
+     - **Blocked on other issue**: RevenueCat payments fail with an Invalid IAM token error.
+
 **In progress Task List**:
-  - Task 1: **Refactor AI Skin Analysis Engine (Phase 1 of PRD)** (P0)
-     - **Where to resume**: The agent was examining  and  in . The next step is to modify the OpenAI prompt to extract specific, measurable signals (e.g., redness, texture, pores as numerical values or categories) and provide a Why this result? explanation, as per the new PRD. The  function must be updated to use these new signals.
-     - **What will be achieved with this?**: This is the first and most critical step in aligning the app with the user's new product vision, moving from a generic AI response to a credible, data-driven analysis.
-     - **Status**: IN PROGRESS
-     - **Should Test frontend/backend/both after fix?**: Backend
-     - **Blocked on something**: No.
+  - Task 1:  **Fix RevenueCat Invalid IAM token error** (P1)
+     - **Where to resume**: Waiting for user to double-check their RevenueCat API keys and bundle ID configuration in the RevenueCat dashboard.
+     - **What will be achieved with this?**: A functional payment system, which is critical for monetization.
+     - **Status**: BLOCKED (on user)
+     - **Should Test frontend/backend/both after fix?**: Frontend
+     - **Blocked on something**: User needs to verify their RevenueCat dashboard settings.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **Implement PRD Phase 2: Free vs Premium Experience (P1)**: In , modify the  endpoint to return a limited payload (1 score, 1-2 strengths, 1 concern) for free users and the full, detailed analysis for premium users.
-    - **Implement PRD Phase 3: Personalized Routine Engine (P2)**: Create a new backend service and endpoints to dynamically generate multi-step (Morning/Evening/Weekly) routines based on the new, detailed analysis results. The frontend will need new screens to display this sequential, locked-step program.
+    - **Guide user on setting up In-App Purchases (P1)**: Explain to the user that they need to create the Products (e.g., monthly, yearly subscriptions) inside App Store Connect and link them in RevenueCat.
 - **Future Tasks**:
-    - **Implement PRD Phase 7: Progress & Challenges**: Develop the backend models and frontend UI for tracking user consistency and displaying weekly challenges.
-    - **Fix Dynamic Content Translation**: The architectural issue where AI-generated content (routines, recommendations) is only in English still exists. This will require a larger refactor to translate dynamic content.
+    - **Rework Routine into a 30-Day Program (P2)**: This is a major feature requested at the very beginning of the previous session. It involves a significant backend and frontend overhaul to create a daily locked-task program.
 
 **Completed work in this session**
-- **Feature: Onboarding Questionnaire:** Created a full multi-step questionnaire flow () that appears after registration, and updated the backend  model.
-- **Feature: Forced Language Selection:** Created a  screen that now appears after registration and removed the language picker from the profile settings.
-- **Feature: Social Login (Google & Apple):** Added UI buttons, backend endpoint (), frontend services (), and context updates (). Configured with user-provided client IDs.
-- **Feature: In-App Legal Pages:** Replaced broken external links with new, in-app  and  pages.
-- **Critical Fix: Web Login/Registration:** Resolved the  web incompatibility by creating a platform-aware storage helper in , making the web preview usable for testing auth flows.
-- **Critical Fix: Skin Scan Functionality:** Fixed the 500 error on the  endpoint by adding the Emergent LLM key to the backend environment and configuring the OpenAI client to use the Emergent base URL.
-- **Bugfix: Scan Screen UI/UX:** Added a  and implemented early permission requests on the scan screen.
-- **Bugfix: Logout on Web:** Modified the logout button to work directly on web without relying on a native  dialog.
-- **User Support:** Guided the user through resolving GitHub merge conflicts by force-pushing the working branch to , and provided the correct command () to bypass local usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
+- **Bugfix: Login/Register Error Notifications:** Implemented UI and logic in  and  to display inline error messages.
+- **Feature: Forgot Password Flow:** Implemented a full-stack forgot password flow using SendGrid for email delivery.
+- **Bugfix: Google Social Login:** Rewrote the Google Sign-In logic in  to use the modern  hook, fixing the  deprecation issue.
+- **Feature: Routine Step Completion:** Added a Mark Complete button to routine steps in  and implemented the corresponding backend endpoint .
+- **Bugfix: Apple Review Rejections:**
+    - Added subscription terms, privacy policy links, and auto-renewal information to the paywall screen ().
+    - Added a medical disclaimer to the scan results screen ().
+- **Deployment: Railway Backend Fix:** Resolved a series of complex build and deployment errors on Railway by creating and refining configuration files (, ) to handle the monorepo structure correctly.
+- **Branding: App Icon & Splash Screen:** Updated the app's icon, adaptive icon, and splash screen using the user-provided logo.
+- **User Support & Configuration:**
+    - Provided extensive, repeated guidance on using usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
            [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
            [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
            [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
@@ -168,96 +194,124 @@ collaborate (see also: git help workflows)
 'git help -a' and 'git help -g' list available subcommands and some
 concept guides. See 'git help <command>' or 'git help <concept>'
 to read about a specific subcommand or concept.
-See 'git help git' for an overview of the system. issues during EAS builds.
-- **Documentation:** Created  to help the user configure their cloud services.
-- **Demo Account:** Created and verified a demo account () on both local and production environments for App Store review.
+See 'git help git' for an overview of the system., An Expo user account is required to proceed.
+
+Log in to EAS with email or username (exit and run eas login --help to see other login options)
+Input is required, but stdin is not readable. Failed to display prompt: Email or username, An Expo user account is required to proceed.
+
+Log in to EAS with email or username (exit and run eas login --help to see other login options)
+Input is required, but stdin is not readable. Failed to display prompt: Email or username, and An Expo user account is required to proceed.
+
+Log in to EAS with email or username (exit and run eas login --help to see other login options)
+Input is required, but stdin is not readable. Failed to display prompt: Email or username.
+    - Guided user through multiple Expo account changes (, , ), updating  and  accordingly.
+    - Diagnosed and provided clear instructions to fix misconfigurations in the user's Google Cloud Console.
+    - Updated  with the user's Apple Team ID and App Store Connect App ID to enable iOS builds.
 
 **Earlier issues found/mentioned but not fixed**
-   - **RevenueCat Caching Issue**: This critical bug from the previous handover was the top priority but was completely ignored by the last agent. It remains the biggest risk to the project's launch.
+   - **RevenueCat Caching Issue**: This critical bug from a previous handover was the top priority but was completely ignored again. It remains a major risk to the project's launch.
 
 **Known issue recurrence from previous fork**
-  - **Issue recurrence in previous fork**: The RevenueCat key caching issue and general build/submission failures.
-  - **Recurrence count**: High. The RevenueCat issue has now been carried over two forks without a verified solution.
+  - **Issue recurrence in previous fork**: The RevenueCat key caching issue.
+  - **Recurrence count**: 3+
   - **Status**: NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Authentication:** Expo Auth Session () for web-based Google OAuth flow,  for Apple Sign-In.
-- **Platform-Specific Code:** Critical use of  in  to differentiate between  (web) and  (native).
-- **API Integration:** The OpenAI client in the backend () was reconfigured with a  to point to the Emergent LLM endpoint ().
-- **Build Process:** User requires  to build locally due to issues with their Git installation.
+- **Deployment Debugging (Railway):** Extensive troubleshooting of a monorepo deployment on Railway, involving , root-level , and debugging Nixpacks/Railpack build errors (, file paths).
+- **OAuth 2.0 (Google Sign-In):** Migrated from a deprecated  method to the modern  hook for authentication, which is a critical fix for social login.
+- **API Integration (SendGrid):** Integrated the SendGrid API on the backend for transactional emails (password reset).
+- **Build Configuration (EAS):** Managed and updated  for different build environments (production), including setting environment variables () and platform-specific credentials (Apple Team/App IDs).
+- **App Store Compliance:** Addressed specific Apple review guidelines by adding legal text (Terms of Use, Privacy Policy) and medical disclaimers to the UI.
+- **State Management:** Added new state and handlers in React components (, ) to implement new features like marking steps complete and displaying legal info.
 
 **key DB schema**
-  -  collection: The  sub-document was updated to optionally include  and  from the new questionnaire.
+  - No changes to the DB schema in this session. The agent added a backend endpoint that modifies the  flag on routine steps within the existing  collection structure.
 
 **changes in tech stack**
-  - No fundamental changes, but a significant new dependency on  was introduced for social login.
+  - **SendGrid:** Added for backend email services.
 
 **All files of reference**
-- : Contains the core analysis logic that is the target of the new PRD implementation. Also contains the new social auth endpoint.
-- : Contains the critical fix for web-based authentication that unblocked significant testing.
-- : Contains the new, unverified logic for Google and Apple sign-in.
-- : Contains the production RevenueCat key that is believed to be affected by the build caching issue.
-- : Contains instructions for the user to complete the Google Sign-In setup.
-- : This is now the most important document and dictates all future work.
+- : Contains the new social login bug (skipping onboarding).
+- : Likely involved in the social login bug.
+- : Needs to be updated with links to medical sources.
+- : The source of the Invalid IAM token error; needs investigation.
+- : Contains the build configuration, including the production backend URL.
+- : Contains the SendGrid integration and routine completion logic.
+-  & : Critical for Railway deployment.
 
 **Areas that need refactoring**:
-- The entire skin analysis pipeline in  needs to be refactored to meet the new PRD specifications.
+- The  and  need to be refactored to handle new vs. existing users correctly to fix the onboarding skip bug.
 
 **key api endpoints**
-- : (NEW) Handles user creation/login via social providers (Google/Apple).
-- : (FIXED) Now works correctly by using the Emergent LLM Key and endpoint. Will be the target of major refactoring.
+-  (POST): Sends a password reset email/token.
+-  (POST): Resets the user's password with a token.
+-  (PUT): Marks a routine step as complete.
+-  (POST): Needs to be checked to see if it returns a flag for new users.
 
 **Critical Info for New Agent**
-- **The PRD is Law:** The user's detailed Product Requirements Document (from message #592) has completely redefined the project's goals. All new work MUST align with it. Start by re-reading it.
-- **VERIFY THE REVENUECAT BUG:** The #1 critical blocker from the last fork, the RevenueCat key caching issue, was **ignored**. Your first action before any new feature work should be to guide the user through a new iOS build and verify if the production environment is working or if it's still stuck in sandbox mode. Do not assume it is fixed.
-- **Social Login is Unfinished:** The code is written, but it requires user action (adding a redirect URI to Google Cloud) and testing on a real device. Do not treat it as complete. Guide the user through verification.
-- **User's Local Environment is Fragile:** The user needs to run  before An Expo user account is required to proceed.
+- **USER HOPS EXPO ACCOUNTS:** The user frequently changes their Expo account (, , ). This is the root cause of the Google Login configuration issues and the critical Android signing key mismatch. Be prepared to guide the user through re-linking their project with An Expo user account is required to proceed.
 
 Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username and may need help with  to sync code to their machine. Be prepared to provide explicit, copy-pasteable commands for Windows .
-- **Demo Account for Apple Review:** An account has been created and verified for the Apple review team:  / .
+Input is required, but stdin is not readable. Failed to display prompt: Email or username and removing the old  from .
+- **ANDROID DEPLOYMENT IS BLOCKED:** The app cannot be updated on the Google Play Store until the signing key issue is resolved. The user must complete the Request upload key reset process in their Play Console.
+- **APPLE REVIEW IS BLOCKED:** The app will be rejected again if links to medical sources are not added. This is a top priority.
+- **PAYMENTS ARE BROKEN:** The Invalid IAM token error from RevenueCat is preventing all purchases. This is a critical monetization blocker that needs to be resolved. Ask the user to re-verify their keys and bundle ID in the RevenueCat dashboard.
+- **RAILWAY DEPLOYMENT IS FRAGILE:** The backend deployment on Railway was fixed after a long struggle. Avoid changing the root  or  unless absolutely necessary to prevent breaking the build again.
 
 **documents created in this job**
-  - 
+- 
+- 
+-  (later deleted)
+-  (later deleted)
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - **Msg 628:** (PENDING) User confirms they want to start implementing the new features from the PRD.
- - **Msg 627:** Agent confirms all files are on GitHub and asks user if they want to proceed with the build or start on the new PRD features.
- - **Msg 592 & 593:** User pastes the entire, detailed PRD for the app.
- - **Msg 589:** User states that the frontend changes are not saved on their local machine.
- - **Msg 569:** User requests creation of a demo account for Apple review and asks about Android manual publishing.
- - **Msg 563:** User states the changes are not on their computer.
- - **Msg 561:** User reports a build failure due to .
- - **Msg 555:** User provides their Expo username () and asks for the correct redirect link.
- - **Msg 546:** User provides a screenshot of a new Google Sign-In error (misconfigured redirect URI).
- - **Msg 533:** User provides a screenshot of a Google Sign-In error and reports the Apple button is not clickable.
+- **Msg 357:** (PENDING) Asks how to add in-app purchases, notes Apple wants links to sources, reports that social login skips onboarding steps, and asks where to add legal URLs.
+- **Msg 356:** Agent provides a summary of fixes for Apple Review and rebuild instructions.
+- **Msg 324-355:** User provides Apple Review rejection screenshots. Agent implements fixes for legal text on the paywall and adds a medical disclaimer.
+- **Msg 323:** User provides more Apple review screenshots.
+- **Msg 322:** Agent explains why the current Android build cannot be used and details the two options (reset key or rebuild with original account).
+- **Msg 321:** (PENDING) User states they manually uploaded the  file and asks how to change the key without another build.
+- **Msg 319:** (PENDING) User states they want to use the  Expo account but don't want to rebuild for Android. Asks about changing the key in Google Play Console.
+- **Msg 318:** Agent correctly diagnoses the Android signing key mismatch and explains the cause (changing Expo accounts).
+- **Msg 317:** User posts logs from a failed Android submission (An Expo user account is required to proceed.
+
+Log in to EAS with email or username (exit and run eas login --help to see other login options)
+Input is required, but stdin is not readable. Failed to display prompt: Email or username) showing a signing key mismatch.
+- **Msg 314-316:** Agent provides the final correct  and instructs the user to pull and push.
 
 **Project Health Check:**
-- **Broken**: The core monetization feature is likely broken due to the unverified RevenueCat caching bug. Social Login is implemented but unverified and likely non-functional for the user. The project cannot be shipped in its current state.
-- **Mocked**: N/A.
+- **Broken**:
+    - **Monetization**: Completely broken due to RevenueCat Invalid IAM token error.
+    - **Android Deployment**: Blocked due to signing key mismatch.
+    - **iOS Deployment**: Blocked pending fixes for Apple Review (medical sources).
+    - **Core UX**: Broken for new social login users who skip onboarding.
 
 **3rd Party Integrations**
-- **OpenAI GPT-4o**: Used for skin analysis via the Emergent LLM endpoint. Requires the  (set to the Emergent key) in the Railway backend environment.
-- **RevenueCat**: Used for subscriptions. The iOS production key is the subject of a critical, unverified caching bug.
-- **Google Sign-In**: Partially integrated. Requires user to add a redirect URI to their Google Cloud Console. Uses .
-- **Apple Sign-In**: Partially integrated. Only works on real iOS devices. Uses .
-- **MongoDB Atlas**: Production database.
-- **Railway**: Production backend hosting.
+- **OpenAI GPT-4o**: Used via Emergent LLM endpoint for skin analysis.
+- **RevenueCat**: Integrated but **BROKEN**. Fails with Invalid IAM token error. Requires user to re-verify keys and dashboard setup. Also has a potential unverified build caching issue.
+- **Google Sign-In**: Integrated, but has a **CRITICAL BUG** where it skips the onboarding flow for new users.
+- **Apple Sign-In**: Integrated, but likely shares the same onboarding skip bug as Google Sign-In.
+- **MongoDB Atlas**: Production database, seems to be working correctly.
+- **Railway**: Production backend hosting. After extensive debugging, the deployment process is now working.
+- **SendGrid**: Integrated for password reset emails. Works from the local agent environment but user reports service unavailable in the app, which points to the Railway deployment needing the  environment variable correctly set and redeployed.
 
 **Testing status**
   - Testing agent used after significant changes: NO
-  - Troubleshoot agent used after agent stuck in loop: NO
+  - Troubleshoot agent used after agent stuck in loop: NO (but the agent did a lot of manual troubleshooting for Railway)
   - Test files created: None.
-  - Known regressions: The RevenueCat integration is potentially still regressed from a previous fork, stuck using a test key in builds.
+  - Known regressions: Social Login now skips onboarding. The Delete Account button remains a recurring, unverified complaint.
 
 **Credentials to test flow:**
-- **App Store Demo Account**:  /  (This has been created and verified on the production backend).
+- **App Store Demo Account**:  /  (Premium)
+- **Railway URL:** 
+- **Expo Account:**  (current)
+- **Apple Team ID:** 
+- **Apple App ID:** 
 
 **What agent forgot to execute**
-- The agent **completely failed** to address the #1 highest priority issue from the previous handover: the **RevenueCat API key caching bug**. It instead immediately jumped into developing new features, leaving a critical production blocker unresolved and unverified. This is a major process failure and puts the project at significant risk.
-- The agent did not ensure user verification of the social login flow after implementation, leaving it in an unknown state.
-
+- The agent **again** failed to address or verify the original critical issue from the first handover: the **RevenueCat API key caching bug** in EAS builds. It only focused on the Invalid IAM token error. This is a major process failure and a significant risk.
+- The agent did not follow up on the user's report that Manage Subscription and Cancel Subscription buttons produced a console error. While this may be a simulator issue, it was never confirmed.
 </analysis>
