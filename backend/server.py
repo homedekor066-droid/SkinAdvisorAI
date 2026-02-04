@@ -708,11 +708,18 @@ async def login(credentials: UserLogin):
         )
     )
 
-@api_router.post("/auth/social", response_model=TokenResponse)
+class SocialAuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+    is_new_user: bool = False  # Flag to indicate if this is a new registration
+
+@api_router.post("/auth/social", response_model=SocialAuthResponse)
 async def social_auth(request: SocialAuthRequest):
     """
     Handle social authentication (Google/Apple Sign-In).
     If user exists, log them in. If not, create a new account.
+    Returns is_new_user=True for new registrations so frontend can redirect to onboarding.
     """
     # Check if user already exists with this social provider
     existing_user = await db.users.find_one({
@@ -720,9 +727,9 @@ async def social_auth(request: SocialAuthRequest):
     })
     
     if existing_user:
-        # User exists - log them in
+        # User exists - log them in (NOT a new user)
         token = create_token(existing_user['id'])
-        return TokenResponse(
+        return SocialAuthResponse(
             access_token=token,
             user=UserResponse(
                 id=existing_user['id'],
@@ -732,20 +739,21 @@ async def social_auth(request: SocialAuthRequest):
                 plan=existing_user.get('plan', 'free'),
                 scan_count=existing_user.get('scan_count', 0),
                 created_at=existing_user['created_at']
-            )
+            ),
+            is_new_user=False
         )
     
     # Check if email already exists (user might have registered with email before)
     if request.email:
         email_user = await db.users.find_one({'email': request.email})
         if email_user:
-            # Link social account to existing user
+            # Link social account to existing user (NOT a new user)
             await db.users.update_one(
                 {'id': email_user['id']},
                 {'$set': {f'social_{request.provider}_id': request.provider_id}}
             )
             token = create_token(email_user['id'])
-            return TokenResponse(
+            return SocialAuthResponse(
                 access_token=token,
                 user=UserResponse(
                     id=email_user['id'],
@@ -755,10 +763,11 @@ async def social_auth(request: SocialAuthRequest):
                     plan=email_user.get('plan', 'free'),
                     scan_count=email_user.get('scan_count', 0),
                     created_at=email_user['created_at']
-                )
+                ),
+                is_new_user=False
             )
     
-    # Create new user with social auth
+    # Create new user with social auth (THIS IS A NEW USER)
     user_id = str(uuid.uuid4())
     email = request.email or f"{request.provider}_{request.provider_id}@social.auth"
     name = request.name or f"{request.provider.capitalize()} User"
@@ -778,7 +787,7 @@ async def social_auth(request: SocialAuthRequest):
     await db.users.insert_one(new_user)
     token = create_token(user_id)
     
-    return TokenResponse(
+    return SocialAuthResponse(
         access_token=token,
         user=UserResponse(
             id=user_id,
@@ -788,7 +797,8 @@ async def social_auth(request: SocialAuthRequest):
             plan='free',
             scan_count=0,
             created_at=new_user['created_at']
-        )
+        ),
+        is_new_user=True  # This is a new registration - frontend should show onboarding
     )
 
 @api_router.get("/auth/me", response_model=UserResponse)
