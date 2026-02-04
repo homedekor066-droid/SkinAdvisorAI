@@ -421,14 +421,51 @@ export default function PaywallScreen() {
 
         {/* Cancel text */}
         <Text style={[styles.cancelText, { color: theme.textMuted }]}>
-          Cancel anytime
+          Cancel anytime. No commitment required.
         </Text>
+
+        {/* Subscription Details - Required by Apple */}
+        <View style={[styles.subscriptionDetails, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.subscriptionTitle, { color: theme.text }]}>
+            Subscription Details
+          </Text>
+          <Text style={[styles.subscriptionInfo, { color: theme.textSecondary }]}>
+            • <Text style={{ fontWeight: '600' }}>Title:</Text> SkinAdvisor AI Premium{'\n'}
+            • <Text style={{ fontWeight: '600' }}>Length:</Text> Monthly ($9.99/month) or Yearly ($59.99/year){'\n'}
+            • <Text style={{ fontWeight: '600' }}>Payment:</Text> Charged to your Apple ID account{'\n'}
+            • <Text style={{ fontWeight: '600' }}>Renewal:</Text> Auto-renews unless canceled 24h before period ends{'\n'}
+            • <Text style={{ fontWeight: '600' }}>Manage:</Text> Settings → Apple ID → Subscriptions
+          </Text>
+        </View>
+
+        {/* Terms Links - Required by Apple */}
+        <View style={styles.termsLinks}>
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://sites.google.com/view/skincare-ia-terms')}
+            style={styles.termLink}
+          >
+            <Text style={[styles.termLinkText, { color: theme.primary }]}>
+              Terms of Use (EULA)
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.termDivider, { color: theme.textMuted }]}>|</Text>
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://sites.google.com/view/skincare-ia-privacy')}
+            style={styles.termLink}
+          >
+            <Text style={[styles.termLinkText, { color: theme.primary }]}>
+              Privacy Policy
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Terms */}
         <Text style={[styles.termsText, { color: theme.textMuted }]}>
-          By subscribing, you agree to our Terms of Service and Privacy Policy.
-          Payment will be charged to your account. Subscription automatically renews
-          unless canceled at least 24 hours before the end of the current period.
+          By subscribing, you agree to our Terms of Use (EULA) and Privacy Policy.
+          Payment will be charged to your Apple ID account at confirmation of purchase.
+          Subscription automatically renews unless auto-renew is turned off at least
+          24-hours before the end of the current period. Your account will be charged
+          for renewal within 24-hours prior to the end of the current period.
         </Text>
       </ScrollView>
     </SafeAreaView>
