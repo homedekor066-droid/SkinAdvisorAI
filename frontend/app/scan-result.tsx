@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
