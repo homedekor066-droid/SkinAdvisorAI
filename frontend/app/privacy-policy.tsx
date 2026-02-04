@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 export default function PrivacyPolicyScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+
+  const handleEmailPress = () => {
+    Linking.openURL('mailto:aziri.603@gmail.com');
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -28,7 +33,7 @@ export default function PrivacyPolicyScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[styles.lastUpdated, { color: theme.textSecondary }]}>
-          Last updated: January 2025
+          Last updated: February 2026
         </Text>
 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>1. Introduction</Text>
@@ -40,7 +45,7 @@ export default function PrivacyPolicyScreen() {
         <Text style={[styles.paragraph, { color: theme.textSecondary }]}>
           • Account Information: Email address, name, and password when you register.{'\n'}
           • Profile Data: Age, gender, skin type, and skin goals you provide.{'\n'}
-          • Photos: Facial images you submit for skin analysis (processed securely and not stored permanently).{'\n'}
+          • Photos: Facial images you submit for skin analysis (processed securely).{'\n'}
           • Usage Data: App interactions, scan history, and preferences.
         </Text>
 
@@ -55,7 +60,7 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>4. Photo Data</Text>
         <Text style={[styles.paragraph, { color: theme.textSecondary }]}>
-          Your facial photos are processed using AI technology to analyze your skin condition. We do not sell or share your photos with third parties. Photos are encrypted during transmission and processing.
+          Your facial photos are processed using AI technology solely to analyze your skin condition. We do not sell or share your photos with third parties. Photos are encrypted during transmission and processing. We do not store your facial images permanently on our servers after the analysis is complete.
         </Text>
 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>5. Data Security</Text>
@@ -66,17 +71,21 @@ export default function PrivacyPolicyScreen() {
         <Text style={[styles.sectionTitle, { color: theme.text }]}>6. Your Rights</Text>
         <Text style={[styles.paragraph, { color: theme.textSecondary }]}>
           You have the right to:{'\n'}
-          • Access your personal data{'\n'}
-          • Request deletion of your account and data{'\n'}
-          • Update or correct your information{'\n'}
-          • Opt out of marketing communications
+          • Access your personal data.{'\n'}
+          • Request deletion of your account and data.{'\n'}
+          • Update or correct your information.{'\n'}
+          • Opt out of marketing communications.
         </Text>
 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>7. Contact Us</Text>
         <Text style={[styles.paragraph, { color: theme.textSecondary }]}>
-          If you have questions about this Privacy Policy, please contact us at:{'\n'}
-          support@skinadvisor.ai
+          If you have questions about this Privacy Policy, please contact us at:
         </Text>
+        <TouchableOpacity onPress={handleEmailPress}>
+          <Text style={[styles.emailLink, { color: theme.primary }]}>
+            aziri.603@gmail.com
+          </Text>
+        </TouchableOpacity>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -124,6 +133,12 @@ const styles = StyleSheet.create({
   paragraph: {
     fontSize: 15,
     lineHeight: 24,
+  },
+  emailLink: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 8,
+    textDecorationLine: 'underline',
   },
   bottomPadding: {
     height: 40,
