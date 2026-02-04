@@ -479,6 +479,24 @@ export default function ScanResultScreen() {
           </Card>
         )}
 
+        {/* Medical Disclaimer - Required by Apple Guideline 1.4.1 */}
+        <Card style={[styles.disclaimerCard, { backgroundColor: '#FFF8E1', borderColor: '#FFB300' }]}>
+          <View style={styles.disclaimerHeader}>
+            <Ionicons name="information-circle" size={20} color="#F57C00" />
+            <Text style={[styles.disclaimerTitle, { color: '#E65100' }]}>
+              Important Notice
+            </Text>
+          </View>
+          <Text style={[styles.disclaimerText, { color: '#5D4037' }]}>
+            This analysis is for informational purposes only and is not a substitute for professional medical advice. 
+            Our AI provides general skincare recommendations based on visual analysis. For medical skin conditions, 
+            allergies, or specific concerns, please consult a board-certified dermatologist.
+          </Text>
+          <Text style={[styles.disclaimerCitation, { color: '#8D6E63' }]}>
+            Sources: American Academy of Dermatology guidelines and peer-reviewed skincare research.
+          </Text>
+        </Card>
+
         {/* PRD Phase 1: Skin Metrics Section (Premium Only) */}
         {!isLocked && Object.keys(skinMetrics).length > 0 && (
           <Card style={styles.metricsCard}>
