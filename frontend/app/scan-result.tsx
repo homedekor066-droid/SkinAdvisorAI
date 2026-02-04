@@ -2328,7 +2328,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 34,
-    maxHeight: '85%',
+    minHeight: 450,
+    maxHeight: '90%',
   },
   sourcesModalHeader: {
     flexDirection: 'row',
@@ -2341,8 +2342,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sourcesModalBody: {
-    minHeight: 300,
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
   },
   sourcesIntro: {
     fontSize: 14,
