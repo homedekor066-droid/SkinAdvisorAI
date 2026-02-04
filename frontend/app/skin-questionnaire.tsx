@@ -19,8 +19,8 @@ import * as WebBrowser from 'expo-web-browser';
 const { width } = Dimensions.get('window');
 
 // Legal URLs
-const PRIVACY_POLICY_URL = 'https://sites.google.com/view/skincare-ia-privacy';
-const TERMS_OF_SERVICE_URL = 'https://sites.google.com/view/skincare-ia-terms';
+const PRIVACY_POLICY_URL = 'https://skinadvisor-ai-p6c4vkkubwolqku2.builder-preview.com/privacy-policy';
+const TERMS_OF_SERVICE_URL = 'https://skinadvisor-ai-p6c4vkkubwolqku2.builder-preview.com/terms-of-service';
 
 type QuestionnaireStep = 'disclaimer' | 'gender' | 'age' | 'skin_goal' | 'skin_type';
 
