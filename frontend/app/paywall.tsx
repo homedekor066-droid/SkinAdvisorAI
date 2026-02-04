@@ -679,4 +679,36 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     paddingHorizontal: 16,
   },
+  subscriptionDetails: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  subscriptionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  subscriptionInfo: {
+    fontSize: 13,
+    lineHeight: 22,
+  },
+  termsLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  termLink: {
+    paddingHorizontal: 8,
+  },
+  termLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  termDivider: {
+    fontSize: 14,
+  },
 });
