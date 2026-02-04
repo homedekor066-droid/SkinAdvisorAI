@@ -2341,6 +2341,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sourcesModalBody: {
+    minHeight: 300,
     flex: 1,
   },
   sourcesIntro: {
