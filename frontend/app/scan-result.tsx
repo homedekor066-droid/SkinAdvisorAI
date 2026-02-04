@@ -164,6 +164,9 @@ export default function ScanResultScreen() {
   // State for routine completion
   const [completingStep, setCompletingStep] = useState<string | null>(null);
 
+  // State for Sources Modal
+  const [showSourcesModal, setShowSourcesModal] = useState(false);
+
   // Function to mark a routine step as complete
   const markStepComplete = async (stepId: string, routineType: 'morning' | 'evening') => {
     if (!scanId || !token) return;
