@@ -44,20 +44,19 @@ export default function SubscriptionScreen() {
 
   const fetchSubscriptionInfo = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/subscription/status`, {
+      // Use server-authoritative subscription endpoint
+      const subResponse = await axios.get(`${API_URL}/api/me/subscription`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       setSubscriptionInfo({
-        plan: user?.plan || 'free',
-        status: response.data.plan === 'premium' ? 'active' : 'inactive',
-        expiresAt: response.data.expires_at,
-        willRenew: response.data.will_renew,
+        plan: subResponse.data.premium ? 'premium' : 'free',
+        status: subResponse.data.premium ? 'active' : 'inactive',
+        expiresAt: subResponse.data.expiresAt,
       });
     } catch (error) {
       console.error('Error fetching subscription:', error);
       setSubscriptionInfo({
-        plan: user?.plan || 'free',
+        plan: user?.premium ? 'premium' : 'free',
         status: 'unknown',
       });
     } finally {
@@ -129,7 +128,7 @@ export default function SubscriptionScreen() {
     );
   }
 
-  const isPremium = user?.plan === 'premium';
+  const isPremium = user?.premium === true;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
