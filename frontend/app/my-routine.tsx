@@ -69,7 +69,7 @@ export default function MyRoutineScreen() {
     total_days_completed: number;
   }>({ streak: 0, bonus_points: 0, total_days_completed: 0 });
 
-  const isPremium = user?.plan === 'premium';
+  const isPremium = user?.premium === true;
   
   // CRITICAL: Only use user-specific storage keys when user.id is available
   // This prevents data from being saved/loaded under 'guest' key

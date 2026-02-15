@@ -144,13 +144,15 @@ class RevenueCatService {
   }
 
   /**
-   * Check if user has active premium subscription
+   * Check if user has active premium entitlement in RevenueCat.
+   * WARNING: Do NOT use this to gate features. Always use the server-authoritative
+   * GET /api/me/subscription endpoint instead. This method is only for RevenueCat SDK state.
    */
   async isPremiumUser(): Promise<boolean> {
     if (!this.initialized || this.initializationFailed || Platform.OS === 'web') {
       return false;
     }
-    
+
     try {
       const customerInfo = await this.getCustomerInfo();
       if (!customerInfo) return false;

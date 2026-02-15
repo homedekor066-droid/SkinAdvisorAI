@@ -182,16 +182,20 @@ export default function PaywallScreen() {
 
     const selectedOption = pricingOptions.find(o => o.id === selectedPlan);
 
-    // If RevenueCat is available and we have a package, use it
+    // RevenueCat must be available for real purchases
     if (revenueCatAvailable && selectedOption?.package && Purchases) {
       try {
         const { customerInfo } = await Purchases.purchasePackage(selectedOption.package);
-        
-        // Check if premium entitlement is active
+
+        // After purchase, fetch subscription status from server
+        // The server will be updated via RevenueCat webhook
         if (customerInfo.entitlements.active['premium']) {
-          // Sync with backend
-          await syncSubscriptionWithBackend();
-          
+          // Wait briefly for webhook to propagate, then fetch from server
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          if (refreshUser) {
+            await refreshUser();
+          }
+
           Alert.alert(
             'Success!',
             'Welcome to Premium! Enjoy all features.',
@@ -208,25 +212,9 @@ export default function PaywallScreen() {
         setLoading(false);
       }
     } else {
-      // Backend upgrade (for testing without RevenueCat)
-      try {
-        await axios.post(
-          `${API_URL}/api/subscription/upgrade`,
-          { plan: 'premium' },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        // Refresh user data to get updated plan
-        if (refreshUser) {
-          await refreshUser();
-        }
-
-        navigateAfterPurchase();
-      } catch (err: any) {
-        setError(err.response?.data?.detail || 'Failed to upgrade. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+      // No RevenueCat available - cannot process purchase
+      setError('Purchases are only available in the production app. Please download from the App Store or Google Play.');
+      setLoading(false);
     }
   };
 
@@ -239,9 +227,13 @@ export default function PaywallScreen() {
     setRestoring(true);
     try {
       const customerInfo = await Purchases.restorePurchases();
-      
+
       if (customerInfo.entitlements.active['premium']) {
-        await syncSubscriptionWithBackend();
+        // Wait for webhook to propagate, then refresh from server
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (refreshUser) {
+          await refreshUser();
+        }
         Alert.alert(
           'Restored!',
           'Your subscription has been restored.',
@@ -254,22 +246,6 @@ export default function PaywallScreen() {
       Alert.alert('Error', e.message || 'Failed to restore purchases.');
     } finally {
       setRestoring(false);
-    }
-  };
-
-  const syncSubscriptionWithBackend = async () => {
-    try {
-      await axios.post(
-        `${API_URL}/api/subscription/upgrade`,
-        { plan: 'premium', source: 'revenuecat' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (refreshUser) {
-        await refreshUser();
-      }
-    } catch (e) {
-      console.error('[Paywall] Failed to sync with backend:', e);
     }
   };
 

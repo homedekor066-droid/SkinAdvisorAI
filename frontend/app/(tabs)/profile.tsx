@@ -272,17 +272,17 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={[
               styles.subscriptionBadge, 
-              { backgroundColor: user?.plan === 'premium' ? '#4CAF50' : theme.primary }
+              { backgroundColor: user?.premium ? '#4CAF50' : theme.primary }
             ]}
             onPress={() => router.push('/subscription')}
           >
-            <Ionicons 
-              name={user?.plan === 'premium' ? 'star' : 'star-outline'} 
-              size={16} 
-              color="#FFFFFF" 
+            <Ionicons
+              name={user?.premium ? 'star' : 'star-outline'}
+              size={16}
+              color="#FFFFFF"
             />
             <Text style={styles.subscriptionBadgeText}>
-              {user?.plan === 'premium' ? 'Premium' : 'Free Plan'}
+              {user?.premium ? 'Premium' : 'Free Plan'}
             </Text>
             <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
           </TouchableOpacity>

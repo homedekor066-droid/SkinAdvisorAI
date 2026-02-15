@@ -33,8 +33,8 @@ export default function ScanScreen() {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [galleryPermission, setGalleryPermission] = useState<boolean | null>(null);
 
-  // Check if user can scan (free users: 1 scan limit)
-  const canScan = user?.plan === 'premium' || (user?.scan_count ?? 0) < 1;
+  // Check if user can scan (free users: 1 scan limit) - server-authoritative
+  const canScan = user?.premium === true || (user?.scan_count ?? 0) < 1;
 
   // Check for photo consent and request permissions on mount
   useEffect(() => {

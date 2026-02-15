@@ -43,6 +43,7 @@ interface User {
     language?: string;
   };
   plan: string;  // 'free' or 'premium'
+  premium: boolean;
   scan_count: number;
   created_at: string;
 }
@@ -70,6 +71,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (profile: any) => Promise<void>;
   refreshUser: () => Promise<void>;
+  fetchSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (storedToken) {
         setToken(storedToken);
         await fetchUser(storedToken);
+        await fetchSubscriptionWithToken(storedToken);
       }
     } catch (error) {
       console.error('Failed to load auth:', error);
@@ -163,14 +166,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(response.data);
   };
 
+  const fetchSubscriptionWithToken = async (authToken: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/me/subscription`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const { premium, expiresAt } = response.data;
+      setUser(prev => prev ? { ...prev, premium, plan: premium ? 'premium' : 'free' } : prev);
+    } catch (error) {
+      console.error('Failed to fetch subscription:', error);
+    }
+  };
+
+  const fetchSubscription = async () => {
+    if (token) {
+      await fetchSubscriptionWithToken(token);
+    }
+  };
+
   const refreshUser = async () => {
     if (token) {
       await fetchUser(token);
+      await fetchSubscriptionWithToken(token);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, socialAuth, logout, updateProfile, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, socialAuth, logout, updateProfile, refreshUser, fetchSubscription }}>
       {children}
     </AuthContext.Provider>
   );

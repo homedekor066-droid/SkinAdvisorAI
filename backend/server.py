@@ -20,6 +20,8 @@ import secrets
 import hashlib
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+from fastapi import Request
+import hmac
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,6 +30,9 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'skincare_db')]
+
+# RevenueCat Webhook Configuration
+REVENUECAT_WEBHOOK_SECRET = os.environ.get('REVENUECAT_WEBHOOK_SECRET', '')
 
 # JWT Configuration
 JWT_SECRET = os.environ.get('JWT_SECRET', 'skincare-secret-key-change-in-production')
@@ -86,6 +91,7 @@ class UserResponse(BaseModel):
     name: str
     profile: Optional[UserProfile] = None
     plan: str = "free"
+    premium: bool = False
     scan_count: int = 0
     created_at: datetime
 
@@ -103,8 +109,9 @@ class SubscriptionStatus(BaseModel):
     can_scan: bool
     features: Dict[str, bool]
 
-class UpgradeRequest(BaseModel):
-    plan: str = "premium"  # For now just premium
+class SubscriptionResponse(BaseModel):
+    premium: bool
+    expiresAt: Optional[str] = None
 
 class SkinAnalysisRequest(BaseModel):
     image_base64: str
@@ -666,8 +673,11 @@ async def register(user_data: UserCreate):
             'skin_goals': [],
             'country': None
         },
-        'plan': 'free',  # NEW: Default plan is free
-        'scan_count': 0,  # NEW: Track number of scans
+        'plan': 'free',
+        'premium': False,
+        'premiumExpiresAt': None,
+        'revenuecatCustomerId': None,
+        'scan_count': 0,
         'created_at': datetime.utcnow()
     }
     
@@ -682,6 +692,7 @@ async def register(user_data: UserCreate):
             name=user_data.name,
             profile=UserProfile(**user['profile']),
             plan=user['plan'],
+            premium=user['premium'],
             scan_count=user['scan_count'],
             created_at=user['created_at']
         )
@@ -694,7 +705,9 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     token = create_token(user['id'])
-    
+    is_premium = user.get('premium', False)
+    plan = 'premium' if is_premium else 'free'
+
     return TokenResponse(
         access_token=token,
         user=UserResponse(
@@ -702,7 +715,8 @@ async def login(credentials: UserLogin):
             email=user['email'],
             name=user['name'],
             profile=UserProfile(**user.get('profile', {})) if user.get('profile') else None,
-            plan=user.get('plan', 'free'),
+            plan=plan,
+            premium=is_premium,
             scan_count=user.get('scan_count', 0),
             created_at=user['created_at']
         )
@@ -729,6 +743,7 @@ async def social_auth(request: SocialAuthRequest):
     if existing_user:
         # User exists - log them in (NOT a new user)
         token = create_token(existing_user['id'])
+        is_premium = existing_user.get('premium', False)
         return SocialAuthResponse(
             access_token=token,
             user=UserResponse(
@@ -736,7 +751,8 @@ async def social_auth(request: SocialAuthRequest):
                 email=existing_user['email'],
                 name=existing_user['name'],
                 profile=UserProfile(**existing_user.get('profile', {})) if existing_user.get('profile') else None,
-                plan=existing_user.get('plan', 'free'),
+                plan='premium' if is_premium else 'free',
+                premium=is_premium,
                 scan_count=existing_user.get('scan_count', 0),
                 created_at=existing_user['created_at']
             ),
@@ -753,6 +769,7 @@ async def social_auth(request: SocialAuthRequest):
                 {'$set': {f'social_{request.provider}_id': request.provider_id}}
             )
             token = create_token(email_user['id'])
+            is_premium = email_user.get('premium', False)
             return SocialAuthResponse(
                 access_token=token,
                 user=UserResponse(
@@ -760,7 +777,8 @@ async def social_auth(request: SocialAuthRequest):
                     email=email_user['email'],
                     name=email_user['name'],
                     profile=UserProfile(**email_user.get('profile', {})) if email_user.get('profile') else None,
-                    plan=email_user.get('plan', 'free'),
+                    plan='premium' if is_premium else 'free',
+                    premium=is_premium,
                     scan_count=email_user.get('scan_count', 0),
                     created_at=email_user['created_at']
                 ),
@@ -780,13 +798,16 @@ async def social_auth(request: SocialAuthRequest):
         f'social_{request.provider}_id': request.provider_id,
         'profile': {'language': request.language},
         'plan': 'free',
+        'premium': False,
+        'premiumExpiresAt': None,
+        'revenuecatCustomerId': None,
         'scan_count': 0,
         'created_at': datetime.utcnow()
     }
-    
+
     await db.users.insert_one(new_user)
     token = create_token(user_id)
-    
+
     return SocialAuthResponse(
         access_token=token,
         user=UserResponse(
@@ -795,20 +816,32 @@ async def social_auth(request: SocialAuthRequest):
             name=name,
             profile=UserProfile(language=request.language),
             plan='free',
+            premium=False,
             scan_count=0,
             created_at=new_user['created_at']
         ),
-        is_new_user=True  # This is a new registration - frontend should show onboarding
+        is_new_user=True
     )
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
+    is_premium = current_user.get('premium', False)
+    # Check expiration
+    expires_at = current_user.get('premiumExpiresAt')
+    if is_premium and expires_at and isinstance(expires_at, datetime) and expires_at < datetime.utcnow():
+        is_premium = False
+        await db.users.update_one(
+            {'id': current_user['id']},
+            {'$set': {'premium': False, 'plan': 'free'}}
+        )
+    plan = 'premium' if is_premium else 'free'
     return UserResponse(
         id=current_user['id'],
         email=current_user['email'],
         name=current_user['name'],
         profile=UserProfile(**current_user.get('profile', {})) if current_user.get('profile') else None,
-        plan=current_user.get('plan', 'free'),
+        plan=plan,
+        premium=is_premium,
         scan_count=current_user.get('scan_count', 0),
         created_at=current_user['created_at']
     )
@@ -1842,11 +1875,12 @@ async def analyze_skin(
     PREMIUM USERS: Get full response (routine, diet, products, explanations)
     """
     try:
-        user_plan = current_user.get('plan', 'free')
+        is_premium = current_user.get('premium', False)
+        user_plan = 'premium' if is_premium else 'free'
         scan_count = current_user.get('scan_count', 0)
-        
+
         # ==================== SCAN LIMIT CHECK (SERVER-SIDE ENFORCEMENT) ====================
-        if user_plan == 'free' and scan_count >= FREE_SCAN_LIMIT:
+        if not is_premium and scan_count >= FREE_SCAN_LIMIT:
             raise HTTPException(
                 status_code=403,
                 detail={
@@ -2931,14 +2965,22 @@ async def refresh_challenges(current_user: dict = Depends(get_current_user)):
 @api_router.get("/subscription/status")
 async def get_subscription_status(current_user: dict = Depends(get_current_user)):
     """Get user's subscription status and limits"""
-    user_plan = current_user.get('plan', 'free')
+    is_premium = current_user.get('premium', False)
+    # Check expiration
+    expires_at = current_user.get('premiumExpiresAt')
+    if is_premium and expires_at and isinstance(expires_at, datetime) and expires_at < datetime.utcnow():
+        is_premium = False
+        await db.users.update_one(
+            {'id': current_user['id']},
+            {'$set': {'premium': False, 'plan': 'free'}}
+        )
     scan_count = current_user.get('scan_count', 0)
-    
-    if user_plan == 'premium':
+
+    if is_premium:
         return SubscriptionStatus(
             plan='premium',
             scan_count=scan_count,
-            scan_limit=-1,  # Unlimited
+            scan_limit=-1,
             can_scan=True,
             features={
                 'unlimited_scans': True,
@@ -2965,36 +3007,170 @@ async def get_subscription_status(current_user: dict = Depends(get_current_user)
             }
         )
 
-@api_router.post("/subscription/upgrade")
-async def upgrade_subscription(request: UpgradeRequest, current_user: dict = Depends(get_current_user)):
+@api_router.get("/me/subscription")
+async def get_my_subscription(current_user: dict = Depends(get_current_user)):
     """
-    Upgrade user to premium (MOCK - for testing)
-    In production, this would integrate with Apple/Google IAP or Stripe
+    Server-authoritative subscription status.
+    Frontend must call this to determine premium access.
     """
-    if request.plan != 'premium':
-        raise HTTPException(status_code=400, detail="Invalid plan. Only 'premium' is supported.")
-    
-    # Update user's plan in database
-    await db.users.update_one(
-        {'id': current_user['id']},
-        {'$set': {'plan': 'premium'}}
+    is_premium = current_user.get('premium', False)
+    expires_at = current_user.get('premiumExpiresAt')
+
+    # Check expiration
+    if is_premium and expires_at and isinstance(expires_at, datetime) and expires_at < datetime.utcnow():
+        is_premium = False
+        await db.users.update_one(
+            {'id': current_user['id']},
+            {'$set': {'premium': False, 'plan': 'free'}}
+        )
+        logger.info(f"User {current_user['id']} premium expired, downgraded to free")
+
+    return SubscriptionResponse(
+        premium=is_premium,
+        expiresAt=expires_at.isoformat() if expires_at and isinstance(expires_at, datetime) else None
     )
-    
-    logger.info(f"User {current_user['id']} upgraded to premium (MOCK)")
-    
-    return {
-        "success": True,
-        "message": "Successfully upgraded to Premium!",
-        "plan": "premium",
-        "features_unlocked": [
-            "Unlimited skin scans",
-            "Full personalized routine",
-            "Diet & nutrition plan",
-            "Product recommendations",
-            "Progress tracking",
-            "Detailed explanations"
+
+# ==================== REVENUECAT WEBHOOK ====================
+
+def verify_revenuecat_signature(payload: bytes, signature: str) -> bool:
+    """Verify RevenueCat webhook signature using HMAC-SHA256."""
+    if not REVENUECAT_WEBHOOK_SECRET:
+        logger.warning("REVENUECAT_WEBHOOK_SECRET not configured, skipping signature verification")
+        return True
+    expected = hmac.new(
+        REVENUECAT_WEBHOOK_SECRET.encode('utf-8'),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+@api_router.post("/webhook/revenuecat")
+async def revenuecat_webhook(request: Request):
+    """
+    Handle RevenueCat server-to-server webhook notifications.
+    This is the ONLY way to change subscription state.
+    Handles: INITIAL_PURCHASE, RENEWAL, EXPIRATION, CANCELLATION, BILLING_ISSUE
+    """
+    body = await request.body()
+
+    # Verify webhook signature
+    signature = request.headers.get('X-RevenueCat-Signature', '')
+    if REVENUECAT_WEBHOOK_SECRET and not verify_revenuecat_signature(body, signature):
+        logger.warning("RevenueCat webhook signature verification failed")
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    event = payload.get('event', {})
+    event_type = event.get('type', '')
+    event_id = event.get('id', '')
+    app_user_id = event.get('app_user_id', '')
+    expiration_at_ms = event.get('expiration_at_ms')
+
+    if not app_user_id:
+        logger.warning(f"RevenueCat webhook missing app_user_id, event_id={event_id}")
+        raise HTTPException(status_code=400, detail="Missing app_user_id")
+
+    # Idempotency: check if this event was already processed
+    existing_event = await db.webhook_events.find_one({'event_id': event_id})
+    if existing_event:
+        logger.info(f"RevenueCat webhook event {event_id} already processed, skipping")
+        return {"status": "already_processed"}
+
+    # Find user by revenuecatCustomerId or app_user_id (which maps to our user id)
+    user = await db.users.find_one({
+        '$or': [
+            {'revenuecatCustomerId': app_user_id},
+            {'id': app_user_id}
         ]
-    }
+    })
+
+    if not user:
+        logger.warning(f"RevenueCat webhook: user not found for app_user_id={app_user_id}, event={event_type}")
+        # Store event for later processing, don't fail
+        await db.webhook_events.insert_one({
+            'event_id': event_id,
+            'event_type': event_type,
+            'app_user_id': app_user_id,
+            'payload': event,
+            'processed': False,
+            'error': 'user_not_found',
+            'created_at': datetime.utcnow()
+        })
+        return {"status": "user_not_found"}
+
+    user_id = user['id']
+    expires_at = None
+    if expiration_at_ms:
+        expires_at = datetime.utcfromtimestamp(expiration_at_ms / 1000)
+
+    update_fields = {}
+
+    if event_type in ('INITIAL_PURCHASE', 'RENEWAL'):
+        update_fields = {
+            'premium': True,
+            'plan': 'premium',
+            'premiumExpiresAt': expires_at,
+            'revenuecatCustomerId': app_user_id,
+        }
+        logger.info(f"User {user_id} granted premium via {event_type}, expires={expires_at}")
+
+    elif event_type == 'EXPIRATION':
+        update_fields = {
+            'premium': False,
+            'plan': 'free',
+        }
+        logger.info(f"User {user_id} premium expired via {event_type}")
+
+    elif event_type == 'CANCELLATION':
+        # Cancellation means the user won't renew, but they keep access until expiration
+        update_fields = {
+            'premiumExpiresAt': expires_at,
+        }
+        logger.info(f"User {user_id} cancelled subscription, access until {expires_at}")
+
+    elif event_type == 'BILLING_ISSUE':
+        # On billing issues, we can optionally grant a grace period or revoke immediately
+        update_fields = {
+            'premium': False,
+            'plan': 'free',
+        }
+        logger.info(f"User {user_id} billing issue, premium revoked")
+
+    else:
+        logger.info(f"RevenueCat webhook unhandled event type: {event_type} for user {user_id}")
+
+    if update_fields:
+        await db.users.update_one(
+            {'id': user_id},
+            {'$set': update_fields}
+        )
+
+    # Log subscription change
+    await db.subscription_logs.insert_one({
+        'user_id': user_id,
+        'event_type': event_type,
+        'event_id': event_id,
+        'app_user_id': app_user_id,
+        'expires_at': expires_at,
+        'update_fields': {k: str(v) for k, v in update_fields.items()},
+        'created_at': datetime.utcnow()
+    })
+
+    # Mark event as processed (idempotency)
+    await db.webhook_events.insert_one({
+        'event_id': event_id,
+        'event_type': event_type,
+        'app_user_id': app_user_id,
+        'user_id': user_id,
+        'processed': True,
+        'created_at': datetime.utcnow()
+    })
+
+    return {"status": "ok"}
 
 @api_router.get("/subscription/pricing")
 async def get_pricing():

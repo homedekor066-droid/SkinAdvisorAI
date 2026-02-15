@@ -157,8 +157,8 @@ export default function ScanResultScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'analysis' | 'routine' | 'nutrition' | 'products'>('analysis');
 
-  // Check if user has premium
-  const isPremium = scan?.user_plan === 'premium' || user?.plan === 'premium';
+  // Check if user has premium - server-authoritative
+  const isPremium = user?.premium === true;
   const isLocked = !isPremium;
 
   // State for routine completion

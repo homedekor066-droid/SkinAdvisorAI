@@ -35,7 +35,7 @@ export default function ProductsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const isPremium = user?.plan === 'premium';
+  const isPremium = user?.premium === true;
 
   useEffect(() => {
     fetchProducts();
