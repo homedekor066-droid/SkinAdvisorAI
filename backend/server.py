@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -20,7 +20,6 @@ import secrets
 import hashlib
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-from fastapi import Request
 import hmac
 
 ROOT_DIR = Path(__file__).parent

@@ -44,10 +44,6 @@ export default function SubscriptionScreen() {
 
   const fetchSubscriptionInfo = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/subscription/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
       // Use server-authoritative subscription endpoint
       const subResponse = await axios.get(`${API_URL}/api/me/subscription`, {
         headers: { Authorization: `Bearer ${token}` }
